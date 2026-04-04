@@ -4,7 +4,7 @@
 // Place the entire ifqm/ folder inside your web root (e.g. C:\xampp\htdocs\).
 // Access via http://localhost/ifqm/
 
-define('OPENAI_API_KEY', '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');
+define('OPENAI_API_KEY', getenv('OPENAI_API_KEY'));
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');          // default XAMPP user
 define('DB_PASS', '');              // default XAMPP password (empty)
