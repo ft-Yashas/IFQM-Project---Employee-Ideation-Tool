@@ -88,11 +88,29 @@ if ($action === 'leaderboard') {
 
 // ── Notifications ─────────────────────────────────────────────────
 if ($action === 'notifications') {
+    // One-time migration: add idea_id column if it doesn't exist yet
+    try { $pdo->exec("ALTER TABLE notifications ADD COLUMN idea_id INT NULL DEFAULT NULL"); } catch (\Exception $e) {}
+
     $stmt = $pdo->prepare(
         "SELECT * FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 20"
     );
     $stmt->execute([$user['id']]);
     $notifs = $stmt->fetchAll();
+
+    // Backfill idea_id for old notifications: parse idea_code from message text
+    foreach ($notifs as &$n) {
+        if (empty($n['idea_id']) && preg_match('/IDA-\d{4}-\d{3}/', $n['message'] ?? '', $m)) {
+            $row = $pdo->prepare("SELECT id FROM ideas WHERE idea_code = ? LIMIT 1");
+            $row->execute([$m[0]]);
+            $found = $row->fetchColumn();
+            if ($found) {
+                $n['idea_id'] = (int)$found;
+                $pdo->prepare("UPDATE notifications SET idea_id=? WHERE id=?")->execute([$found, $n['id']]);
+            }
+        }
+    }
+    unset($n);
+
     $unread = array_filter($notifs, fn($n) => !$n['is_read']);
     respond(['success' => true, 'notifications' => $notifs, 'unread_count' => count($unread)]);
 }

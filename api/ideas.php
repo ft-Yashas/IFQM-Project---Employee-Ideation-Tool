@@ -207,7 +207,8 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
             addNotification(
                 $user['manager_id'],
                 'New Idea Submitted',
-                $user['name'] . ' submitted a new idea. Please review it in your queue.'
+                $user['name'] . ' submitted a new idea. Please review it in your queue.',
+                $ideaId
             );
         }
     }
@@ -288,7 +289,7 @@ if ($action === 'review_action' && $method === 'POST') {
         'Implemented' => "Your idea {$idea['idea_code']} is now Implemented. +{$pts} points awarded.",
         default       => "Your idea {$idea['idea_code']} is Under Review.",
     };
-    addNotification($idea['submitter_id'], "Idea {$decision}", $msg);
+    addNotification($idea['submitter_id'], "Idea {$decision}", $msg, $ideaId);
 
     respond(['success' => true, 'decision' => $decision, 'points_awarded' => $pts]);
 }

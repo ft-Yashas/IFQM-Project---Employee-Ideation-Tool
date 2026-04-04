@@ -91,10 +91,16 @@ function generateIdeaCode(): string {
     return 'IDA-' . $year . '-' . str_pad($n, 3, '0', STR_PAD_LEFT);
 }
 
-function addNotification(int $userId, string $title, string $msg): void {
+function addNotification(int $userId, string $title, string $msg, ?int $ideaId = null): void {
     $pdo = db();
-    $pdo->prepare("INSERT INTO notifications (user_id,title,message) VALUES (?,?,?)")
-        ->execute([$userId, $title, $msg]);
+    try {
+        $pdo->prepare("INSERT INTO notifications (user_id,title,message,idea_id) VALUES (?,?,?,?)")
+            ->execute([$userId, $title, $msg, $ideaId]);
+    } catch (\Exception $e) {
+        // Fallback if idea_id column doesn't exist yet
+        $pdo->prepare("INSERT INTO notifications (user_id,title,message) VALUES (?,?,?)")
+            ->execute([$userId, $title, $msg]);
+    }
 }
 
 function addWorkflow(int $ideaId, int $actorId, string $action, ?string $comment = null): void {
