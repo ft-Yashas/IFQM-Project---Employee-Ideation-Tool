@@ -1,5 +1,4 @@
 <?php
-// api/auth.php  –  POST /api/auth.php?action=login|logout|me
 require_once __DIR__ . '/config.php';
 
 session_set_cookie_params(SESSION_LIFETIME);
@@ -7,7 +6,6 @@ session_start();
 
 $action = $_GET['action'] ?? 'me';
 
-// ── GET current session user ───────────────────────────────────
 if ($action === 'me') {
     if (empty($_SESSION['user_id'])) {
         respond(['success' => false, 'authenticated' => false]);
@@ -15,7 +13,6 @@ if ($action === 'me') {
     respond(['success' => true, 'authenticated' => true, 'user' => $_SESSION['user']]);
 }
 
-// ── Login ──────────────────────────────────────────────────────
 if ($action === 'login') {
     $body  = json_decode(file_get_contents('php://input'), true) ?? [];
     $email = trim($body['email'] ?? '');
@@ -38,21 +35,20 @@ if ($action === 'login') {
         respond(['success' => false, 'error' => 'Invalid email or password.'], 401);
     }
 
-    // Build safe session payload (no hash)
     $session = [
-        'id'            => $user['id'],
-        'employee_id'   => $user['employee_id'],
-        'name'          => $user['name'],
-        'email'         => $user['email'],
-        'phone'         => $user['phone'],
-        'department'    => $user['department'],
-        'business_unit' => $user['business_unit'],
-        'location'      => $user['location'],
-        'role'          => $user['role'],
-        'manager_id'    => $user['manager_id'],
-        'manager_name'  => $user['manager_name'],
-        'points'        => $user['points'],
-        'avatar_initials'=> $user['avatar_initials'] ?? strtoupper(substr($user['name'],0,1)),
+        'id'             => $user['id'],
+        'employee_id'    => $user['employee_id'],
+        'name'           => $user['name'],
+        'email'          => $user['email'],
+        'phone'          => $user['phone'],
+        'department'     => $user['department'],
+        'business_unit'  => $user['business_unit'],
+        'location'       => $user['location'],
+        'role'           => $user['role'],
+        'manager_id'     => $user['manager_id'],
+        'manager_name'   => $user['manager_name'],
+        'points'         => $user['points'],
+        'avatar_initials' => $user['avatar_initials'] ?? strtoupper(substr($user['name'], 0, 1)),
     ];
 
     $_SESSION['user_id'] = $user['id'];
@@ -61,7 +57,6 @@ if ($action === 'login') {
     respond(['success' => true, 'user' => $session]);
 }
 
-// ── Logout ─────────────────────────────────────────────────────
 if ($action === 'logout') {
     session_destroy();
     respond(['success' => true]);

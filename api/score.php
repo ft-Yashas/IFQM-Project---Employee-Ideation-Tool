@@ -1,35 +1,6 @@
 <?php
-// api/score.php  –  Idea quality scoring
-//
-// Provides two functions usable as a library by other endpoints:
-//   computeIdeaScore(array $idea): int          – rule-based fallback (0–100)
-//   computeAIScoreWithReason(array $idea): array – OpenAI scoring with reason + fallback
-//   saveIdeaScore(int $id, int $score, string $reason): void
-//
-// Also acts as a REST endpoint when called directly:
-//   GET  ?action=score&id=X     – score one idea
-//   POST ?action=batch_rescore  – rescore ALL ideas (admin only)
-//
 require_once __DIR__ . '/config.php';
 
-// ══════════════════════════════════════════════════════════════
-//  RULE-BASED FALLBACK SCORER
-// ══════════════════════════════════════════════════════════════
-
-/**
- * Weighted feature model (0–100).  Used as fallback when OpenAI is unavailable.
- *
- *  1. Title word count          –  8 pts
- *  2. Situation length          – 15 pts
- *  3. Situation diagnostic kws  – 10 pts
- *  4. Solution length           – 15 pts
- *  5. Solution action kws       – 10 pts
- *  6. Impact level              – 20 pts
- *  7. Impact area count         – 10 pts
- *  8. Tangible benefit detail   –  7 pts
- *  9. Intangible benefit        –  3 pts
- * 10. Co-suggesters             –  2 pts
- */
 function computeIdeaScore(array $idea): int
 {
     $score = 0;
@@ -95,24 +66,13 @@ function computeIdeaScore(array $idea): int
     return max(0, min(100, $score));
 }
 
-// ══════════════════════════════════════════════════════════════
-//  OPENAI SCORER WITH REASON
-// ══════════════════════════════════════════════════════════════
-
-/**
- * Score an idea using OpenAI (gpt-4o-mini).
- * Falls back to computeIdeaScore() if the API call fails or returns unparseable output.
- *
- * @return array{score: int, reason: string, source: string}
- *              source is 'openai' or 'fallback'
- */
 function computeAIScoreWithReason(array $idea): array
 {
-    $title   = (string)($idea['title']             ?? '');
-    $sit     = (string)($idea['present_situation'] ?? '');
-    $sol     = (string)($idea['proposed_solution'] ?? '');
-    $areas   = (string)($idea['impact_areas']      ?? '');
-    $level   = (string)($idea['impact_level']      ?? 'Medium');
+    $title = (string)($idea['title']             ?? '');
+    $sit   = (string)($idea['present_situation'] ?? '');
+    $sol   = (string)($idea['proposed_solution'] ?? '');
+    $areas = (string)($idea['impact_areas']      ?? '');
+    $level = (string)($idea['impact_level']      ?? 'Medium');
 
     $prompt = <<<PROMPT
 Evaluate this employee improvement idea for an operations/manufacturing company.
@@ -136,13 +96,11 @@ PROMPT;
     $content = callOpenAI($prompt);
 
     if ($content !== null) {
-        // Strip markdown code fences that some models add despite the instruction
         $cleaned = trim($content);
         $cleaned = preg_replace('/^```(?:json)?\s*/i', '', $cleaned);
         $cleaned = preg_replace('/\s*```$/i',          '', $cleaned);
         $cleaned = trim($cleaned);
 
-        // Extract the first {...} JSON object, even if there is surrounding text
         if (preg_match('/\{.*\}/s', $cleaned, $matches)) {
             $parsed = json_decode($matches[0], true);
 
@@ -165,7 +123,6 @@ PROMPT;
         error_log('OpenAI score parse failed. Cleaned content: ' . $cleaned);
     }
 
-    // Fallback: rule-based score, no AI reason
     return [
         'score'  => computeIdeaScore($idea),
         'reason' => 'Scored using the structured rule-based model (AI service unavailable).',
@@ -173,25 +130,17 @@ PROMPT;
     ];
 }
 
-// ══════════════════════════════════════════════════════════════
-//  PERSIST
-// ══════════════════════════════════════════════════════════════
-
 function saveIdeaScore(int $ideaId, int $score, string $reason = ''): void
 {
     db()->prepare("UPDATE ideas SET ai_score = ?, ai_reason = ? WHERE id = ?")
        ->execute([$score, $reason, $ideaId]);
 }
 
-// ══════════════════════════════════════════════════════════════
-//  REST ACTIONS  (only when this file is the HTTP entry-point)
-// ══════════════════════════════════════════════════════════════
 if (basename($_SERVER['PHP_SELF']) !== 'score.php') return;
 
 $user   = requireAuth();
 $action = $_GET['action'] ?? 'score';
 
-// ── Score a single idea ───────────────────────────────────────────
 if ($action === 'score') {
     $id   = (int)($_GET['id'] ?? 0);
     $stmt = db()->prepare("SELECT * FROM ideas WHERE id = ?");
@@ -202,15 +151,14 @@ if ($action === 'score') {
     $ai = computeAIScoreWithReason($idea);
     saveIdeaScore($id, $ai['score'], $ai['reason']);
     respond([
-        'success'  => true,
-        'id'       => $id,
-        'ai_score' => $ai['score'],
-        'ai_reason'=> $ai['reason'],
-        'source'   => $ai['source'],
+        'success'   => true,
+        'id'        => $id,
+        'ai_score'  => $ai['score'],
+        'ai_reason' => $ai['reason'],
+        'source'    => $ai['source'],
     ]);
 }
 
-// ── Batch rescore all ideas (admin only) ─────────────────────────
 if ($action === 'batch_rescore' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     requireRole('admin');
     $ideas   = db()->query("SELECT * FROM ideas")->fetchAll();

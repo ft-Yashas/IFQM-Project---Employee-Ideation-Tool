@@ -1,38 +1,28 @@
 <?php
-// ── config.php ────────────────────────────────────────────────
-// Central configuration.
-// Place the entire ifqm/ folder inside your web root (e.g. C:\xampp\htdocs\).
-// Access via http://localhost/ifqm/
-
 define('OPENAI_API_KEY', getenv('OPENAI_API_KEY'));
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');          // default XAMPP user
-define('DB_PASS', '');              // default XAMPP password (empty)
+define('DB_USER', 'root');
+define('DB_PASS', '');
 define('DB_NAME', 'ifqm_ideation');
 
 define('UPLOAD_DIR', __DIR__ . '/uploads/');
 define('MAX_FILE_MB', 10);
 
-// Session lifetime: 8 hours
 define('SESSION_LIFETIME', 28800);
 
-// Points config
 define('POINTS_SUBMIT',      10);
 define('POINTS_APPROVED',    25);
-define('POINTS_IMPLEMENTED', 65);  // total = 100 when implemented
+define('POINTS_IMPLEMENTED', 65);
 
-// ── Derive the public base URL dynamically (works on any host) ───
 function getAppBaseUrl(): string {
     $proto  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    // Walk up from /ifqm/api/ to /ifqm/
     $script = dirname(dirname($_SERVER['SCRIPT_NAME'] ?? '/ifqm/api/config.php'));
     $base   = rtrim($script, '/\\');
     return $proto . '://' . $host . $base . '/';
 }
 define('UPLOAD_URL', getAppBaseUrl() . 'api/uploads/');
 
-// ── Database connection ───────────────────────────────────────────
 function db(): PDO {
     static $pdo = null;
     if ($pdo === null) {
@@ -48,7 +38,6 @@ function db(): PDO {
             );
         } catch (PDOException $e) {
             http_response_code(500);
-            // Do not expose DB internals to clients in production.
             error_log('DB connection failed: ' . $e->getMessage());
             die(json_encode(['success' => false, 'error' => 'Database connection failed.']));
         }
@@ -56,7 +45,6 @@ function db(): PDO {
     return $pdo;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────
 function respond(array $data, int $code = 200): never {
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
@@ -97,7 +85,6 @@ function addNotification(int $userId, string $title, string $msg, ?int $ideaId =
         $pdo->prepare("INSERT INTO notifications (user_id,title,message,idea_id) VALUES (?,?,?,?)")
             ->execute([$userId, $title, $msg, $ideaId]);
     } catch (\Exception $e) {
-        // Fallback if idea_id column doesn't exist yet
         $pdo->prepare("INSERT INTO notifications (user_id,title,message) VALUES (?,?,?)")
             ->execute([$userId, $title, $msg]);
     }
@@ -127,7 +114,7 @@ function callOpenAI(string $prompt): ?string
             ],
             ['role' => 'user', 'content' => $prompt],
         ],
-        'temperature' => 0.3,   // low = more deterministic JSON
+        'temperature' => 0.3,
         'max_tokens'  => 250,
     ];
 
@@ -140,8 +127,8 @@ function callOpenAI(string $prompt): ?string
             'Content-Type: application/json',
             'Authorization: Bearer ' . $apiKey,
         ],
-        CURLOPT_TIMEOUT        => 20,   // total request timeout (seconds)
-        CURLOPT_CONNECTTIMEOUT => 10,   // connection timeout
+        CURLOPT_TIMEOUT        => 20,
+        CURLOPT_CONNECTTIMEOUT => 10,
     ]);
 
     $raw      = curl_exec($ch);
@@ -167,5 +154,3 @@ function callOpenAI(string $prompt): ?string
 
     return $content;
 }
-
-// End of config.php

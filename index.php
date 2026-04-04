@@ -1,5 +1,4 @@
 <?php
-// index.php  –  Main entry point
 session_start();
 $loggedIn = !empty($_SESSION['user_id']);
 $user     = $_SESSION['user'] ?? [];
@@ -336,12 +335,8 @@ $user     = $_SESSION['user'] ?? [];
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
-     LOGIN PAGE
-══════════════════════════════════════════ -->
 <div id="login-page" class="login-wrap" <?= $loggedIn ? 'style="display:none"' : '' ?>>
 
-  <!-- Left branding panel -->
   <div class="login-left">
     <div style="font-size:36px;font-weight:900;letter-spacing:-2px;margin-bottom:6px">IF<span style="color:#7986cb">QM</span></div>
     <h1 style="font-size:26px;font-weight:800;line-height:1.25;margin-bottom:10px">Employee Ideation Tool</h1>
@@ -367,7 +362,6 @@ $user     = $_SESSION['user'] ?? [];
     </div>
   </div>
 
-  <!-- Right form panel -->
   <div class="login-right">
     <div class="login-card">
       <div class="login-logo">
@@ -396,13 +390,9 @@ $user     = $_SESSION['user'] ?? [];
 
 </div>
 
-<!-- ══════════════════════════════════════════
-     MAIN APP
-══════════════════════════════════════════ -->
 <div id="main-app" style="<?= $loggedIn ? '' : 'display:none;' ?>height:100vh">
 <div id="app">
 
-  <!-- SIDEBAR -->
   <div id="sidebar">
     <div class="sidebar-logo">
       <span style="font-size:14px;font-weight:900;letter-spacing:-.5px;flex-shrink:0;background:rgba(255,255,255,.18);padding:3px 8px;border-radius:6px">IF</span>
@@ -438,7 +428,6 @@ $user     = $_SESSION['user'] ?? [];
     </div>
   </div>
 
-  <!-- MAIN CONTENT -->
   <div id="main">
     <div id="topbar" style="position:relative">
       <div class="topbar-left">
@@ -458,7 +447,6 @@ $user     = $_SESSION['user'] ?? [];
         </div>
         <button class="btn btn-outline btn-sm" onclick="doLogout()">Logout</button>
       </div>
-      <!-- Notification panel -->
       <div class="notification-panel" id="notif-panel">
         <div style="padding:10px 14px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">
           <strong style="font-size:13px">Notifications</strong>
@@ -470,7 +458,6 @@ $user     = $_SESSION['user'] ?? [];
 
     <div id="content">
 
-      <!-- ══ PAGE: DASHBOARD ══ -->
       <div class="page active" id="page-dashboard">
         <div class="kpi-grid" id="dash-kpis">
           <div class="kpi-card"><div class="spinner"></div></div>
@@ -490,7 +477,6 @@ $user     = $_SESSION['user'] ?? [];
         </div>
       </div>
 
-      <!-- ══ PAGE: MY IDEAS ══ -->
       <div class="page" id="page-my-ideas">
         <div class="section-header">
           <div><div class="page-title">My Ideas</div><div class="text-muted">Track all ideas you have submitted</div></div>
@@ -505,7 +491,6 @@ $user     = $_SESSION['user'] ?? [];
         <div id="my-ideas-list"><div class="empty-state"><div class="spinner"></div> Loading…</div></div>
       </div>
 
-      <!-- ══ PAGE: SUBMIT IDEA (WIZARD) ══ -->
       <div class="page" id="page-submit">
         <div class="section-header">
           <div><div class="page-title">Submit New Idea</div><div class="text-muted">Fill in all steps to submit your improvement idea</div></div>
@@ -521,7 +506,6 @@ $user     = $_SESSION['user'] ?? [];
             <div class="w-step" onclick="goStep(5)"><span class="w-num">5</span><span class="w-lbl">Review &amp; Submit</span></div>
           </div>
 
-          <!-- Step 1 -->
           <div class="wizard-body" id="step-1">
             <h3 style="font-size:14px;color:#1a237e;margin-bottom:12px">Step 1: Describe the Present Situation</h3>
             <div class="form-group">
@@ -542,7 +526,6 @@ $user     = $_SESSION['user'] ?? [];
             </div>
           </div>
 
-          <!-- Step 2 -->
           <div class="wizard-body" id="step-2" style="display:none">
             <h3 style="font-size:14px;color:#1a237e;margin-bottom:12px">Step 2: Proposed Idea / Solution</h3>
             <div class="form-group">
@@ -559,7 +542,6 @@ $user     = $_SESSION['user'] ?? [];
             </div>
           </div>
 
-          <!-- Step 3 -->
           <div class="wizard-body" id="step-3" style="display:none">
             <h3 style="font-size:14px;color:#1a237e;margin-bottom:12px">Step 3: Impact Areas &amp; Measurable Benefits</h3>
             <div class="form-group">
@@ -592,7 +574,6 @@ $user     = $_SESSION['user'] ?? [];
             </div>
           </div>
 
-          <!-- Step 4 -->
           <div class="wizard-body" id="step-4" style="display:none">
             <h3 style="font-size:14px;color:#1a237e;margin-bottom:12px">Step 4: Co-Suggesters (Optional, max 2)</h3>
             <div class="form-group">
@@ -615,20 +596,17 @@ $user     = $_SESSION['user'] ?? [];
             </div>
           </div>
 
-          <!-- Step 5: Review -->
           <div class="wizard-body" id="step-5" style="display:none">
             <h3 style="font-size:14px;color:#1a237e;margin-bottom:12px">Step 5: Review &amp; Submit</h3>
             <div id="review-preview"></div>
             <div class="alert alert-info mt-8">By submitting, you confirm this idea is original. You will earn <strong>+10 points</strong> on submission. An AI quality score will be automatically computed.</div>
           </div>
 
-          <!-- Wizard nav -->
           <div class="wizard-footer" id="wizard-nav">
             <button class="btn btn-outline" id="btn-back" onclick="prevStep()" style="visibility:hidden">&#8592; Back</button>
             <button class="btn btn-outline" onclick="saveDraft()">Save Draft</button>
             <button class="btn btn-primary" id="btn-next" onclick="nextStep()">Next &#8594;</button>
           </div>
-          <!-- Final submit (shown on step 5) -->
           <div class="wizard-footer" id="wizard-submit-row" style="display:none">
             <button class="btn btn-outline" id="btn-back-final" onclick="goStep(4)">&#8592; Back</button>
             <button class="btn btn-outline" onclick="saveDraft()">Save Draft</button>
@@ -637,7 +615,6 @@ $user     = $_SESSION['user'] ?? [];
         </div>
       </div>
 
-      <!-- ══ PAGE: REVIEW QUEUE ══ -->
       <div class="page" id="page-review">
         <div class="section-header">
           <div><div class="page-title">Review Queue</div><div class="text-muted">Ideas pending your review — sorted by AI quality score (highest first)</div></div>
@@ -645,7 +622,6 @@ $user     = $_SESSION['user'] ?? [];
         <div id="review-list"><div class="empty-state"><div class="spinner"></div> Loading…</div></div>
       </div>
 
-      <!-- ══ PAGE: ALL IDEAS ══ -->
       <div class="page" id="page-ideas-all">
         <div class="section-header">
           <div><div class="page-title">All Ideas</div></div>
@@ -667,7 +643,6 @@ $user     = $_SESSION['user'] ?? [];
         </div>
       </div>
 
-      <!-- ══ PAGE: AUDIT TRAIL ══ -->
       <div class="page" id="page-audit">
         <div class="section-header">
           <div class="page-title">System Audit Trail</div>
@@ -682,7 +657,6 @@ $user     = $_SESSION['user'] ?? [];
         </div>
       </div>
 
-      <!-- ══ PAGE: LEADERBOARD ══ -->
       <div class="page" id="page-leaderboard">
         <div class="section-header"><div class="page-title">Leaderboard &amp; Gamification</div></div>
         <div class="filter-bar">
@@ -709,7 +683,6 @@ $user     = $_SESSION['user'] ?? [];
         </div>
       </div>
 
-      <!-- ══ PAGE: ANALYTICS ══ -->
       <div class="page" id="page-analytics">
         <div class="section-header">
           <div class="page-title">Analytics Dashboard</div>
@@ -742,7 +715,6 @@ $user     = $_SESSION['user'] ?? [];
         </div>
       </div>
 
-      <!-- ══ PAGE: ADMIN PANEL ══ -->
       <div class="page" id="page-admin">
         <div class="section-header"><div class="page-title">Admin Panel</div></div>
         <div class="tabs">
@@ -786,7 +758,6 @@ $user     = $_SESSION['user'] ?? [];
         </div>
       </div>
 
-      <!-- ══ PAGE: PROFILE ══ -->
       <div class="page" id="page-profile">
         <div class="grid-2">
           <div class="card">
@@ -812,12 +783,7 @@ $user     = $_SESSION['user'] ?? [];
         </div>
       </div>
 
-    </div><!-- /content -->
-  </div><!-- /main -->
-</div><!-- /app -->
-</div><!-- /main-app -->
-
-<!-- ══ MODAL: Idea Detail ══ -->
+    </div>  </div></div></div>
 <div class="modal-overlay" id="modal-idea-detail">
   <div class="modal">
     <div class="modal-header">
@@ -849,7 +815,6 @@ $user     = $_SESSION['user'] ?? [];
   </div>
 </div>
 
-<!-- ══ MODAL: Review Decision ══ -->
 <div class="modal-overlay" id="modal-review">
   <div class="modal" style="width:480px">
     <div class="modal-header">
@@ -878,7 +843,6 @@ $user     = $_SESSION['user'] ?? [];
   </div>
 </div>
 
-<!-- ══ MODAL: Success ══ -->
 <div class="modal-overlay" id="modal-success">
   <div class="modal" style="width:400px;text-align:center">
     <div class="modal-body" style="padding:36px 32px">
@@ -893,9 +857,6 @@ $user     = $_SESSION['user'] ?? [];
 </div>
 
 <script>
-// ════════════════════════════════════════════════════════════
-//  STATE
-// ════════════════════════════════════════════════════════════
 let currentUser   = <?= $loggedIn ? json_encode($user) : 'null' ?>;
 let currentStep   = 1;
 const totalSteps  = 5;
@@ -903,9 +864,6 @@ let draftIdeaId   = null;
 let pendingIdeaId = null;
 let allMyIdeas    = [];
 
-// ════════════════════════════════════════════════════════════
-//  AUTH
-// ════════════════════════════════════════════════════════════
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-pass').value.trim();
@@ -943,9 +901,6 @@ async function doLogout() {
   document.getElementById('login-page').style.display = 'flex';
 }
 
-// ════════════════════════════════════════════════════════════
-//  INIT APP
-// ════════════════════════════════════════════════════════════
 function initApp() {
   if (!currentUser) return;
   const u = currentUser;
@@ -973,9 +928,6 @@ function initApp() {
   loadMyIdeas();
 }
 
-// ════════════════════════════════════════════════════════════
-//  NAVIGATION
-// ════════════════════════════════════════════════════════════
 const pageTitles = {
   dashboard:'Dashboard', 'my-ideas':'My Ideas', submit:'Submit New Idea',
   review:'Review Queue', 'ideas-all':'All Ideas', audit:'Audit Trail',
@@ -1014,9 +966,6 @@ document.addEventListener('click', e => {
     document.getElementById('notif-panel').classList.remove('open');
 });
 
-// ════════════════════════════════════════════════════════════
-//  DASHBOARD
-// ════════════════════════════════════════════════════════════
 async function loadDashboard() {
   let r, d;
   try {
@@ -1072,9 +1021,6 @@ async function loadDashboard() {
     : '<div class="empty-state">No activity yet</div>';
 }
 
-// ════════════════════════════════════════════════════════════
-//  MY IDEAS
-// ════════════════════════════════════════════════════════════
 async function loadMyIdeas() {
   let r, d;
   try {
@@ -1123,9 +1069,6 @@ function renderMyIdeas(ideas) {
     </div>`).join('');
 }
 
-// ════════════════════════════════════════════════════════════
-//  ALL IDEAS
-// ════════════════════════════════════════════════════════════
 async function loadAllIdeas() {
   const s  = document.getElementById('all-search').value;
   const st = document.getElementById('all-status').value;
@@ -1158,9 +1101,6 @@ async function loadAllIdeas() {
     </tr>`).join('') || '<tr><td colspan="9" class="text-center">No ideas found.</td></tr>';
 }
 
-// ════════════════════════════════════════════════════════════
-//  IDEA DETAIL MODAL
-// ════════════════════════════════════════════════════════════
 async function openIdeaDetail(id) {
   pendingIdeaId = id;
   document.getElementById('modal-idea-code').textContent = 'Loading…';
@@ -1270,9 +1210,6 @@ async function openIdeaDetail(id) {
   `;
 }
 
-// ════════════════════════════════════════════════════════════
-//  REVIEW QUEUE
-// ════════════════════════════════════════════════════════════
 async function loadReviewQueue() {
   const el = document.getElementById('review-list');
   el.innerHTML = '<div class="empty-state"><div class="spinner"></div> Loading review queue…</div>';
@@ -1353,7 +1290,6 @@ async function submitReview() {
 
   closeModal('modal-review');
   if (d.success) {
-    // success icon already set in HTML
     document.getElementById('success-title').textContent = 'Decision Submitted';
     document.getElementById('success-msg').textContent   = `Idea marked as "${decision}". Submitter notified.${d.points_awarded ? ' +' + d.points_awarded + ' pts awarded.' : ''}`;
     document.getElementById('modal-success').classList.add('open');
@@ -1365,9 +1301,6 @@ async function submitReview() {
   }
 }
 
-// ════════════════════════════════════════════════════════════
-//  WIZARD — SUBMIT IDEA
-// ════════════════════════════════════════════════════════════
 function resetWizard() {
   draftIdeaId = null;
   ['idea-title','idea-situation','idea-solution','idea-tangible','idea-intangible','co1-search','co2-search'].forEach(id => {
@@ -1468,7 +1401,6 @@ async function submitIdea() {
     currentUser.points += (d.points_added || 0);
     document.getElementById('sb-points').textContent = currentUser.points + ' pts';
     closeModal('modal-idea-detail');
-    // success icon already set in HTML
     document.getElementById('success-title').textContent = 'Idea Submitted Successfully';
     document.getElementById('success-msg').textContent   = `Idea #${d.idea_code} submitted and routed to your manager for review. +${d.points_added} points credited. AI Quality Score: ${d.ai_score}/100.`;
     document.getElementById('modal-success').classList.add('open');
@@ -1508,9 +1440,6 @@ async function uploadFiles(ideaId) {
   }
 }
 
-// ════════════════════════════════════════════════════════════
-//  CO-SUGGESTER SEARCH
-// ════════════════════════════════════════════════════════════
 let searchTimer;
 async function searchUsers(input, resultsId, hiddenId, displayId) {
   clearTimeout(searchTimer);
@@ -1542,9 +1471,6 @@ document.addEventListener('click', e => {
   }
 });
 
-// ════════════════════════════════════════════════════════════
-//  AUDIT TRAIL
-// ════════════════════════════════════════════════════════════
 async function loadAudit() {
   if (!['manager','admin','executive'].includes(currentUser?.role)) {
     document.getElementById('audit-tbody').innerHTML = '<tr><td colspan="5" class="text-center"><div class="alert alert-warning">Audit Trail is only available to Managers, Admins and Executives.</div></td></tr>';
@@ -1573,9 +1499,6 @@ async function loadAudit() {
     </tr>`).join('') || '<tr><td colspan="5" class="text-center">No audit records.</td></tr>';
 }
 
-// ════════════════════════════════════════════════════════════
-//  LEADERBOARD
-// ════════════════════════════════════════════════════════════
 let lbPeriod = 'all';
 async function loadLeaderboard() {
   document.getElementById('lb-individuals').innerHTML = '<div class="spinner"></div>';
@@ -1616,7 +1539,6 @@ async function loadLeaderboard() {
         <span class="bar-val">${dept.dept_points||0}</span>
       </div>`).join('')}</div>`;
 
-  // Top ideas by AI score
   if (d.top_ideas && d.top_ideas.length) {
     document.getElementById('lb-top-ideas').innerHTML = d.top_ideas.map((idea, idx) => `
       <div class="top-idea-row">
@@ -1641,9 +1563,6 @@ function activateChip(el, group) {
   if (group === 'lb-period') { lbPeriod = el.dataset.val; loadLeaderboard(); }
 }
 
-// ════════════════════════════════════════════════════════════
-//  ANALYTICS
-// ════════════════════════════════════════════════════════════
 async function loadAnalytics() {
   if (!['manager','admin','executive'].includes(currentUser?.role)) {
     document.getElementById('analytics-kpis').innerHTML = '<div class="alert alert-warning" style="grid-column:1/-1">Analytics is only available to Managers, Admins and Executives.</div>';
@@ -1719,7 +1638,6 @@ async function loadAnalytics() {
       <span class="bar-val">${t.total}</span>
     </div>`).join('') || '<div class="empty-state">No trend data yet.</div>';
 
-  // AI Score distribution
   const hq = parseInt(ss.high_quality || 0);
   const mq = parseInt(ss.medium_quality || 0);
   const lq = parseInt(ss.low_quality || 0);
@@ -1733,9 +1651,6 @@ async function loadAnalytics() {
     <div style="font-size:11px;color:#888;margin-top:8px">Overall average AI score: <strong>${ss.overall_avg || 0}/100</strong></div>`;
 }
 
-// ════════════════════════════════════════════════════════════
-//  ADMIN
-// ════════════════════════════════════════════════════════════
 async function loadAdminUsers() {
   const r = await fetch('api/users.php?action=list&q=', {credentials:'same-origin'});
   const d = await r.json();
@@ -1764,9 +1679,6 @@ async function batchRescore() {
   if (btn) { btn.disabled = false; btn.textContent = 'Rescore All Ideas'; }
 }
 
-// ════════════════════════════════════════════════════════════
-//  PROFILE
-// ════════════════════════════════════════════════════════════
 function renderProfile() {
   if (!currentUser) return;
   const u = currentUser;
@@ -1787,9 +1699,6 @@ function renderProfile() {
   `;
 }
 
-// ════════════════════════════════════════════════════════════
-//  NOTIFICATIONS
-// ════════════════════════════════════════════════════════════
 async function loadNotifications() {
   const r = await fetch('api/users.php?action=notifications', {credentials:'same-origin'});
   const d = await r.json();
@@ -1818,9 +1727,6 @@ function openNotifIdea(ideaId) {
   openIdeaDetail(ideaId);
 }
 
-// ════════════════════════════════════════════════════════════
-//  MODALS / TABS
-// ════════════════════════════════════════════════════════════
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-overlay').forEach(o => {
   o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
@@ -1834,9 +1740,6 @@ function switchTab(el, tabId) {
   document.getElementById(tabId).classList.add('active');
 }
 
-// ════════════════════════════════════════════════════════════
-//  FILE INPUT LABELS
-// ════════════════════════════════════════════════════════════
 ['situation','solution'].forEach(s => {
   document.getElementById('file-'+s).addEventListener('change', function() {
     document.getElementById('file-'+s+'-name').textContent =
@@ -1844,9 +1747,6 @@ function switchTab(el, tabId) {
   });
 });
 
-// ════════════════════════════════════════════════════════════
-//  HELPERS
-// ════════════════════════════════════════════════════════════
 function statusBadge(s) {
   return {'Submitted':'badge-submitted','Under Review':'badge-review','Approved':'badge-approved',
           'Rejected':'badge-rejected','Implemented':'badge-implemented','Draft':'badge-draft',
@@ -1882,9 +1782,6 @@ function timeAgo(dt) {
   return Math.floor(diff/86400) + 'd ago';
 }
 
-// ════════════════════════════════════════════════════════════
-//  BOOT
-// ════════════════════════════════════════════════════════════
 if (currentUser) initApp();
 </script>
 </body>

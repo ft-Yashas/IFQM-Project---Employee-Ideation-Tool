@@ -1,12 +1,10 @@
 <?php
-// api/users.php  –  Users, leaderboard, notifications, analytics
 require_once __DIR__ . '/config.php';
 
 $user   = requireAuth();
 $action = $_GET['action'] ?? 'list';
 $pdo    = db();
 
-// ── List employees (for co-suggester search) ──────────────────────
 if ($action === 'list') {
     $q    = '%' . trim($_GET['q'] ?? '') . '%';
     $stmt = $pdo->prepare(
@@ -18,9 +16,8 @@ if ($action === 'list') {
     respond(['success' => true, 'users' => $stmt->fetchAll()]);
 }
 
-// ── Leaderboard ───────────────────────────────────────────────────
 if ($action === 'leaderboard') {
-    $period = $_GET['period'] ?? 'all';   // all | monthly | quarterly | yearly
+    $period = $_GET['period'] ?? 'all';
 
     $dateFilter = '';
     switch ($period) {
@@ -35,7 +32,6 @@ if ($action === 'leaderboard') {
             break;
     }
 
-    // Individual leaderboard — includes average AI quality score
     $stmt = $pdo->query(
         "SELECT u.id, u.name, u.department, u.business_unit, u.points, u.avatar_initials,
                 COUNT(DISTINCT i.id) AS idea_count,
@@ -50,7 +46,6 @@ if ($action === 'leaderboard') {
     );
     $individuals = $stmt->fetchAll();
 
-    // Department leaderboard
     $dstmt = $pdo->query(
         "SELECT u.department,
                 SUM(u.points)          AS dept_points,
@@ -65,7 +60,6 @@ if ($action === 'leaderboard') {
     );
     $departments = $dstmt->fetchAll();
 
-    // Top ideas by AI quality score
     $topIdeasStmt = $pdo->query(
         "SELECT i.id, i.idea_code, i.title, i.ai_score, i.status,
                 i.impact_level, i.impact_areas,
@@ -86,9 +80,7 @@ if ($action === 'leaderboard') {
     ]);
 }
 
-// ── Notifications ─────────────────────────────────────────────────
 if ($action === 'notifications') {
-    // One-time migration: add idea_id column if it doesn't exist yet
     try { $pdo->exec("ALTER TABLE notifications ADD COLUMN idea_id INT NULL DEFAULT NULL"); } catch (\Exception $e) {}
 
     $stmt = $pdo->prepare(
@@ -97,7 +89,6 @@ if ($action === 'notifications') {
     $stmt->execute([$user['id']]);
     $notifs = $stmt->fetchAll();
 
-    // Backfill idea_id for old notifications: parse idea_code from message text
     foreach ($notifs as &$n) {
         if (empty($n['idea_id']) && preg_match('/IDA-\d{4}-\d{3}/', $n['message'] ?? '', $m)) {
             $row = $pdo->prepare("SELECT id FROM ideas WHERE idea_code = ? LIMIT 1");
@@ -115,17 +106,14 @@ if ($action === 'notifications') {
     respond(['success' => true, 'notifications' => $notifs, 'unread_count' => count($unread)]);
 }
 
-// ── Mark notifications read ───────────────────────────────────────
 if ($action === 'mark_read' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo->prepare("UPDATE notifications SET is_read=1 WHERE user_id=?")->execute([$user['id']]);
     respond(['success' => true]);
 }
 
-// ── Analytics (admin / executive / manager) ───────────────────────
 if ($action === 'analytics') {
     requireRole('admin', 'executive', 'manager');
 
-    // Monthly submission trend (last 12 months)
     $trend = $pdo->query(
         "SELECT DATE_FORMAT(submitted_at,'%Y-%m') AS month,
                 COUNT(*) AS total,
@@ -135,7 +123,6 @@ if ($action === 'analytics') {
          GROUP BY month ORDER BY month DESC LIMIT 12"
     )->fetchAll();
 
-    // Impact area distribution
     $impactRaw = $pdo->query(
         "SELECT impact_areas FROM ideas WHERE impact_areas IS NOT NULL"
     )->fetchAll(PDO::FETCH_COLUMN);
@@ -148,12 +135,10 @@ if ($action === 'analytics') {
     }
     arsort($impactCount);
 
-    // Status summary
     $statusSummary = $pdo->query(
         "SELECT status, COUNT(*) AS cnt FROM ideas GROUP BY status"
     )->fetchAll();
 
-    // Overall quality score distribution
     $scoreStmt = $pdo->query(
         "SELECT
             SUM(CASE WHEN ai_score >= 75 THEN 1 ELSE 0 END) AS high_quality,
@@ -165,15 +150,14 @@ if ($action === 'analytics') {
     $scoreStats = $scoreStmt->fetch() ?: [];
 
     respond([
-        'success'            => true,
-        'trend'              => $trend,
-        'impact_distribution'=> $impactCount,
-        'status_summary'     => $statusSummary,
-        'score_stats'        => $scoreStats,
+        'success'             => true,
+        'trend'               => $trend,
+        'impact_distribution' => $impactCount,
+        'status_summary'      => $statusSummary,
+        'score_stats'         => $scoreStats,
     ]);
 }
 
-// ── Audit trail ───────────────────────────────────────────────────
 if ($action === 'audit') {
     requireRole('admin', 'manager', 'executive');
     $stmt = $pdo->query(
@@ -189,7 +173,6 @@ if ($action === 'audit') {
     respond(['success' => true, 'audit' => $stmt->fetchAll()]);
 }
 
-// ── Profile update ────────────────────────────────────────────────
 if ($action === 'profile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $b     = json_decode(file_get_contents('php://input'), true) ?? [];
     $phone = trim($b['phone'] ?? '');

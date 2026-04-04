@@ -1,5 +1,4 @@
 <?php
-// api/upload.php  –  Handle file attachments for ideas
 require_once __DIR__ . '/config.php';
 
 $user   = requireAuth();
@@ -7,13 +6,12 @@ $action = $_GET['action'] ?? 'upload';
 
 if ($action === 'upload' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $ideaId  = (int)($_POST['idea_id'] ?? 0);
-    $section = $_POST['section'] ?? 'situation'; // situation | solution
+    $section = $_POST['section'] ?? 'situation';
 
     if (!$ideaId || !in_array($section, ['situation', 'solution'], true)) {
         respond(['success' => false, 'error' => 'Invalid parameters.'], 400);
     }
 
-    // Verify ownership
     $stmt = db()->prepare("SELECT id FROM ideas WHERE id=? AND submitter_id=?");
     $stmt->execute([$ideaId, $user['id']]);
     if (!$stmt->fetch()) {
@@ -24,8 +22,8 @@ if ($action === 'upload' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         respond(['success' => false, 'error' => 'No file uploaded.'], 400);
     }
 
-    $file    = $_FILES['file'];
-    $maxBytes= MAX_FILE_MB * 1024 * 1024;
+    $file     = $_FILES['file'];
+    $maxBytes = MAX_FILE_MB * 1024 * 1024;
 
     if ($file['size'] > $maxBytes) {
         respond(['success' => false, 'error' => 'File exceeds ' . MAX_FILE_MB . 'MB limit.'], 400);
