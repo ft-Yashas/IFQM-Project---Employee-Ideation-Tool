@@ -1,15 +1,20 @@
 <?php
+// api/ideas.php  –  RESTful endpoint for ideas
+// GET    ?action=list|get&id=X|my|review|dashboard
+// POST   ?action=submit|draft|review_action
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/score.php';
+require_once __DIR__ . '/score.php';   // provides computeIdeaScore() / saveIdeaScore()
 
 $user   = requireAuth();
 $action = $_GET['action'] ?? 'list';
 $method = $_SERVER['REQUEST_METHOD'];
 
+// ── LIST all ideas ─────────────────────────────────────────────────
 if ($action === 'list') {
     $where  = [];
     $params = [];
 
+    // Employees only see their own; managers see their dept; admin/executive see all
     if ($user['role'] === 'employee') {
         $where[]  = '(i.submitter_id = ? OR i.co_suggester_1_id = ? OR i.co_suggester_2_id = ?)';
         $params   = array_merge($params, [$user['id'], $user['id'], $user['id']]);
@@ -46,6 +51,7 @@ if ($action === 'list') {
     respond(['success' => true, 'ideas' => $stmt->fetchAll()]);
 }
 
+// ── MY ideas ──────────────────────────────────────────────────────
 if ($action === 'my') {
     $stmt = db()->prepare(
         "SELECT i.*, c1.name AS co1_name, c2.name AS co2_name
@@ -59,6 +65,7 @@ if ($action === 'my') {
     respond(['success' => true, 'ideas' => $stmt->fetchAll()]);
 }
 
+// ── REVIEW QUEUE (manager / admin / executive) ─────────────────────
 if ($action === 'review') {
     requireRole('manager', 'admin', 'executive');
     $params = [];
@@ -78,6 +85,7 @@ if ($action === 'review') {
     respond(['success' => true, 'ideas' => $stmt->fetchAll()]);
 }
 
+// ── GET single idea detail ─────────────────────────────────────────
 if ($action === 'get') {
     $id   = (int)($_GET['id'] ?? 0);
     $stmt = db()->prepare(
@@ -96,10 +104,12 @@ if ($action === 'get') {
     $idea = $stmt->fetch();
     if (!$idea) respond(['success' => false, 'error' => 'Idea not found'], 404);
 
+    // Attachments
     $att = db()->prepare("SELECT * FROM idea_attachments WHERE idea_id = ?");
     $att->execute([$id]);
     $idea['attachments'] = $att->fetchAll();
 
+    // Workflow timeline
     $wf = db()->prepare(
         "SELECT w.*, u.name AS actor_name, u.role AS actor_role
          FROM idea_workflow w JOIN users u ON u.id = w.actor_id
@@ -111,6 +121,7 @@ if ($action === 'get') {
     respond(['success' => true, 'idea' => $idea]);
 }
 
+// ── SUBMIT / SAVE DRAFT ───────────────────────────────────────────
 if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
     $b = json_decode(file_get_contents('php://input'), true) ?? [];
 
@@ -129,6 +140,7 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
         respond(['success' => false, 'error' => 'Title, present situation and proposed solution are required.'], 400);
     }
 
+    // Compute AI score from submitted data
     $ideaData = [
         'title'              => $title,
         'present_situation'  => $sit,
@@ -140,9 +152,11 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
         'co_suggester_1_id'  => $co1,
         'co_suggester_2_id'  => $co2,
     ];
-    $ai       = computeAIScoreWithReason($ideaData);
-    $aiScore  = $ai['score'];
+    $ai = computeAIScoreWithReason($ideaData);
+    $aiScore = $ai['score'];
     $aiReason = $ai['reason'];
+    
+     // If editing an existing idea, ensure user has permission
 
     $status      = $action === 'submit' ? 'Submitted' : 'Draft';
     $submittedAt = $action === 'submit' ? date('Y-m-d H:i:s') : null;
@@ -150,17 +164,17 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
 
     if ($editId) {
         $pdo->prepare(
-            "UPDATE ideas SET
+            "UPDATE ideas SET 
             title=?,present_situation=?,proposed_solution=?,
             impact_areas=?,impact_level=?,tangible_benefit=?,intangible_benefit=?,
             co_suggester_1_id=?,co_suggester_2_id=?,
             status=?,submitted_at=COALESCE(submitted_at,?),
-            ai_score=?,ai_reason=?,
+            ai_score=?, ai_reason=?,
             updated_at=NOW()
             WHERE id=? AND submitter_id=?"
         )->execute([
             $title,$sit,$sol,$impacts,$impLvl,$tangible,$intang,
-            $co1,$co2,$status,$submittedAt,
+            $co1,$co2,$status,$submittedAt, 
             $aiScore,$aiReason,
             $editId,$user['id']
         ]);
@@ -172,13 +186,14 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
                 idea_code,title,present_situation,proposed_solution,
                 impact_areas,impact_level,tangible_benefit,intangible_benefit,
                 co_suggester_1_id,co_suggester_2_id,status,submitter_id,submitted_at,
-                ai_score,ai_reason
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                ai_score, ai_reason
+                )
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         )->execute([
             $code,$title,$sit,$sol,$impacts,$impLvl,$tangible,$intang,
             $co1,$co2,$status,$user['id'],$submittedAt,
             $aiScore,$aiReason
-        ]);
+            ]);
         $ideaId = (int)$pdo->lastInsertId();
     }
 
@@ -187,12 +202,12 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
         addPoints($user['id'], POINTS_SUBMIT);
         $_SESSION['user']['points'] += POINTS_SUBMIT;
 
+        // Notify manager
         if ($user['manager_id']) {
             addNotification(
                 $user['manager_id'],
                 'New Idea Submitted',
-                $user['name'] . ' submitted a new idea. Please review it in your queue.',
-                $ideaId
+                $user['name'] . ' submitted a new idea. Please review it in your queue.'
             );
         }
     }
@@ -210,12 +225,13 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
     ]);
 }
 
+// ── MANAGER REVIEW (approve / reject / implement) ─────────────────
 if ($action === 'review_action' && $method === 'POST') {
     requireRole('manager', 'admin', 'executive');
-    $b        = json_decode(file_get_contents('php://input'), true) ?? [];
-    $ideaId   = (int)($b['idea_id'] ?? 0);
-    $decision = $b['decision'] ?? '';
-    $comment  = trim($b['comment'] ?? '');
+    $b       = json_decode(file_get_contents('php://input'), true) ?? [];
+    $ideaId  = (int)($b['idea_id'] ?? 0);
+    $decision= $b['decision'] ?? '';   // Approved | Rejected | Implemented | Under Review
+    $comment = trim($b['comment'] ?? '');
 
     if (!$ideaId || !in_array($decision, ['Approved','Rejected','Implemented','Under Review'], true)) {
         respond(['success' => false, 'error' => 'Invalid request.'], 400);
@@ -227,6 +243,7 @@ if ($action === 'review_action' && $method === 'POST') {
     $idea = $stmt->fetch();
     if (!$idea) respond(['success' => false, 'error' => 'Idea not found.'], 404);
 
+    // Prevent self-approval
     if ((int)$idea['submitter_id'] === (int)$user['id']) {
         respond(['success' => false, 'error' => 'You cannot review or approve your own idea.'], 403);
     }
@@ -238,6 +255,7 @@ if ($action === 'review_action' && $method === 'POST') {
         default       => 'Reviewed',
     };
 
+    // Idempotency guard — prevent duplicate workflow entries within 10 s
     $dupCheck = $pdo->prepare(
         "SELECT COUNT(*) FROM idea_workflow WHERE idea_id=? AND actor_id=? AND action=? AND created_at > NOW() - INTERVAL 10 SECOND"
     );
@@ -251,6 +269,7 @@ if ($action === 'review_action' && $method === 'POST') {
 
     addWorkflow($ideaId, $user['id'], $wfAction, $comment ?: null);
 
+    // Award points to submitter
     $pts = match($decision) {
         'Approved'    => POINTS_APPROVED,
         'Implemented' => POINTS_IMPLEMENTED,
@@ -262,17 +281,19 @@ if ($action === 'review_action' && $method === 'POST') {
             ->execute([$pts, $ideaId]);
     }
 
+    // Notify submitter
     $msg = match($decision) {
         'Approved'    => "Your idea {$idea['idea_code']} was Approved. +{$pts} points awarded.",
         'Rejected'    => "Your idea {$idea['idea_code']} was Rejected. Feedback: {$comment}",
         'Implemented' => "Your idea {$idea['idea_code']} is now Implemented. +{$pts} points awarded.",
         default       => "Your idea {$idea['idea_code']} is Under Review.",
     };
-    addNotification($idea['submitter_id'], "Idea {$decision}", $msg, $ideaId);
+    addNotification($idea['submitter_id'], "Idea {$decision}", $msg);
 
     respond(['success' => true, 'decision' => $decision, 'points_awarded' => $pts]);
 }
 
+// ── DASHBOARD stats ───────────────────────────────────────────────
 if ($action === 'dashboard') {
     $pdo  = db();
     $uid  = $user['id'];
@@ -296,6 +317,7 @@ if ($action === 'dashboard') {
         $counts[$s] = (int)$q->fetchColumn();
     }
 
+    // Recent activity (last 10 workflow entries)
     $recent = $pdo->query(
         "SELECT w.*, u.name AS actor_name, i.idea_code, i.title
          FROM idea_workflow w
@@ -304,16 +326,17 @@ if ($action === 'dashboard') {
          ORDER BY w.created_at DESC LIMIT 10"
     )->fetchAll();
 
+    // Fetch current points from DB (authoritative)
     $ptsStmt = $pdo->prepare("SELECT points FROM users WHERE id=?");
     $ptsStmt->execute([$uid]);
     $userPoints = (int)($ptsStmt->fetchColumn() ?: $user['points']);
 
     respond([
-        'success'     => true,
-        'total'       => $total,
-        'counts'      => $counts,
-        'recent'      => $recent,
-        'user_points' => $userPoints,
+        'success'      => true,
+        'total'        => $total,
+        'counts'       => $counts,
+        'recent'       => $recent,
+        'user_points'  => $userPoints,
     ]);
 }
 
