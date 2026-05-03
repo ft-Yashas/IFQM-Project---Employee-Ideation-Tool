@@ -38,7 +38,9 @@ if ($action === 'list') {
     }
 
     $sql = "SELECT i.*, u.name AS submitter_name, u.department, u.avatar_initials,
-                   c1.name AS co1_name, c2.name AS co2_name
+                   c1.name AS co1_name, c2.name AS co2_name,
+                   (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
+                   (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating
             FROM ideas i
             JOIN users u ON u.id = i.submitter_id
             LEFT JOIN users c1 ON c1.id = i.co_suggester_1_id
@@ -54,7 +56,9 @@ if ($action === 'list') {
 // ── MY ideas ──────────────────────────────────────────────────────
 if ($action === 'my') {
     $stmt = db()->prepare(
-        "SELECT i.*, c1.name AS co1_name, c2.name AS co2_name
+        "SELECT i.*, c1.name AS co1_name, c2.name AS co2_name,
+                (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
+                (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating
          FROM ideas i
          LEFT JOIN users c1 ON c1.id = i.co_suggester_1_id
          LEFT JOIN users c2 ON c2.id = i.co_suggester_2_id
@@ -67,21 +71,34 @@ if ($action === 'my') {
 
 // ── REVIEW QUEUE (manager / admin / executive) ─────────────────────
 if ($action === 'review') {
-    requireRole('manager', 'admin', 'executive');
-    $params = [];
-    $extra  = '';
+    requireRole('manager', 'admin', 'executive', 'super_admin');
+    $pdo = db();
+    $uid = $user['id'];
+
+    $cols = "SELECT DISTINCT i.*, u.name AS submitter_name, u.department, u.avatar_initials,
+                    ir.decision AS my_reviewer_decision,
+                    (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
+                    (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating,
+                    (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id) AS reviewer_count,
+                    (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id AND decision='approved') AS approved_count,
+                    (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id AND decision='rejected') AS rejected_count
+             FROM ideas i
+             JOIN users u ON u.id = i.submitter_id
+             LEFT JOIN idea_reviewers ir ON ir.idea_id = i.id AND ir.reviewer_id = ?";
+
     if ($user['role'] === 'manager') {
-        $extra    = 'AND i.submitter_id IN (SELECT id FROM users WHERE manager_id = ?)';
-        $params[] = $user['id'];
+        $stmt = $pdo->prepare($cols .
+            " WHERE i.status IN ('Submitted','Under Review')
+              AND ((i.workflow_type='hierarchical' AND u.manager_id=?)
+                   OR (i.workflow_type='multi_reviewer' AND ir.reviewer_id=? AND ir.decision='pending'))
+              ORDER BY i.ai_score DESC, i.submitted_at ASC");
+        $stmt->execute([$uid, $uid, $uid]);
+    } else {
+        $stmt = $pdo->prepare($cols .
+            " WHERE i.status IN ('Submitted','Under Review')
+              ORDER BY i.ai_score DESC, i.submitted_at ASC");
+        $stmt->execute([$uid]);
     }
-    $stmt = db()->prepare(
-        "SELECT i.*, u.name AS submitter_name, u.department, u.avatar_initials
-         FROM ideas i
-         JOIN users u ON u.id = i.submitter_id
-         WHERE i.status IN ('Submitted','Under Review') $extra
-         ORDER BY i.ai_score DESC, i.submitted_at ASC"
-    );
-    $stmt->execute($params);
     respond(['success' => true, 'ideas' => $stmt->fetchAll()]);
 }
 
@@ -92,7 +109,9 @@ if ($action === 'get') {
         "SELECT i.*, u.name AS submitter_name, u.department, u.business_unit,
                 u.avatar_initials, u.email AS submitter_email,
                 c1.name AS co1_name, c2.name AS co2_name,
-                m.name AS manager_name
+                m.name AS manager_name,
+                (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
+                (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating
          FROM ideas i
          JOIN  users u  ON u.id  = i.submitter_id
          LEFT JOIN users c1 ON c1.id = i.co_suggester_1_id
@@ -117,6 +136,17 @@ if ($action === 'get') {
     );
     $wf->execute([$id]);
     $idea['workflow'] = $wf->fetchAll();
+
+    // Reviewer assignments (multi-reviewer workflow)
+    $rv = db()->prepare(
+        "SELECT ir.*, u.name AS reviewer_name, u.role AS reviewer_role,
+                u.avatar_initials, u.department
+         FROM idea_reviewers ir
+         JOIN users u ON u.id = ir.reviewer_id
+         WHERE ir.idea_id = ? ORDER BY ir.assigned_at ASC"
+    );
+    $rv->execute([$id]);
+    $idea['reviewers'] = $rv->fetchAll();
 
     respond(['success' => true, 'idea' => $idea]);
 }
@@ -162,6 +192,15 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
     $submittedAt = $action === 'submit' ? date('Y-m-d H:i:s') : null;
     $pdo         = db();
 
+    // Check prior status before updating so we only award points on first submission
+    $wasAlreadySubmitted = false;
+    if ($editId && $action === 'submit') {
+        $chk = $pdo->prepare("SELECT status FROM ideas WHERE id=? AND submitter_id=?");
+        $chk->execute([$editId, $user['id']]);
+        $prevStatus = $chk->fetchColumn();
+        $wasAlreadySubmitted = ($prevStatus !== false && $prevStatus !== 'Draft');
+    }
+
     if ($editId) {
         $pdo->prepare(
             "UPDATE ideas SET 
@@ -197,7 +236,7 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
         $ideaId = (int)$pdo->lastInsertId();
     }
 
-    if ($action === 'submit') {
+    if ($action === 'submit' && !$wasAlreadySubmitted) {
         addWorkflow($ideaId, $user['id'], 'Submitted');
         addPoints($user['id'], POINTS_SUBMIT);
         $_SESSION['user']['points'] += POINTS_SUBMIT;
@@ -221,13 +260,13 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
         'idea_id'      => $ideaId,
         'idea_code'    => $row['idea_code'],
         'ai_score'     => $aiScore,
-        'points_added' => $action === 'submit' ? POINTS_SUBMIT : 0,
+        'points_added' => ($action === 'submit' && !$wasAlreadySubmitted) ? POINTS_SUBMIT : 0,
     ]);
 }
 
 // ── MANAGER REVIEW (approve / reject / implement) ─────────────────
 if ($action === 'review_action' && $method === 'POST') {
-    requireRole('manager', 'admin', 'executive');
+    requireRole('manager', 'admin', 'executive', 'super_admin');
     $b       = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId  = (int)($b['idea_id'] ?? 0);
     $decision= $b['decision'] ?? '';   // Approved | Rejected | Implemented | Under Review
@@ -338,6 +377,120 @@ if ($action === 'dashboard') {
         'recent'       => $recent,
         'user_points'  => $userPoints,
     ]);
+}
+
+// ── ASSIGN REVIEWERS (convert to multi-reviewer workflow) ─────────
+if ($action === 'assign_reviewers' && $method === 'POST') {
+    requireRole('manager', 'admin', 'executive', 'super_admin');
+    $b           = json_decode(file_get_contents('php://input'), true) ?? [];
+    $ideaId      = (int)($b['idea_id']      ?? 0);
+    $reviewerIds = array_map('intval', $b['reviewer_ids'] ?? []);
+    $threshold   = max(1, min(100, (int)($b['threshold'] ?? 100)));
+
+    if (!$ideaId || empty($reviewerIds)) {
+        respond(['success'=>false,'error'=>'idea_id and reviewer_ids required.'], 400);
+    }
+
+    $pdo  = db();
+    $stmt = $pdo->prepare("SELECT * FROM ideas WHERE id=?");
+    $stmt->execute([$ideaId]);
+    $idea = $stmt->fetch();
+    if (!$idea) respond(['success'=>false,'error'=>'Idea not found.'], 404);
+
+    // Submitter cannot be a reviewer
+    $reviewerIds = array_values(array_unique(
+        array_filter($reviewerIds, fn($rid) => $rid !== (int)$idea['submitter_id'])
+    ));
+    if (empty($reviewerIds)) {
+        respond(['success'=>false,'error'=>'No valid reviewers — submitter cannot review own idea.'], 400);
+    }
+
+    // Remove existing reviewers (allows re-routing)
+    $pdo->prepare("DELETE FROM idea_reviewers WHERE idea_id=?")->execute([$ideaId]);
+
+    $pdo->prepare(
+        "UPDATE ideas SET workflow_type='multi_reviewer', approval_threshold=?,
+         status='Under Review', updated_at=NOW() WHERE id=?"
+    )->execute([$threshold, $ideaId]);
+
+    $ins = $pdo->prepare("INSERT INTO idea_reviewers (idea_id, reviewer_id) VALUES (?, ?)");
+    foreach ($reviewerIds as $rid) {
+        $ins->execute([$ideaId, $rid]);
+        addNotification($rid, 'Review Assigned',
+            "You have been assigned to review idea {$idea['idea_code']}: {$idea['title']}.",
+            $ideaId);
+    }
+
+    addWorkflow($ideaId, $user['id'], 'Reviewed',
+        'Routed to committee (' . count($reviewerIds) . ' reviewers, threshold: ' . $threshold . '%)');
+    addNotification($idea['submitter_id'], 'Idea Under Committee Review',
+        "Your idea {$idea['idea_code']} has been routed to a review committee.", $ideaId);
+
+    respond(['success'=>true, 'reviewer_count'=>count($reviewerIds)]);
+}
+
+// ── REVIEWER INDIVIDUAL DECISION ─────────────────────────────────
+if ($action === 'reviewer_decision' && $method === 'POST') {
+    requireRole('manager', 'admin', 'executive', 'super_admin');
+    $b        = json_decode(file_get_contents('php://input'), true) ?? [];
+    $ideaId   = (int)($b['idea_id']  ?? 0);
+    $decision = strtolower($b['decision'] ?? '');
+    $comment  = trim($b['comment'] ?? '');
+
+    if (!$ideaId || !in_array($decision, ['approved','rejected'], true)) {
+        respond(['success'=>false,'error'=>'Invalid idea_id or decision.'], 400);
+    }
+
+    $pdo = db();
+    $revRow = $pdo->prepare("SELECT * FROM idea_reviewers WHERE idea_id=? AND reviewer_id=? LIMIT 1");
+    $revRow->execute([$ideaId, $user['id']]);
+    $rev = $revRow->fetch();
+    if (!$rev) respond(['success'=>false,'error'=>'You are not an assigned reviewer for this idea.'], 403);
+    if ($rev['decision'] !== 'pending') respond(['success'=>false,'error'=>'You have already submitted your decision.'], 409);
+
+    $pdo->prepare("UPDATE idea_reviewers SET decision=?, comment=?, decided_at=NOW() WHERE idea_id=? AND reviewer_id=?")
+        ->execute([$decision, $comment ?: null, $ideaId, $user['id']]);
+
+    addWorkflow($ideaId, $user['id'], $decision === 'approved' ? 'Approved' : 'Rejected', $comment ?: null);
+
+    $ideaStmt = $pdo->prepare("SELECT * FROM ideas WHERE id=?");
+    $ideaStmt->execute([$ideaId]);
+    $idea = $ideaStmt->fetch();
+
+    $decStmt = $pdo->prepare("SELECT decision FROM idea_reviewers WHERE idea_id=?");
+    $decStmt->execute([$ideaId]);
+    $allDecisions = $decStmt->fetchAll(PDO::FETCH_COLUMN);
+
+    $total    = count($allDecisions);
+    $approved = count(array_filter($allDecisions, fn($d) => $d === 'approved'));
+    $rejected = count(array_filter($allDecisions, fn($d) => $d === 'rejected'));
+    $pending  = count(array_filter($allDecisions, fn($d) => $d === 'pending'));
+    $threshold= (int)($idea['approval_threshold'] ?? 100);
+
+    $newStatus = null; $pts = 0;
+
+    if ($threshold === 100 && $rejected > 0) {
+        $newStatus = 'Rejected';
+    } elseif ($pending === 0) {
+        $rate = $total > 0 ? ($approved / $total) * 100 : 0;
+        if ($rate >= $threshold) { $newStatus = 'Approved'; $pts = POINTS_APPROVED; }
+        else { $newStatus = 'Rejected'; }
+    }
+
+    if ($newStatus) {
+        $pdo->prepare("UPDATE ideas SET status=?, updated_at=NOW() WHERE id=?")->execute([$newStatus, $ideaId]);
+        if ($pts > 0) {
+            addPoints($idea['submitter_id'], $pts);
+            $pdo->prepare("UPDATE ideas SET points_awarded = points_awarded + ? WHERE id=?")->execute([$pts, $ideaId]);
+        }
+        $summary = "{$approved}/{$total} approved";
+        $msg = $newStatus === 'Approved'
+            ? "Your idea {$idea['idea_code']} was Approved by committee ({$summary}). +{$pts} points awarded."
+            : "Your idea {$idea['idea_code']} was Rejected by committee ({$summary}).";
+        addNotification($idea['submitter_id'], "Idea {$newStatus}", $msg, $ideaId);
+    }
+
+    respond(['success'=>true,'new_status'=>$newStatus,'approved'=>$approved,'rejected'=>$rejected,'pending'=>$pending,'total'=>$total]);
 }
 
 respond(['success' => false, 'error' => 'Unknown action'], 400);

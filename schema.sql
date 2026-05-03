@@ -1,0 +1,118 @@
+-- ============================================================
+--  IFQM Per-Tenant Schema Template (no seed data)
+--  Run this against a new tenant database.
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS users (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  employee_id     VARCHAR(20)  NOT NULL UNIQUE,
+  name            VARCHAR(100) NOT NULL,
+  email           VARCHAR(150) NOT NULL UNIQUE,
+  password_hash   VARCHAR(255) NOT NULL,
+  phone           VARCHAR(20),
+  department      VARCHAR(100),
+  business_unit   VARCHAR(100),
+  location        VARCHAR(100),
+  role            ENUM('employee','manager','admin','executive','super_admin') NOT NULL DEFAULT 'employee',
+  manager_id      INT NULL,
+  points          INT NOT NULL DEFAULT 0,
+  avatar_initials VARCHAR(4),
+  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS ideas (
+  id                  INT AUTO_INCREMENT PRIMARY KEY,
+  idea_code           VARCHAR(20)  NOT NULL UNIQUE,
+  title               VARCHAR(255) NOT NULL,
+  present_situation   TEXT NOT NULL,
+  proposed_solution   TEXT NOT NULL,
+  impact_areas        VARCHAR(255),
+  impact_level        ENUM('Low','Medium','High') DEFAULT 'Medium',
+  tangible_benefit    TEXT,
+  intangible_benefit  TEXT,
+  ai_score            INT DEFAULT 0,
+  ai_reason           TEXT,
+  workflow_type       ENUM('hierarchical','multi_reviewer') NOT NULL DEFAULT 'hierarchical',
+  approval_threshold  TINYINT NOT NULL DEFAULT 100,
+  status              ENUM('Draft','Submitted','Under Review','Approved','Rejected','Implemented') DEFAULT 'Draft',
+  submitter_id        INT NOT NULL,
+  co_suggester_1_id   INT NULL,
+  co_suggester_2_id   INT NULL,
+  points_awarded      INT DEFAULT 0,
+  submitted_at        DATETIME NULL,
+  created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (submitter_id)      REFERENCES users(id),
+  FOREIGN KEY (co_suggester_1_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (co_suggester_2_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS idea_reviewers (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  idea_id      INT NOT NULL,
+  reviewer_id  INT NOT NULL,
+  decision     ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  comment      TEXT,
+  decided_at   DATETIME NULL,
+  assigned_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_reviewer (idea_id, reviewer_id),
+  FOREIGN KEY (idea_id)    REFERENCES ideas(id) ON DELETE CASCADE,
+  FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS idea_attachments (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  idea_id     INT NOT NULL,
+  section     ENUM('situation','solution') NOT NULL,
+  filename    VARCHAR(255) NOT NULL,
+  filepath    VARCHAR(500) NOT NULL,
+  uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (idea_id) REFERENCES ideas(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS idea_workflow (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  idea_id    INT NOT NULL,
+  actor_id   INT NOT NULL,
+  action     ENUM('Submitted','Reviewed','Approved','Rejected','Implemented','Commented','Reopened') NOT NULL,
+  comment    TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (idea_id)  REFERENCES ideas(id) ON DELETE CASCADE,
+  FOREIGN KEY (actor_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS idea_votes (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  idea_id    INT NOT NULL,
+  user_id    INT NOT NULL,
+  rating     TINYINT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_vote (idea_id, user_id),
+  FOREIGN KEY (idea_id) REFERENCES ideas(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT chk_rating CHECK (rating BETWEEN 1 AND 5)
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT NOT NULL,
+  title      VARCHAR(255) NOT NULL,
+  message    TEXT,
+  idea_id    INT NULL DEFAULT NULL,
+  is_read    TINYINT(1) DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE OR REPLACE VIEW leaderboard AS
+SELECT
+  u.id, u.name, u.department, u.business_unit, u.points,
+  COUNT(DISTINCT i.id)                                          AS idea_count,
+  SUM(CASE WHEN i.status = 'Implemented' THEN 1 ELSE 0 END)    AS implemented_count,
+  ROUND(AVG(CASE WHEN i.status != 'Draft' THEN i.ai_score ELSE NULL END), 1) AS avg_score
+FROM users u
+LEFT JOIN ideas i ON i.submitter_id = u.id AND i.status != 'Draft'
+GROUP BY u.id
+ORDER BY u.points DESC;

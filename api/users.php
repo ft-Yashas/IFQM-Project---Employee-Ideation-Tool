@@ -16,6 +16,45 @@ if ($action === 'list') {
     respond(['success' => true, 'users' => $stmt->fetchAll()]);
 }
 
+if ($action === 'admin_users') {
+    requireRole('admin', 'super_admin');
+    $stmt = $pdo->query(
+        "SELECT id, employee_id, name, department, email, role, avatar_initials, points
+         FROM users ORDER BY role, name"
+    );
+    respond(['success' => true, 'users' => $stmt->fetchAll()]);
+}
+
+if ($action === 'hierarchy') {
+    requireRole('super_admin');
+    $stmt = $pdo->query(
+        "SELECT u.id, u.employee_id, u.name, u.email, u.department, u.business_unit,
+                u.location, u.role, u.manager_id, u.points, u.avatar_initials,
+                m.name AS manager_name,
+                (SELECT COUNT(*) FROM ideas WHERE submitter_id = u.id AND status != 'Draft') AS idea_count
+         FROM users u
+         LEFT JOIN users m ON m.id = u.manager_id
+         WHERE u.role != 'super_admin'
+         ORDER BY u.role, u.name"
+    );
+    $users = $stmt->fetchAll();
+
+    $stats = [
+        'total'      => 0,
+        'admins'     => 0,
+        'managers'   => 0,
+        'employees'  => 0,
+        'executives' => 0,
+    ];
+    foreach ($users as $u) {
+        $stats['total']++;
+        $key = $u['role'] . 's';
+        if (isset($stats[$key])) $stats[$key]++;
+    }
+
+    respond(['success' => true, 'users' => $users, 'stats' => $stats]);
+}
+
 if ($action === 'leaderboard') {
     $period = $_GET['period'] ?? 'all';
 
@@ -36,7 +75,11 @@ if ($action === 'leaderboard') {
         "SELECT u.id, u.name, u.department, u.business_unit, u.points, u.avatar_initials,
                 COUNT(DISTINCT i.id) AS idea_count,
                 SUM(CASE WHEN i.status='Implemented' THEN 1 ELSE 0 END) AS implemented_count,
-                ROUND(AVG(CASE WHEN i.status != 'Draft' THEN i.ai_score ELSE NULL END), 1) AS avg_score
+                ROUND(AVG(CASE WHEN i.status != 'Draft' THEN i.ai_score ELSE NULL END), 1) AS avg_score,
+                (SELECT COUNT(*) FROM idea_votes iv
+                 JOIN ideas i2 ON i2.id = iv.idea_id WHERE i2.submitter_id = u.id) AS total_votes_received,
+                (SELECT ROUND(AVG(iv.rating),1) FROM idea_votes iv
+                 JOIN ideas i2 ON i2.id = iv.idea_id WHERE i2.submitter_id = u.id) AS avg_community_rating
          FROM users u
          LEFT JOIN ideas i ON i.submitter_id = u.id $dateFilter
          WHERE u.role = 'employee'
@@ -81,8 +124,6 @@ if ($action === 'leaderboard') {
 }
 
 if ($action === 'notifications') {
-    try { $pdo->exec("ALTER TABLE notifications ADD COLUMN idea_id INT NULL DEFAULT NULL"); } catch (\Exception $e) {}
-
     $stmt = $pdo->prepare(
         "SELECT * FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 20"
     );
@@ -112,7 +153,7 @@ if ($action === 'mark_read' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if ($action === 'analytics') {
-    requireRole('admin', 'executive', 'manager');
+    requireRole('admin', 'executive', 'manager', 'super_admin');
 
     $trend = $pdo->query(
         "SELECT DATE_FORMAT(submitted_at,'%Y-%m') AS month,
@@ -159,7 +200,7 @@ if ($action === 'analytics') {
 }
 
 if ($action === 'audit') {
-    requireRole('admin', 'manager', 'executive');
+    requireRole('admin', 'manager', 'executive', 'super_admin');
     $stmt = $pdo->query(
         "SELECT w.*, u.name AS actor_name, u.role AS actor_role,
                 i.idea_code, i.title AS idea_title,

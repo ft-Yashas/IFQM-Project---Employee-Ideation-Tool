@@ -52,10 +52,10 @@ All accounts use password: **`password`**
 
 | Email | Role |
 |---|---|
-| yashas.r@company.com | Employee |
-| priya.sharma@company.com | Manager |
-| bhuvan.kh@company.com | Admin |
-| adrish.c@company.com | Executive |
+| yashas.r@ifqm.com | Employee |
+| priya.sharma@ifqm.com | Manager |
+| bhuvan.kh@ifqm.com | Admin |
+| adrish.c@ifqm.com | Executive |
 
 ---
 

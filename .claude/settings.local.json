@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php:*)",
+      "Bash(C:\\\\xampp\\\\php\\\\php.exe:*)",
+      "Bash(C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe:*)",
+      "Bash(Get-ChildItem -Path \"C:\\\\xampp\\\\htdocs\\\\ifqm\" -Recurse -Force)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(head *)",
+      "Bash(\"C:/xampp/mysql/bin/mysql.exe\" -u root ifqm_ideation -e \"ALTER TABLE users MODIFY COLUMN role ENUM\\('employee','manager','admin','executive','super_admin'\\) NOT NULL DEFAULT 'employee';\")",
+      "Bash(C:/xampp/mysql/bin/mysql.exe *)",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -l api/config.php)",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -l api/ideas.php)",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -l provision_tenant.php)"
+    ]
+  }
+}
