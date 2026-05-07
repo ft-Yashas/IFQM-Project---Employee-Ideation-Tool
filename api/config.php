@@ -11,7 +11,7 @@ define('FALLBACK_DB_USER', 'root');
 define('FALLBACK_DB_PASS', '');
 define('FALLBACK_DB_NAME', 'ifqm_ideation');
 
-define('GEMINI_API_KEY', 'AIzaSyA8PMepwppjPfwPFOlAuvUrPcaVLX6WClU');
+define('GEMINI_API_KEY', '');
 
 define('MAX_FILE_MB',       10);
 define('SESSION_LIFETIME',  28800);
