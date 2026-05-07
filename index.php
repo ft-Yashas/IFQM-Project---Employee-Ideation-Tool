@@ -56,7 +56,7 @@ $user     = $_SESSION['user'] ?? [];
   #sidebar{width:224px;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;flex-shrink:0;transition:width .22s var(--ease);border-right:1px solid var(--sidebar-border)}
   #sidebar.collapsed{width:60px}
   #main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-  #topbar{background:var(--topbar-bg);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--topbar-border);flex-shrink:0;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  #topbar{background:var(--topbar-bg);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--topbar-border);flex-shrink:0;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);position:relative;z-index:50}
   #content{flex:1;overflow-y:auto;padding:24px 28px}
   .sidebar-logo{padding:18px 16px;display:flex;align-items:center;gap:10px;white-space:nowrap;overflow:hidden;border-bottom:1px solid var(--sidebar-border)}
   .sidebar-logo span{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.3px;transition:opacity .2s}
@@ -238,7 +238,7 @@ $user     = $_SESSION['user'] ?? [];
   .upload-zone:hover{border-color:var(--primary);background:var(--primary-lt);color:var(--primary)}
 
   /* ── NOTIFICATIONS ── */
-  .notification-panel{position:absolute;top:52px;right:70px;width:320px;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-xl);z-index:200;display:none;border:1px solid var(--border);overflow:hidden}
+  .notification-panel{position:fixed;top:52px;right:20px;width:320px;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-xl);z-index:9999;display:none;border:1px solid var(--border);overflow:hidden;max-height:calc(100vh - 70px)}
   .notification-panel.open{display:block;animation:slide-up .2s var(--ease)}
   .notif-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;color:var(--text)}
   .notif-item:hover{background:var(--bg)}
@@ -326,9 +326,32 @@ $user     = $_SESSION['user'] ?? [];
   .star-widget{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .eng-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;border:1px solid}
 
-  /* ── LANGUAGE TOGGLE ── */
-  .lang-toggle{background:var(--surface);border:1px solid var(--input-border);border-radius:var(--r);padding:5px 11px;cursor:pointer;font-size:11px;font-weight:700;color:var(--text-muted);transition:all .15s var(--ease);letter-spacing:.8px;line-height:1;font-family:inherit}
-  .lang-toggle:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-lt)}
+  /* ── COMMUNITY VOTE WIDGET ── */
+  .vote-widget{display:inline-flex;align-items:center;gap:3px}
+  .vote-btn{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all .15s var(--ease);user-select:none;-webkit-user-select:none;line-height:1}
+  .vote-btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+  .vote-btn.up:hover{background:#dcfce7;color:#15803d;border-color:#86efac}
+  .vote-btn.up-active{background:#dcfce7;color:#15803d;border-color:#86efac}
+  .vote-btn.down:hover{background:#fee2e2;color:#b91c1c;border-color:#fca5a5}
+  .vote-btn.down-active{background:#fee2e2;color:#b91c1c;border-color:#fca5a5}
+  .vote-btn.vote-disabled{cursor:not-allowed;opacity:.45;pointer-events:none}
+  .vote-net{font-size:11px;font-weight:800;min-width:22px;text-align:center;color:var(--heading);padding:0 2px}
+  @keyframes vote-pop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+  .vote-pop{animation:vote-pop .22s var(--ease)}
+
+  /* ── LANGUAGE DROPDOWN ── */
+  .lang-wrap{position:relative;display:inline-flex}
+  .lang-toggle{background:var(--surface);border:1px solid var(--input-border);border-radius:var(--r);padding:5px 22px 5px 10px;cursor:pointer;font-size:11px;font-weight:700;color:var(--text-muted);transition:all .15s var(--ease);letter-spacing:.5px;line-height:1;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap}
+  .lang-toggle:hover,.lang-wrap.open .lang-toggle{border-color:var(--primary);color:var(--primary);background:var(--primary-lt)}
+  .lang-toggle::after{content:'▾';position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:9px;pointer-events:none;transition:transform .15s}
+  .lang-wrap.open .lang-toggle::after{transform:translateY(-50%) rotate(180deg)}
+  .lang-menu{position:fixed;top:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-xl);z-index:10000;display:none;overflow:hidden;min-width:140px}
+  .lang-wrap.open .lang-menu{display:block;animation:slide-up .15s var(--ease)}
+  .lang-opt{padding:8px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .12s;color:var(--text)}
+  .lang-opt:hover{background:var(--primary-lt);color:var(--primary)}
+  .lang-opt.active{font-weight:700;color:var(--primary);background:var(--primary-lt)}
+  .lang-opt-code{font-size:11px;font-weight:700;min-width:22px;color:var(--text-muted)}
+  .lang-opt.active .lang-opt-code{color:var(--primary)}
 
   /* ── TOP IDEAS ── */
   .top-idea-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
@@ -560,11 +583,11 @@ $user     = $_SESSION['user'] ?? [];
       <div id="login-error" class="alert alert-danger" style="display:none"></div>
       <div class="form-group">
         <label data-i18n="login.email">Email Address</label>
-        <input class="form-control" id="login-email" type="email" placeholder="your.name@ifqm.com" value="yashas.r@ifqm.com"/>
+        <input class="form-control" id="login-email" type="email" data-i18n-ph="login.email_ph" placeholder="your.name@jain.com" value="yashas.r@jain.com"/>
       </div>
       <div class="form-group">
         <label data-i18n="login.password">Password</label>
-        <input class="form-control" id="login-pass" type="password" placeholder="••••••••" value="password"/>
+        <input class="form-control" id="login-pass" type="password" data-i18n-ph="login.password_ph" placeholder="••••••••" value="password"/>
       </div>
       <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;padding:11px;font-size:14px" onclick="doLogin()" data-i18n="login.btn">Sign In</button>
       <div class="separator"></div>
@@ -572,7 +595,7 @@ $user     = $_SESSION['user'] ?? [];
       <div class="separator"></div>
       <div style="background:var(--panel-bg);border-radius:8px;padding:12px 14px">
         <p style="font-size:11px;color:#818cf8;margin-bottom:6px"><strong>Demo accounts</strong> &mdash; password: <code style="background:var(--tag-bg);padding:1px 5px;border-radius:4px">password</code></p>
-        <p style="font-size:11px;color:var(--label);line-height:1.8">yashas.r@ifqm.com &middot; priya.sharma@ifqm.com<br>bhuvan.kh@ifqm.com &middot; adrish.c@ifqm.com</p>
+        <p style="font-size:11px;color:var(--label);line-height:1.8">yashas.r@jain.com &middot; priya.sharma@jain.com<br>bhuvan.kh@jain.com &middot; adrish.c@jain.com</p>
       </div>
     </div>
   </div>
@@ -608,7 +631,11 @@ $user     = $_SESSION['user'] ?? [];
     <div class="nav-section" id="nav-section-super-admin" style="display:none" data-i18n="section.super_admin">IFQM Super Admin</div>
     <div class="nav-item" data-label="Org Hierarchy" id="nav-super-admin" onclick="navigate('super-admin',this)" style="display:none"><span class="icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></span><span class="label" data-i18n="nav.super_admin">Org Hierarchy</span></div>
 
-    <div class="nav-item" data-label="My Profile" onclick="navigate('profile',this)" style="margin-top:auto"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span><span class="label" data-i18n="nav.profile">My Profile</span></div>
+    <div class="nav-section" id="nav-section-platform" style="display:none">Platform</div>
+    <div class="nav-item" data-label="Platform Dashboard" id="nav-platform-dash" onclick="navigate('platform-dash',this)" style="display:none"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="label">Platform Dashboard</span></div>
+    <div class="nav-item" data-label="Tenants" id="nav-platform-tenants" onclick="navigate('platform-tenants',this)" style="display:none"><span class="icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span class="label">Tenants</span></div>
+
+    <div class="nav-item" data-label="My Profile" id="nav-profile" onclick="navigate('profile',this)" style="margin-top:auto"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span><span class="label" data-i18n="nav.profile">My Profile</span></div>
 
     <div class="sidebar-user">
       <div class="avatar" id="sb-avatar" style="flex-shrink:0">??</div>
@@ -631,7 +658,10 @@ $user     = $_SESSION['user'] ?? [];
           <div class="dm-track" id="dm-track"><div class="dm-thumb"></div></div>
           <span id="dm-label">Dark</span>
         </div>
-        <button class="lang-toggle" id="lang-btn" onclick="toggleLang()" title="Switch Language / भाषा बदलें">EN</button>
+        <div class="lang-wrap" id="lang-wrap">
+          <button class="lang-toggle" id="lang-btn" onclick="toggleLangMenu(event)">EN</button>
+          <div class="lang-menu" id="lang-menu"></div>
+        </div>
         <div class="notif-bell" onclick="toggleNotif()" title="Notifications" style="display:flex;align-items:center;gap:6px">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
           <span data-i18n="topbar.notifications">Notifications</span>
@@ -676,13 +706,13 @@ $user     = $_SESSION['user'] ?? [];
 
       <div class="page" id="page-my-ideas">
         <div class="section-header">
-          <div><div class="page-title">My Ideas</div><div class="text-muted">Track all ideas you have submitted</div></div>
-          <button class="btn btn-primary" onclick="navigate('submit',document.getElementById('nav-submit'))">New Idea</button>
+          <div><div class="page-title" data-i18n="nav.my_ideas">My Ideas</div><div class="text-muted" data-i18n="page.my_ideas_sub">Track all ideas you have submitted</div></div>
+          <button class="btn btn-primary" onclick="navigate('submit',document.getElementById('nav-submit'))" data-i18n="btn.new_idea">New Idea</button>
         </div>
         <div class="filter-bar">
-          <input id="my-search" placeholder="Search ideas..." style="flex:1;min-width:180px" oninput="filterMyIdeas()"/>
+          <input id="my-search" data-i18n-ph="placeholder.search_ideas" placeholder="Search ideas..." style="flex:1;min-width:180px" oninput="filterMyIdeas()"/>
           <select id="my-status-filter" class="form-control" style="width:140px" onchange="filterMyIdeas()">
-            <option value="">All Status</option><option>Draft</option><option>Submitted</option><option>Under Review</option><option>Approved</option><option>Rejected</option><option>Implemented</option>
+            <option value="" data-i18n="filter.all_status">All Status</option><option data-i18n="status.draft">Draft</option><option data-i18n="status.submitted">Submitted</option><option data-i18n="status.review">Under Review</option><option data-i18n="status.approved">Approved</option><option data-i18n="status.rejected">Rejected</option><option data-i18n="status.implemented">Implemented</option>
           </select>
         </div>
         <div id="my-ideas-list"><div class="empty-state"><div class="spinner"></div> Loading…</div></div>
@@ -690,102 +720,102 @@ $user     = $_SESSION['user'] ?? [];
 
       <div class="page" id="page-submit">
         <div class="section-header">
-          <div><div class="page-title">Submit New Idea</div><div class="text-muted">Fill in all steps to submit your improvement idea</div></div>
+          <div><div class="page-title" data-i18n="form.submit_idea">Submit New Idea</div><div class="text-muted" data-i18n="page.submit_sub">Fill in all steps to submit your improvement idea</div></div>
         </div>
         <div class="card">
           <div class="alert alert-info" id="submit-user-banner">Auto-fetched from HR Database: Loading…</div>
 
           <div class="wizard-steps">
-            <div class="w-step active" onclick="goStep(1)"><span class="w-num">1</span><span class="w-lbl">Situation</span></div>
-            <div class="w-step" onclick="goStep(2)"><span class="w-num">2</span><span class="w-lbl">Solution</span></div>
-            <div class="w-step" onclick="goStep(3)"><span class="w-num">3</span><span class="w-lbl">Impact</span></div>
-            <div class="w-step" onclick="goStep(4)"><span class="w-num">4</span><span class="w-lbl">Co-Suggesters</span></div>
-            <div class="w-step" onclick="goStep(5)"><span class="w-num">5</span><span class="w-lbl">Review &amp; Submit</span></div>
+            <div class="w-step active" onclick="goStep(1)"><span class="w-num">1</span><span class="w-lbl" data-i18n="wizard.step1">Situation</span></div>
+            <div class="w-step" onclick="goStep(2)"><span class="w-num">2</span><span class="w-lbl" data-i18n="wizard.step2">Solution</span></div>
+            <div class="w-step" onclick="goStep(3)"><span class="w-num">3</span><span class="w-lbl" data-i18n="wizard.step3">Impact</span></div>
+            <div class="w-step" onclick="goStep(4)"><span class="w-num">4</span><span class="w-lbl" data-i18n="wizard.step4">Co-Suggesters</span></div>
+            <div class="w-step" onclick="goStep(5)"><span class="w-num">5</span><span class="w-lbl" data-i18n="wizard.step5">Review &amp; Submit</span></div>
           </div>
 
           <div class="wizard-body" id="step-1">
-            <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px">Step 1: Describe the Present Situation</h3>
+            <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px" data-i18n="step1.heading">Step 1: Describe the Present Situation</h3>
             <div class="form-group">
-              <label>Situation Title <span style="color:red">*</span></label>
-              <input class="form-control" id="idea-title" placeholder="Brief title for your idea"/>
+              <label data-i18n="step1.title_label">Situation Title</label> <span style="color:red">*</span>
+              <input class="form-control" id="idea-title" data-i18n-ph="step1.title_ph" placeholder="Brief title for your idea"/>
             </div>
             <div class="form-group">
-              <label>Current Situation Description <span style="color:red">*</span></label>
-              <textarea class="form-control" id="idea-situation" rows="5" placeholder="Describe the current problem or inefficiency in detail (min. 50 chars)…"></textarea>
+              <label data-i18n="step1.desc_label">Current Situation Description</label> <span style="color:red">*</span>
+              <textarea class="form-control" id="idea-situation" rows="5" data-i18n-ph="step1.desc_ph" placeholder="Describe the current problem or inefficiency in detail (min. 50 chars)…"></textarea>
             </div>
             <div class="form-group">
-              <label>Supporting Document (Optional)</label>
+              <label data-i18n="step1.doc_label">Supporting Document (Optional)</label>
               <input type="file" id="file-situation" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.csv,.docx" style="display:none"/>
               <div class="upload-zone" onclick="document.getElementById('file-situation').click()">
-                Click to upload or drag &amp; drop<br/><span style="font-size:11px;color:#bbb">PDF, PNG, JPG, XLSX — Max 10 MB</span>
+                <span data-i18n="step1.upload">Click to upload or drag &amp; drop</span><br/><span style="font-size:11px;color:#bbb" data-i18n="step1.upload_types">PDF, PNG, JPG, XLSX — Max 10 MB</span>
               </div>
               <div id="file-situation-name" style="font-size:12px;color:#059669;margin-top:4px"></div>
             </div>
           </div>
 
           <div class="wizard-body" id="step-2" style="display:none">
-            <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px">Step 2: Proposed Idea / Solution</h3>
+            <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px" data-i18n="step2.heading">Step 2: Proposed Idea / Solution</h3>
             <div class="form-group">
-              <label>Proposed Solution <span style="color:red">*</span></label>
-              <textarea class="form-control" id="idea-solution" rows="5" placeholder="Describe your proposed improvement in detail…"></textarea>
+              <label data-i18n="step2.label">Proposed Solution</label> <span style="color:red">*</span>
+              <textarea class="form-control" id="idea-solution" rows="5" data-i18n-ph="step2.ph" placeholder="Describe your proposed improvement in detail…"></textarea>
             </div>
             <div class="form-group">
-              <label>Supporting Document (Optional)</label>
+              <label data-i18n="step1.doc_label">Supporting Document (Optional)</label>
               <input type="file" id="file-solution" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.csv,.docx" style="display:none"/>
               <div class="upload-zone" onclick="document.getElementById('file-solution').click()">
-                Click to upload or drag &amp; drop<br/><span style="font-size:11px;color:#bbb">PDF, PNG, JPG, XLSX — Max 10 MB</span>
+                <span data-i18n="step1.upload">Click to upload or drag &amp; drop</span><br/><span style="font-size:11px;color:#bbb" data-i18n="step1.upload_types">PDF, PNG, JPG, XLSX — Max 10 MB</span>
               </div>
               <div id="file-solution-name" style="font-size:12px;color:#059669;margin-top:4px"></div>
             </div>
           </div>
 
           <div class="wizard-body" id="step-3" style="display:none">
-            <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px">Step 3: Impact Areas &amp; Measurable Benefits</h3>
+            <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px" data-i18n="step3.heading">Step 3: Impact Areas &amp; Measurable Benefits</h3>
             <div class="form-group">
-              <label>Select Impact Areas <span style="color:red">*</span> (select all that apply)</label>
+              <label><span data-i18n="step3.impact_label">Select Impact Areas</span> <span style="color:red">*</span> <span data-i18n="step3.impact_sub">(select all that apply)</span></label>
               <div class="impact-grid" style="margin-top:8px">
-                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Production">Production</div>
-                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Quality">Quality</div>
-                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Cost">Cost</div>
-                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Delivery">Delivery</div>
-                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Safety">Safety</div>
-                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Environment">Environment</div>
-                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Morale">Morale</div>
+                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Production" data-i18n="impact.production">Production</div>
+                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Quality" data-i18n="impact.quality">Quality</div>
+                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Cost" data-i18n="impact.cost">Cost</div>
+                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Delivery" data-i18n="impact.delivery">Delivery</div>
+                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Safety" data-i18n="impact.safety">Safety</div>
+                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Environment" data-i18n="impact.environment">Environment</div>
+                <div class="impact-chip" onclick="toggleImpact(this)" data-val="Morale" data-i18n="impact.morale">Morale</div>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label>Overall Impact Level</label>
+                <label data-i18n="step3.level">Overall Impact Level</label>
                 <select class="form-control" id="idea-impact-level">
-                  <option>Low</option><option selected>Medium</option><option>High</option>
+                  <option data-i18n="impact.low">Low</option><option selected data-i18n="impact.medium">Medium</option><option data-i18n="impact.high">High</option>
                 </select>
               </div>
               <div class="form-group">
-                <label>Tangible Benefit (Optional)</label>
-                <input class="form-control" id="idea-tangible" placeholder="e.g. Rs. 50,000 savings/year"/>
+                <label data-i18n="step3.tangible_label">Tangible Benefit (Optional)</label>
+                <input class="form-control" id="idea-tangible" data-i18n-ph="step3.tangible_ph" placeholder="e.g. Rs. 50,000 savings/year"/>
               </div>
             </div>
             <div class="form-group">
-              <label>Intangible Benefits (Optional)</label>
-              <input class="form-control" id="idea-intangible" placeholder="e.g. Improved worker confidence, better audit scores"/>
+              <label data-i18n="step3.intangible_label">Intangible Benefits (Optional)</label>
+              <input class="form-control" id="idea-intangible" data-i18n-ph="step3.intangible_ph" placeholder="e.g. Improved worker confidence, better audit scores"/>
             </div>
           </div>
 
           <div class="wizard-body" id="step-4" style="display:none">
-            <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px">Step 4: Co-Suggesters (Optional, max 2)</h3>
+            <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px" data-i18n="step4.heading">Step 4: Co-Suggesters (Optional, max 2)</h3>
             <div class="form-group">
-              <label>Co-Suggester 1</label>
+              <label data-i18n="step4.co1">Co-Suggester 1</label>
               <div class="pos-rel">
-                <input class="form-control" id="co1-search" placeholder="Search by name or employee ID…" oninput="searchUsers(this,'co1-results','co1-id','co1-name-display')" autocomplete="off"/>
+                <input class="form-control" id="co1-search" data-i18n-ph="step4.co_ph" placeholder="Search by name or employee ID…" oninput="searchUsers(this,'co1-results','co1-id','co1-name-display')" autocomplete="off"/>
                 <div class="user-search-results" id="co1-results"></div>
               </div>
               <div id="co1-name-display" style="font-size:12px;color:#4f46e5;margin-top:4px"></div>
               <input type="hidden" id="co1-id"/>
             </div>
             <div class="form-group">
-              <label>Co-Suggester 2</label>
+              <label data-i18n="step4.co2">Co-Suggester 2</label>
               <div class="pos-rel">
-                <input class="form-control" id="co2-search" placeholder="Search by name or employee ID…" oninput="searchUsers(this,'co2-results','co2-id','co2-name-display')" autocomplete="off"/>
+                <input class="form-control" id="co2-search" data-i18n-ph="step4.co_ph" placeholder="Search by name or employee ID…" oninput="searchUsers(this,'co2-results','co2-id','co2-name-display')" autocomplete="off"/>
                 <div class="user-search-results" id="co2-results"></div>
               </div>
               <div id="co2-name-display" style="font-size:12px;color:#4f46e5;margin-top:4px"></div>
@@ -794,47 +824,47 @@ $user     = $_SESSION['user'] ?? [];
           </div>
 
           <div class="wizard-body" id="step-5" style="display:none">
-            <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px">Step 5: Review &amp; Submit</h3>
+            <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px" data-i18n="step5.heading">Step 5: Review &amp; Submit</h3>
             <div id="review-preview"></div>
-            <div class="alert alert-info mt-8">By submitting, you confirm this idea is original. You will earn <strong>+10 points</strong> on submission. An AI quality score will be automatically computed.</div>
+            <div class="alert alert-info mt-8" data-i18n="step5.note">By submitting, you confirm this idea is original. You will earn +10 points on submission. An AI quality score will be automatically computed.</div>
           </div>
 
           <div class="wizard-footer" id="wizard-nav">
-            <button class="btn btn-outline" id="btn-back" onclick="prevStep()" style="visibility:hidden">&#8592; Back</button>
-            <button class="btn btn-outline" onclick="saveDraft()">Save Draft</button>
-            <button class="btn btn-primary" id="btn-next" onclick="nextStep()">Next &#8594;</button>
+            <button class="btn btn-outline" id="btn-back" onclick="prevStep()" style="visibility:hidden" data-i18n="form.back">← Back</button>
+            <button class="btn btn-outline" onclick="saveDraft()" data-i18n="form.save_draft">Save Draft</button>
+            <button class="btn btn-primary" id="btn-next" onclick="nextStep()" data-i18n="form.next">Next →</button>
           </div>
           <div class="wizard-footer" id="wizard-submit-row" style="display:none">
-            <button class="btn btn-outline" id="btn-back-final" onclick="goStep(4)">&#8592; Back</button>
-            <button class="btn btn-outline" onclick="saveDraft()">Save Draft</button>
-            <button class="btn btn-success" onclick="submitIdea()">Submit Idea</button>
+            <button class="btn btn-outline" id="btn-back-final" onclick="goStep(4)" data-i18n="form.back">← Back</button>
+            <button class="btn btn-outline" onclick="saveDraft()" data-i18n="form.save_draft">Save Draft</button>
+            <button class="btn btn-success" onclick="submitIdea()" data-i18n="form.submit_idea">Submit Idea</button>
           </div>
         </div>
       </div>
 
       <div class="page" id="page-review">
         <div class="section-header">
-          <div><div class="page-title">Review Queue</div><div class="text-muted">Ideas pending your review — sorted by AI quality score (highest first)</div></div>
+          <div><div class="page-title" data-i18n="nav.review">Review Queue</div><div class="text-muted" data-i18n="page.review_sub">Ideas pending your review — sorted by AI quality score (highest first)</div></div>
         </div>
         <div id="review-list"><div class="empty-state"><div class="spinner"></div> Loading…</div></div>
       </div>
 
       <div class="page" id="page-ideas-all">
         <div class="section-header">
-          <div><div class="page-title">All Ideas</div></div>
+          <div><div class="page-title" data-i18n="nav.all_ideas">All Ideas</div></div>
         </div>
         <div class="filter-bar">
-          <input id="all-search" placeholder="Search…" style="flex:1" oninput="loadAllIdeas()"/>
+          <input id="all-search" data-i18n-ph="placeholder.search" placeholder="Search…" style="flex:1" oninput="loadAllIdeas()"/>
           <select id="all-status" class="form-control" style="width:140px" onchange="loadAllIdeas()">
-            <option value="">All Status</option><option>Submitted</option><option>Under Review</option><option>Approved</option><option>Rejected</option><option>Implemented</option>
+            <option value="" data-i18n="filter.all_status">All Status</option><option data-i18n="status.submitted">Submitted</option><option data-i18n="status.review">Under Review</option><option data-i18n="status.approved">Approved</option><option data-i18n="status.rejected">Rejected</option><option data-i18n="status.implemented">Implemented</option>
           </select>
           <select id="all-impact" class="form-control" style="width:130px" onchange="loadAllIdeas()">
-            <option value="">All Impact</option><option>Low</option><option>Medium</option><option>High</option>
+            <option value="" data-i18n="filter.all_impact">All Impact</option><option data-i18n="impact.low">Low</option><option data-i18n="impact.medium">Medium</option><option data-i18n="impact.high">High</option>
           </select>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
           <table>
-            <thead><tr><th>Idea ID</th><th>Title</th><th>Submitted By</th><th>Department</th><th>Impact</th><th>AI Score</th><th>Engagement</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+            <thead><tr><th data-i18n="table.idea_id">Idea ID</th><th data-i18n="table.title">Title</th><th data-i18n="table.submitted_by">Submitted By</th><th data-i18n="table.dept">Department</th><th data-i18n="table.impact">Impact</th><th data-i18n="table.ai_score">AI Score</th><th data-i18n="table.engagement">Engagement</th><th data-i18n="table.status">Status</th><th data-i18n="table.date">Date</th><th data-i18n="table.action">Action</th></tr></thead>
             <tbody id="all-ideas-tbody"><tr><td colspan="10" class="text-center"><div class="spinner"></div></td></tr></tbody>
           </table>
         </div>
@@ -842,13 +872,13 @@ $user     = $_SESSION['user'] ?? [];
 
       <div class="page" id="page-audit">
         <div class="section-header">
-          <div class="page-title">System Audit Trail</div>
-          <div class="text-muted">Immutable append-only log of all workflow actions</div>
+          <div class="page-title" data-i18n="page.audit_title">System Audit Trail</div>
+          <div class="text-muted" data-i18n="page.audit_sub">Immutable append-only log of all workflow actions</div>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
-          <div style="font-size:11px;color:#b91c1c;background:#fee2e2;padding:8px 14px;border-left:4px solid #dc2626;font-weight:600;letter-spacing:.2px">This log is append-only and tamper-proof. No record can be edited or deleted.</div>
+          <div style="font-size:11px;color:#b91c1c;background:#fee2e2;padding:8px 14px;border-left:4px solid #dc2626;font-weight:600;letter-spacing:.2px" data-i18n="audit.proof">This log is append-only and tamper-proof. No record can be edited or deleted.</div>
           <table>
-            <thead><tr><th>Timestamp</th><th>Idea</th><th>Action</th><th>Actor</th><th>Comment</th></tr></thead>
+            <thead><tr><th data-i18n="table.timestamp">Timestamp</th><th data-i18n="table.idea_id">Idea</th><th data-i18n="table.action">Action</th><th data-i18n="table.actor">Actor</th><th data-i18n="table.comment_col">Comment</th></tr></thead>
             <tbody id="audit-tbody"><tr><td colspan="5" class="text-center"><div class="spinner"></div></td></tr></tbody>
           </table>
         </div>
@@ -858,24 +888,24 @@ $user     = $_SESSION['user'] ?? [];
         <div class="section-header"><div class="page-title">Leaderboard &amp; Gamification</div></div>
         <div class="filter-bar">
           <div class="chip-filter">
-            <div class="chip active" onclick="activateChip(this,'lb-period');" data-val="all">All Time</div>
-            <div class="chip" onclick="activateChip(this,'lb-period');" data-val="monthly">Monthly</div>
-            <div class="chip" onclick="activateChip(this,'lb-period');" data-val="quarterly">Quarterly</div>
-            <div class="chip" onclick="activateChip(this,'lb-period');" data-val="yearly">Yearly</div>
+            <div class="chip active" onclick="activateChip(this,'lb-period');" data-val="all" data-i18n="lb.all_time">All Time</div>
+            <div class="chip" onclick="activateChip(this,'lb-period');" data-val="monthly" data-i18n="lb.monthly">Monthly</div>
+            <div class="chip" onclick="activateChip(this,'lb-period');" data-val="quarterly" data-i18n="lb.quarterly">Quarterly</div>
+            <div class="chip" onclick="activateChip(this,'lb-period');" data-val="yearly" data-i18n="lb.yearly">Yearly</div>
           </div>
         </div>
         <div class="grid-2">
           <div class="card">
-            <div class="card-title">Individual Rankings</div>
+            <div class="card-title" data-i18n="lb.individual">Individual Rankings</div>
             <div id="lb-individuals"><div class="spinner"></div></div>
           </div>
           <div class="card">
-            <div class="card-title">Department Rankings</div>
+            <div class="card-title" data-i18n="lb.dept">Department Rankings</div>
             <div id="lb-departments"><div class="spinner"></div></div>
           </div>
         </div>
         <div class="card">
-          <div class="card-title">Top Ideas by AI Quality Score</div>
+          <div class="card-title" data-i18n="lb.top_ideas">Top Ideas by AI Quality Score</div>
           <div id="lb-top-ideas"><div class="spinner"></div></div>
         </div>
       </div>
@@ -913,34 +943,34 @@ $user     = $_SESSION['user'] ?? [];
       </div>
 
       <div class="page" id="page-admin">
-        <div class="section-header"><div class="page-title">Admin Panel</div></div>
+        <div class="section-header"><div class="page-title" data-i18n="nav.admin">Admin Panel</div></div>
         <div class="tabs">
-          <div class="tab active" onclick="switchTab(this,'atab1')">Users</div>
-          <div class="tab" onclick="switchTab(this,'atab2')">Points Config</div>
-          <div class="tab" onclick="switchTab(this,'atab3')">HR Sync</div>
-          <div class="tab" onclick="switchTab(this,'atab4')">Rescore Ideas</div>
+          <div class="tab active" onclick="switchTab(this,'atab1')" data-i18n="admin.tab_users">Users</div>
+          <div class="tab" onclick="switchTab(this,'atab2')" data-i18n="admin.points_config">Points Config</div>
+          <div class="tab" onclick="switchTab(this,'atab3')" data-i18n="admin.db_status">HR Sync</div>
+          <div class="tab" onclick="switchTab(this,'atab4')" data-i18n="btn.rescore_all">Rescore Ideas</div>
         </div>
         <div class="tab-content active" id="atab1">
           <table>
-            <thead><tr><th>Employee</th><th>Dept</th><th>Email</th><th>Role</th><th>Points</th></tr></thead>
+            <thead><tr><th data-i18n="table.employee">Employee</th><th data-i18n="table.dept">Dept</th><th data-i18n="table.email_col">Email</th><th data-i18n="table.role">Role</th><th data-i18n="table.points_col">Points</th></tr></thead>
             <tbody id="admin-users-tbody"><tr><td colspan="5" class="text-center"><div class="spinner"></div></td></tr></tbody>
           </table>
         </div>
         <div class="tab-content" id="atab2">
           <div class="alert alert-info">Points config (stored in config.php). Restart needed to apply changes.</div>
           <table>
-            <thead><tr><th>Event</th><th>Current Points</th></tr></thead>
+            <thead><tr><th data-i18n="table.event">Event</th><th data-i18n="table.pts_awarded">Current Points</th></tr></thead>
             <tbody>
-              <tr><td>Idea Submitted</td><td><span class="badge badge-submitted">+10 pts</span></td></tr>
-              <tr><td>Idea Approved</td><td><span class="badge badge-approved">+25 pts</span></td></tr>
-              <tr><td>Idea Implemented</td><td><span class="badge badge-implemented">+65 pts</span></td></tr>
+              <tr><td data-i18n="admin.event_sub">Idea Submitted</td><td><span class="badge badge-submitted">+10 pts</span></td></tr>
+              <tr><td data-i18n="admin.event_app">Idea Approved</td><td><span class="badge badge-approved">+25 pts</span></td></tr>
+              <tr><td data-i18n="admin.event_impl">Idea Implemented</td><td><span class="badge badge-implemented">+65 pts</span></td></tr>
             </tbody>
           </table>
         </div>
         <div class="tab-content" id="atab3">
           <div class="alert alert-info">Employee data is loaded from the <code>users</code> table. Run the SQL seed script to populate.</div>
           <div class="card" style="max-width:480px">
-            <div class="card-title">HR Database Sync Status</div>
+            <div class="card-title" data-i18n="admin.db_status">HR Database Sync Status</div>
             <div style="font-size:13px;line-height:2">
               <div><strong>Status:</strong> Connected to MySQL</div>
               <div><strong>Engine:</strong> MySQL 8.x</div>
@@ -950,7 +980,7 @@ $user     = $_SESSION['user'] ?? [];
         </div>
         <div class="tab-content" id="atab4">
           <div class="alert alert-info">Recompute AI quality scores for all existing ideas using the current scoring model. Use this after importing legacy data.</div>
-          <button class="btn btn-warning" onclick="batchRescore()">Rescore All Ideas</button>
+          <button class="btn btn-warning" onclick="batchRescore()" data-i18n="btn.rescore_all">Rescore All Ideas</button>
           <div id="rescore-result" style="margin-top:12px;font-size:13px"></div>
         </div>
       </div>
@@ -985,21 +1015,21 @@ $user     = $_SESSION['user'] ?? [];
 
         <!-- ── Tabs ── -->
         <div class="tabs" style="margin-bottom:0">
-          <div class="tab active" onclick="switchSaTab(this,'sa-overview')">Overview</div>
-          <div class="tab" onclick="switchSaTab(this,'sa-hierarchy')">Org Hierarchy</div>
-          <div class="tab" onclick="switchSaTab(this,'sa-users')">User Management</div>
-          <div class="tab" onclick="switchSaTab(this,'sa-system')">System</div>
+          <div class="tab active" onclick="switchSaTab(this,'sa-overview')" data-i18n="sa.tab_overview">Overview</div>
+          <div class="tab" onclick="switchSaTab(this,'sa-hierarchy')" data-i18n="sa.tab_hierarchy">Org Hierarchy</div>
+          <div class="tab" onclick="switchSaTab(this,'sa-users')" data-i18n="sa.tab_users">User Management</div>
+          <div class="tab" onclick="switchSaTab(this,'sa-system')" data-i18n="sa.tab_system">System</div>
         </div>
 
         <!-- ── Tab: Overview ── -->
         <div id="sa-overview" class="sa-pane" style="padding-top:20px">
           <div class="grid-2">
             <div class="card">
-              <div class="card-title">Idea Status Distribution</div>
+              <div class="card-title" data-i18n="sa.status_dist">Idea Status Distribution</div>
               <div id="sa-status-dist"><div class="spinner"></div></div>
             </div>
             <div class="card">
-              <div class="card-title">Recent Activity</div>
+              <div class="card-title" data-i18n="sa.recent">Recent Activity</div>
               <div class="timeline" id="sa-recent-activity" style="max-height:360px;overflow-y:auto"><div class="spinner"></div></div>
             </div>
           </div>
@@ -1008,7 +1038,7 @@ $user     = $_SESSION['user'] ?? [];
         <!-- ── Tab: Org Hierarchy ── -->
         <div id="sa-hierarchy" class="sa-pane" style="display:none;padding-top:20px">
           <div class="card">
-            <div class="card-title">Organization Tree &mdash; Admin &rarr; Manager &rarr; Employee</div>
+            <div class="card-title" data-i18n="sa.org_tree">Organization Tree &mdash; Admin &rarr; Manager &rarr; Employee</div>
             <div id="hierarchy-tree" style="padding:4px 0"><div class="spinner" style="margin:20px auto"></div></div>
           </div>
         </div>
@@ -1017,11 +1047,11 @@ $user     = $_SESSION['user'] ?? [];
         <div id="sa-users" class="sa-pane" style="display:none;padding-top:20px">
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-              <div class="card-title" style="margin-bottom:0;padding-bottom:0;border-bottom:none">All Employees</div>
-              <input id="sa-user-search" class="form-control" placeholder="Search by name, email or ID…" style="width:260px" oninput="filterSaUsers()"/>
+              <div class="card-title" style="margin-bottom:0;padding-bottom:0;border-bottom:none" data-i18n="sa.all_employees">All Employees</div>
+              <input id="sa-user-search" class="form-control" data-i18n-ph="placeholder.search_user" placeholder="Search by name, email or ID…" style="width:260px" oninput="filterSaUsers()"/>
             </div>
             <table id="sa-users-table">
-              <thead><tr><th>Employee</th><th>ID</th><th>Role</th><th>Department</th><th>Business Unit</th><th>Email</th><th>Reports To</th><th>Points</th><th>Ideas</th></tr></thead>
+              <thead><tr><th data-i18n="table.employee">Employee</th><th data-i18n="table.emp_id">ID</th><th data-i18n="table.role">Role</th><th data-i18n="table.dept">Department</th><th data-i18n="table.bu">Business Unit</th><th data-i18n="table.email_col">Email</th><th data-i18n="table.reports_to">Reports To</th><th data-i18n="table.points_col">Points</th><th data-i18n="table.ideas_col">Ideas</th></tr></thead>
               <tbody id="hierarchy-users-tbody"><tr><td colspan="9" class="text-center"><div class="spinner"></div></td></tr></tbody>
             </table>
           </div>
@@ -1031,19 +1061,19 @@ $user     = $_SESSION['user'] ?? [];
         <div id="sa-system" class="sa-pane" style="display:none;padding-top:20px">
           <div class="grid-2" style="margin-bottom:16px">
             <div class="card">
-              <div class="card-title">Points Configuration</div>
+              <div class="card-title" data-i18n="sa.points_config">Points Configuration</div>
               <table style="font-size:13px">
-                <thead><tr><th>Event</th><th>Points Awarded</th></tr></thead>
+                <thead><tr><th data-i18n="table.event">Event</th><th data-i18n="table.pts_awarded">Points Awarded</th></tr></thead>
                 <tbody>
-                  <tr><td>Idea Submitted</td><td><span class="badge badge-submitted">+10 pts</span></td></tr>
-                  <tr><td>Idea Approved</td><td><span class="badge badge-approved">+25 pts</span></td></tr>
-                  <tr><td>Idea Implemented</td><td><span class="badge badge-implemented">+65 pts</span></td></tr>
+                  <tr><td data-i18n="admin.event_sub">Idea Submitted</td><td><span class="badge badge-submitted">+10 pts</span></td></tr>
+                  <tr><td data-i18n="admin.event_app">Idea Approved</td><td><span class="badge badge-approved">+25 pts</span></td></tr>
+                  <tr><td data-i18n="admin.event_impl">Idea Implemented</td><td><span class="badge badge-implemented">+65 pts</span></td></tr>
                 </tbody>
               </table>
               <div style="font-size:11px;color:var(--subtle);margin-top:12px">Configured in <code>api/config.php</code>. Server restart required to apply changes.</div>
             </div>
             <div class="card">
-              <div class="card-title">Database &amp; HR Sync</div>
+              <div class="card-title" data-i18n="sa.db_sync">Database &amp; HR Sync</div>
               <div style="font-size:13px;line-height:2.4">
                 <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border)"><span style="color:var(--subtle)">Status</span><span style="color:#059669;font-weight:700">&#9679; Connected</span></div>
                 <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border)"><span style="color:var(--subtle)">Engine</span><span>MySQL 8.x</span></div>
@@ -1054,12 +1084,12 @@ $user     = $_SESSION['user'] ?? [];
             </div>
           </div>
           <div class="card">
-            <div class="card-title">AI Scoring Engine</div>
-            <div style="font-size:13px;color:var(--subtext);margin-bottom:16px">Recompute AI quality scores for all existing ideas using the current scoring model. Use this after importing legacy data or after updating the scoring algorithm.</div>
+            <div class="card-title" data-i18n="sa.ai_engine">AI Scoring Engine</div>
+            <div style="font-size:13px;color:var(--subtext);margin-bottom:16px" data-i18n="sa.ai_desc">Recompute AI quality scores for all existing ideas using the current scoring model. Use this after importing legacy data or after updating the scoring algorithm.</div>
             <div style="display:flex;align-items:center;gap:14px">
               <button class="btn btn-warning" id="sa-rescore-btn" onclick="batchRescoreSa()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-                Rescore All Ideas
+                <span data-i18n="btn.rescore_all">Rescore All Ideas</span>
               </button>
               <div id="sa-rescore-result" style="font-size:13px"></div>
             </div>
@@ -1068,10 +1098,50 @@ $user     = $_SESSION['user'] ?? [];
 
       </div>
 
+      <!-- ═══ PLATFORM DASHBOARD ═══════════════════════════════════ -->
+      <div class="page" id="page-platform-dash">
+        <div style="background:linear-gradient(145deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);border-radius:var(--r-xl);padding:26px 30px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow-lg)">
+          <div>
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);font-weight:700;margin-bottom:6px">IFQM &middot; Platform Admin Console</div>
+            <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1.15">Platform Overview</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:5px">Aggregate metrics only &mdash; tenant content is private</div>
+          </div>
+          <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:var(--r);padding:8px 18px;text-align:right">
+            <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">Signed in as</div>
+            <div style="font-size:13px;font-weight:700;color:#fff" id="pa-name">—</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px" id="pa-kpi-strip">
+          <div class="kpi-card" style="border-left-color:#4f46e5"><div class="spinner"></div></div>
+          <div class="kpi-card" style="border-left-color:#059669"><div class="spinner"></div></div>
+          <div class="kpi-card" style="border-left-color:#d97706"><div class="spinner"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title" data-i18n="pa.all_tenants">All Tenants — Aggregate Stats</div>
+          <div id="pa-tenant-list"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- ═══ PLATFORM TENANT HIERARCHY ════════════════════════════ -->
+      <div class="page" id="page-platform-tenants">
+        <div class="section-header">
+          <div>
+            <div class="page-title" id="pt-tenant-name">Tenant Hierarchy</div>
+            <div class="text-muted" data-i18n="pa.hierarchy_sub">Org structure — names, roles, departments only. No idea content.</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="navigate('platform-dash',document.getElementById('nav-platform-dash'))" data-i18n="btn.back_tenants">← All Tenants</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px" id="pt-stats-strip"></div>
+        <div class="card">
+          <div class="card-title" data-i18n="pa.user_hierarchy">User Hierarchy</div>
+          <div id="pt-hierarchy-body"><div class="spinner"></div></div>
+        </div>
+      </div>
+
       <div class="page" id="page-profile">
         <div class="grid-2">
           <div class="card">
-            <div class="card-title">Employee Profile</div>
+            <div class="card-title" data-i18n="profile.title">Employee Profile</div>
             <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
               <div class="avatar" id="profile-avatar" style="width:60px;height:60px;font-size:22px;border-radius:50%">??</div>
               <div>
@@ -1082,11 +1152,11 @@ $user     = $_SESSION['user'] ?? [];
             </div>
             <table style="font-size:13px" id="profile-table"></table>
             <div class="separator"></div>
-            <div style="font-size:11px;color:var(--subtle)">Auto-fetched from HR Database. Contact Admin to update.</div>
+            <div style="font-size:11px;color:var(--subtle)" data-i18n="profile.hr_note">Auto-fetched from HR Database. Contact Admin to update.</div>
           </div>
           <div>
             <div class="card">
-              <div class="card-title">My Stats</div>
+              <div class="card-title" data-i18n="profile.stats">My Stats</div>
               <div style="display:flex;gap:10px" id="profile-stats"></div>
             </div>
           </div>
@@ -1105,9 +1175,9 @@ $user     = $_SESSION['user'] ?? [];
     </div>
     <div class="modal-body">
       <div class="tabs">
-        <div class="tab active" onclick="switchTab(this,'dtab1')">Details</div>
-        <div class="tab" onclick="switchTab(this,'dtab2')">Timeline</div>
-        <div class="tab" onclick="switchTab(this,'dtab3')">Attachments</div>
+        <div class="tab active" onclick="switchTab(this,'dtab1')" data-i18n="modal.details">Details</div>
+        <div class="tab" onclick="switchTab(this,'dtab2')" data-i18n="modal.timeline">Timeline</div>
+        <div class="tab" onclick="switchTab(this,'dtab3')" data-i18n="modal.attachments">Attachments</div>
       </div>
       <div class="tab-content active" id="dtab1">
         <div id="modal-detail-body"><div class="spinner"></div></div>
@@ -1120,7 +1190,7 @@ $user     = $_SESSION['user'] ?? [];
       </div>
     </div>
     <div class="modal-footer" id="idea-detail-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-idea-detail')">Close</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-idea-detail')" data-i18n="btn.close">Close</button>
     </div>
   </div>
 </div>
@@ -1133,22 +1203,22 @@ $user     = $_SESSION['user'] ?? [];
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>Decision <span style="color:red">*</span></label>
+        <label data-i18n="review.decision">Decision</label> <span style="color:red">*</span>
         <select class="form-control" id="review-decision">
-          <option value="Under Review">Move to Under Review</option>
-          <option value="Approved">Approve</option>
-          <option value="Rejected">Reject</option>
-          <option value="Implemented">Mark as Implemented</option>
+          <option value="Under Review" data-i18n="review.to_review">Move to Under Review</option>
+          <option value="Approved" data-i18n="review.approve">Approve</option>
+          <option value="Rejected" data-i18n="review.reject">Reject</option>
+          <option value="Implemented" data-i18n="review.implement">Mark as Implemented</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Comment / Feedback</label>
-        <textarea class="form-control" id="review-comment" rows="3" placeholder="Optional comments for the submitter…"></textarea>
+        <label data-i18n="review.comment_label">Comment / Feedback</label>
+        <textarea class="form-control" id="review-comment" rows="3" data-i18n-ph="review.comment_ph" placeholder="Optional comments for the submitter…"></textarea>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-review')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitReview()">Submit Decision</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-review')" data-i18n="btn.cancel">Cancel</button>
+      <button class="btn btn-primary" onclick="submitReview()" data-i18n="btn.submit_decision">Submit Decision</button>
     </div>
   </div>
 </div>
@@ -1161,7 +1231,7 @@ $user     = $_SESSION['user'] ?? [];
       </div>
       <div style="font-size:18px;font-weight:700;color:var(--heading);margin:12px 0 6px;animation:fadeInUp .3s ease .15s both" id="success-title"></div>
       <div style="font-size:13px;color:var(--subtext);animation:fadeInUp .3s ease .25s both" id="success-msg"></div>
-      <button class="btn btn-primary mt-8" style="margin-top:20px;animation:fadeInUp .3s ease .35s both" onclick="closeModal('modal-success');navigate('my-ideas',null)">View My Ideas</button>
+      <button class="btn btn-primary mt-8" style="margin-top:20px;animation:fadeInUp .3s ease .35s both" onclick="closeModal('modal-success');navigate('my-ideas',null)" data-i18n="btn.view_my_ideas">View My Ideas</button>
     </div>
   </div>
 </div>
@@ -1276,16 +1346,19 @@ async function doLogin() {
       requestAnimationFrame(() => { err.style.animation = 'fadeInDown .25s ease'; });
     }
   } catch(e) {
-    err.textContent = 'Server error. Is the web server running?';
+    err.textContent = t('msg.server_error');
     err.style.display = 'block';
   }
   btn.disabled = false; btn.innerHTML = t('login.btn');
 }
 
 // ═══════════════════════════════════════════════════════════════
-// BILINGUAL SYSTEM — English / Hindi
+// MULTILINGUAL SYSTEM — EN / HI / KN / TE / TA / ML
 // ═══════════════════════════════════════════════════════════════
+const SUPPORTED_LANGS = ['en','hi','mr','kn','te','ta','ml'];
+const LANG_LABELS = {en:'EN',hi:'हि',mr:'म',kn:'ಕ',te:'తె',ta:'த',ml:'മ'};
 let lang = localStorage.getItem('ifqm-lang') || 'en';
+if (!SUPPORTED_LANGS.includes(lang)) lang = 'en';
 const TRANSLATIONS = {
   en: {
     'app.name':'IdeaTool',
@@ -1295,10 +1368,10 @@ const TRANSLATIONS = {
     'nav.super_admin':'Org Hierarchy','nav.profile':'My Profile',
     'section.main':'Main','section.workflow':'Workflow','section.insights':'Insights',
     'section.admin':'Admin','section.super_admin':'IFQM Super Admin',
-    'login.app_title':'Employee Ideation Tool',
-    'login.tagline':'Turn great ideas into real improvements.',
+    'login.app_title':'Employee Ideation Tool','login.tagline':'Turn great ideas into real improvements.',
     'login.welcome':'Welcome back','login.subtitle':'Sign in to your IFQM account to continue',
     'login.email':'Email Address','login.password':'Password','login.btn':'Sign In',
+    'login.email_ph':'your.name@jain.com','login.password_ph':'Enter your password',
     'login.feat1_title':'Submit & Track Ideas','login.feat1_sub':'5-step wizard with AI quality scoring',
     'login.feat2_title':'Earn Points & Rewards',
     'login.feat3_title':'Analytics & Leaderboard','login.feat3_sub':'Real-time insights across departments',
@@ -1316,14 +1389,106 @@ const TRANSLATIONS = {
     'lb.individual':'Individual Rankings','lb.dept':'Department Rankings',
     'lb.top_ideas':'Top Scored Ideas','lb.points':'pts','lb.ideas':'ideas',
     'lb.avg_score':'Avg Score','lb.engagement':'Engagement',
-    'form.save_draft':'Save Draft','form.next':'Next','form.back':'Back',
-    'form.submit_idea':'Submit New Idea',
+    'lb.all_time':'All Time','lb.monthly':'Monthly','lb.quarterly':'Quarterly','lb.yearly':'Yearly',
+    'form.save_draft':'Save Draft','form.next':'Next','form.back':'Back','form.submit_idea':'Submit New Idea',
     'detail.submitted_by':'Submitted by','detail.situation':'Present Situation',
     'detail.solution':'Proposed Solution','detail.impact_areas':'Impact Areas',
     'detail.impact_level':'Impact Level','detail.tangible':'Tangible Benefit',
     'detail.intangible':'Intangible Benefit','detail.co_suggesters':'Co-Suggesters',
     'detail.ai_eval':'AI Evaluation','detail.score':'Score','detail.close':'Close',
     'profile.title':'Employee Profile','profile.stats':'My Stats',
+    'profile.dept':'Department','profile.email_lbl':'Email','profile.phone':'Phone',
+    'profile.reports_to':'Reporting To','profile.bu':'Business Unit','profile.loc':'Location',
+    'profile.hr_note':'Auto-fetched from HR Database. Contact Admin to update.',
+    'profile.total_pts':'Total Points',
+    'btn.new_idea':'New Idea','btn.close':'Close','btn.cancel':'Cancel',
+    'btn.submit_decision':'Submit Decision','btn.view_my_ideas':'View My Ideas',
+    'btn.rescore_all':'Rescore All Ideas','btn.back_tenants':'← All Tenants',
+    'page.my_ideas_sub':'Track all ideas you have submitted',
+    'placeholder.search_ideas':'Search ideas...','filter.all_status':'All Status',
+    'page.submit_sub':'Fill in all steps to submit your improvement idea',
+    'wizard.step1':'Situation','wizard.step2':'Solution','wizard.step3':'Impact',
+    'wizard.step4':'Co-Suggesters','wizard.step5':'Review & Submit',
+    'step1.heading':'Step 1: Describe the Present Situation',
+    'step1.title_label':'Situation Title','step1.title_ph':'Brief title for your idea',
+    'step1.desc_label':'Current Situation Description',
+    'step1.desc_ph':'Describe the current problem or inefficiency in detail (min. 50 chars)…',
+    'step1.doc_label':'Supporting Document (Optional)',
+    'step1.upload':'Click to upload or drag & drop','step1.upload_types':'PDF, PNG, JPG, XLSX — Max 10 MB',
+    'step2.heading':'Step 2: Proposed Idea / Solution',
+    'step2.label':'Proposed Solution','step2.ph':'Describe your proposed improvement in detail…',
+    'step3.heading':'Step 3: Impact Areas & Measurable Benefits',
+    'step3.impact_label':'Select Impact Areas','step3.impact_sub':'(select all that apply)',
+    'step3.level':'Overall Impact Level',
+    'step3.tangible_label':'Tangible Benefit (Optional)','step3.tangible_ph':'e.g. Rs. 50,000 savings/year',
+    'step3.intangible_label':'Intangible Benefits (Optional)',
+    'step3.intangible_ph':'e.g. Improved worker confidence, better audit scores',
+    'step4.heading':'Step 4: Co-Suggesters (Optional, max 2)',
+    'step4.co1':'Co-Suggester 1','step4.co2':'Co-Suggester 2','step4.co_ph':'Search by name or employee ID…',
+    'step5.heading':'Step 5: Review & Submit',
+    'step5.note':'By submitting, you confirm this idea is original. You will earn +10 points on submission. An AI quality score will be automatically computed.',
+    'impact.production':'Production','impact.quality':'Quality','impact.cost':'Cost',
+    'impact.delivery':'Delivery','impact.safety':'Safety','impact.environment':'Environment',
+    'impact.morale':'Morale','impact.low':'Low','impact.medium':'Medium','impact.high':'High',
+    'page.review_sub':'Ideas pending your review — sorted by AI quality score (highest first)',
+    'placeholder.search':'Search…','filter.all_impact':'All Impact',
+    'table.idea_id':'Idea ID','table.title':'Title','table.submitted_by':'Submitted By',
+    'table.dept':'Department','table.impact':'Impact','table.ai_score':'AI Score',
+    'table.engagement':'Engagement','table.status':'Status','table.date':'Date','table.action':'Action',
+    'table.timestamp':'Timestamp','table.actor':'Actor','table.comment_col':'Comment',
+    'table.event':'Event','table.pts_awarded':'Points Awarded',
+    'table.employee':'Employee','table.emp_id':'ID','table.role':'Role',
+    'table.bu':'Business Unit','table.email_col':'Email',
+    'table.reports_to':'Reports To','table.points_col':'Points','table.ideas_col':'Ideas',
+    'page.audit_title':'System Audit Trail',
+    'page.audit_sub':'Immutable append-only log of all workflow actions',
+    'audit.proof':'This log is append-only and tamper-proof. No record can be edited or deleted.',
+    'modal.details':'Details','modal.timeline':'Timeline','modal.attachments':'Attachments',
+    'review.decision':'Decision','review.comment_label':'Comment / Feedback',
+    'review.comment_ph':'Optional comments for the submitter…',
+    'review.to_review':'Move to Under Review','review.approve':'Approve',
+    'review.reject':'Reject','review.implement':'Mark as Implemented',
+    'admin.tab_overview':'Overview','admin.tab_ideas':'Idea Management',
+    'admin.tab_users':'User List','admin.tab_system':'System',
+    'admin.points_config':'Points Configuration',
+    'admin.event_sub':'Idea Submitted','admin.event_app':'Idea Approved','admin.event_impl':'Idea Implemented',
+    'admin.db_status':'HR Database Sync Status',
+    'admin.rescore_desc':'Recompute AI quality scores for all existing ideas using the current scoring model. Use this after importing legacy data.',
+    'sa.console':'Command Center','sa.signed_in':'Signed in as',
+    'sa.tab_overview':'Overview','sa.tab_hierarchy':'Org Hierarchy',
+    'sa.tab_users':'User Management','sa.tab_system':'System',
+    'sa.status_dist':'Idea Status Distribution','sa.recent':'Recent Activity',
+    'sa.org_tree':'Organization Tree — Admin → Manager → Employee',
+    'sa.all_employees':'All Employees','sa.points_config':'Points Configuration',
+    'sa.ai_engine':'AI Scoring Engine',
+    'sa.ai_desc':'Recompute AI quality scores for all existing ideas using the current scoring model. Use this after importing legacy data or after updating the scoring algorithm.',
+    'sa.db_sync':'Database & HR Sync',
+    'placeholder.search_user':'Search by name, email or ID…',
+    'pa.overview':'Platform Overview','pa.private':'Aggregate metrics only — tenant content is private',
+    'pa.signed_in':'Signed in as','pa.all_tenants':'All Tenants — Aggregate Stats',
+    'pa.tenant_hierarchy':'Tenant Hierarchy',
+    'pa.hierarchy_sub':'Org structure — names, roles, departments only. No idea content.',
+    'pa.user_hierarchy':'User Hierarchy',
+    'msg.loading':'Loading…','msg.no_ideas':'No ideas found. Submit your first idea!',
+    'msg.no_review':'No ideas pending review.','msg.no_audit':'No audit records.',
+    'msg.no_leaderboard':'No scored ideas yet. Submit ideas to see rankings.',
+    'msg.no_notif':'No notifications','msg.draft_prefix':'Draft saved! Idea code: ',
+    'msg.fill_situation':'Please fill in the title and situation description (min 20 chars).',
+    'msg.fill_solution':'Please fill in the proposed solution.',
+    'msg.server_error':'Server error. Please try again.',
+    'msg.fail_dashboard':'Failed to load dashboard. Is the server running?',
+    'msg.fail_ideas':'Failed to load ideas. Check server.',
+    'msg.fail_queue':'Failed to load review queue. Check server connection.',
+    'msg.fail_audit':'Failed to load. Check server connection.',
+    'msg.fail_leaderboard':'Failed to load leaderboard.',
+    'msg.fail_analytics':'Failed to load analytics. Check server connection.',
+    'msg.audit_restricted':'Audit Trail is only available to Managers, Admins and Executives.',
+    'msg.analytics_restricted':'Analytics is only available to Managers, Admins and Executives.',
+    'msg.decision_ok':'Decision Submitted','msg.idea_ok':'Idea Submitted Successfully',
+    'pa.active_tenants':'Active Tenants','pa.total_users':'Total Users','pa.ideas_submitted':'Ideas Submitted',
+    'msg.rescoring':'Rescoring…',
+    'analytics.approval_rate':'Approval Rate','analytics.impl_rate':'Implementation Rate',
+    'analytics.avg_score':'Avg AI Quality Score',
   },
   hi: {
     'app.name':'आइडियाटूल',
@@ -1333,10 +1498,10 @@ const TRANSLATIONS = {
     'nav.super_admin':'संगठन संरचना','nav.profile':'मेरी प्रोफ़ाइल',
     'section.main':'मुख्य','section.workflow':'वर्कफ़्लो','section.insights':'अंतर्दृष्टि',
     'section.admin':'एडमिन','section.super_admin':'IFQM सुपर एडमिन',
-    'login.app_title':'कर्मचारी विचार मंच',
-    'login.tagline':'महान विचारों को वास्तविक सुधारों में बदलें।',
+    'login.app_title':'कर्मचारी विचार मंच','login.tagline':'महान विचारों को वास्तविक सुधारों में बदलें।',
     'login.welcome':'वापस स्वागत है','login.subtitle':'जारी रखने के लिए अपने IFQM खाते में साइन इन करें',
     'login.email':'ईमेल पता','login.password':'पासवर्ड','login.btn':'साइन इन',
+    'login.email_ph':'आपका.नाम@jain.com','login.password_ph':'अपना पासवर्ड दर्ज करें',
     'login.feat1_title':'विचार सबमिट और ट्रैक करें','login.feat1_sub':'एआई स्कोरिंग सहित 5-चरण विज़ार्ड',
     'login.feat2_title':'अंक और पुरस्कार अर्जित करें',
     'login.feat3_title':'विश्लेषण और लीडरबोर्ड','login.feat3_sub':'विभागों में रीयल-टाइम जानकारी',
@@ -1354,33 +1519,741 @@ const TRANSLATIONS = {
     'lb.individual':'व्यक्तिगत रैंकिंग','lb.dept':'विभाग रैंकिंग',
     'lb.top_ideas':'शीर्ष स्कोर विचार','lb.points':'अंक','lb.ideas':'विचार',
     'lb.avg_score':'औसत स्कोर','lb.engagement':'सहभागिता',
-    'form.save_draft':'मसौदा सहेजें','form.next':'अगला','form.back':'वापस',
-    'form.submit_idea':'नया विचार सबमिट करें',
+    'lb.all_time':'सर्वकालिक','lb.monthly':'मासिक','lb.quarterly':'त्रैमासिक','lb.yearly':'वार्षिक',
+    'form.save_draft':'मसौदा सहेजें','form.next':'अगला','form.back':'वापस','form.submit_idea':'नया विचार सबमिट करें',
     'detail.submitted_by':'द्वारा सबमिट','detail.situation':'वर्तमान स्थिति',
     'detail.solution':'प्रस्तावित समाधान','detail.impact_areas':'प्रभाव क्षेत्र',
     'detail.impact_level':'प्रभाव स्तर','detail.tangible':'मूर्त लाभ',
     'detail.intangible':'अमूर्त लाभ','detail.co_suggesters':'सह-सुझावकर्ता',
     'detail.ai_eval':'एआई मूल्यांकन','detail.score':'स्कोर','detail.close':'बंद करें',
     'profile.title':'कर्मचारी प्रोफ़ाइल','profile.stats':'मेरे आँकड़े',
+    'profile.dept':'विभाग','profile.email_lbl':'ईमेल','profile.phone':'फ़ोन',
+    'profile.reports_to':'रिपोर्टिंग प्रबंधक','profile.bu':'व्यवसाय इकाई','profile.loc':'स्थान',
+    'profile.hr_note':'एचआर डेटाबेस से स्वतः प्राप्त। अपडेट के लिए एडमिन से संपर्क करें।',
+    'profile.total_pts':'कुल अंक',
+    'btn.new_idea':'नया विचार','btn.close':'बंद करें','btn.cancel':'रद्द करें',
+    'btn.submit_decision':'निर्णय सबमिट करें','btn.view_my_ideas':'मेरे विचार देखें',
+    'btn.rescore_all':'सभी विचारों को री-स्कोर करें','btn.back_tenants':'← सभी टेनेंट',
+    'page.my_ideas_sub':'आपके द्वारा सबमिट किए गए सभी विचारों को ट्रैक करें',
+    'placeholder.search_ideas':'विचार खोजें...','filter.all_status':'सभी स्थिति',
+    'page.submit_sub':'अपना सुधार विचार सबमिट करने के लिए सभी चरण भरें',
+    'wizard.step1':'परिस्थिति','wizard.step2':'समाधान','wizard.step3':'प्रभाव',
+    'wizard.step4':'सह-सुझावकर्ता','wizard.step5':'समीक्षा और सबमिट',
+    'step1.heading':'चरण 1: वर्तमान परिस्थिति का वर्णन करें',
+    'step1.title_label':'परिस्थिति शीर्षक','step1.title_ph':'अपने विचार के लिए संक्षिप्त शीर्षक',
+    'step1.desc_label':'वर्तमान परिस्थिति विवरण',
+    'step1.desc_ph':'वर्तमान समस्या या अकुशलता का विस्तार से वर्णन करें (न्यूनतम 50 अक्षर)…',
+    'step1.doc_label':'सहायक दस्तावेज़ (वैकल्पिक)',
+    'step1.upload':'अपलोड करने के लिए क्लिक करें या खींचें और छोड़ें',
+    'step1.upload_types':'PDF, PNG, JPG, XLSX — अधिकतम 10 MB',
+    'step2.heading':'चरण 2: प्रस्तावित विचार / समाधान',
+    'step2.label':'प्रस्तावित समाधान','step2.ph':'अपने प्रस्तावित सुधार का विस्तार से वर्णन करें…',
+    'step3.heading':'चरण 3: प्रभाव क्षेत्र और मापने योग्य लाभ',
+    'step3.impact_label':'प्रभाव क्षेत्र चुनें','step3.impact_sub':'(सभी लागू विकल्प चुनें)',
+    'step3.level':'समग्र प्रभाव स्तर',
+    'step3.tangible_label':'मूर्त लाभ (वैकल्पिक)','step3.tangible_ph':'जैसे. ₹50,000 बचत/वर्ष',
+    'step3.intangible_label':'अमूर्त लाभ (वैकल्पिक)',
+    'step3.intangible_ph':'जैसे. कर्मचारी आत्मविश्वास में सुधार, बेहतर ऑडिट स्कोर',
+    'step4.heading':'चरण 4: सह-सुझावकर्ता (वैकल्पिक, अधिकतम 2)',
+    'step4.co1':'सह-सुझावकर्ता 1','step4.co2':'सह-सुझावकर्ता 2',
+    'step4.co_ph':'नाम या कर्मचारी आईडी से खोजें…',
+    'step5.heading':'चरण 5: समीक्षा और सबमिट',
+    'step5.note':'सबमिट करके आप पुष्टि करते हैं कि यह विचार मौलिक है। सबमिट करने पर आपको +10 अंक मिलेंगे।',
+    'impact.production':'उत्पादन','impact.quality':'गुणवत्ता','impact.cost':'लागत',
+    'impact.delivery':'डिलीवरी','impact.safety':'सुरक्षा','impact.environment':'पर्यावरण',
+    'impact.morale':'मनोबल','impact.low':'कम','impact.medium':'मध्यम','impact.high':'उच्च',
+    'page.review_sub':'समीक्षा के लिए लंबित विचार — AI गुणवत्ता स्कोर के अनुसार क्रमबद्ध',
+    'placeholder.search':'खोजें…','filter.all_impact':'सभी प्रभाव',
+    'table.idea_id':'विचार आईडी','table.title':'शीर्षक','table.submitted_by':'सबमिटर',
+    'table.dept':'विभाग','table.impact':'प्रभाव','table.ai_score':'AI स्कोर',
+    'table.engagement':'सहभागिता','table.status':'स्थिति','table.date':'दिनांक','table.action':'कार्रवाई',
+    'table.timestamp':'समय','table.actor':'कर्ता','table.comment_col':'टिप्पणी',
+    'table.event':'घटना','table.pts_awarded':'अंक प्रदान',
+    'table.employee':'कर्मचारी','table.emp_id':'आईडी','table.role':'भूमिका',
+    'table.bu':'व्यवसाय इकाई','table.email_col':'ईमेल',
+    'table.reports_to':'रिपोर्ट करता है','table.points_col':'अंक','table.ideas_col':'विचार',
+    'page.audit_title':'सिस्टम ऑडिट ट्रेल',
+    'page.audit_sub':'सभी वर्कफ़्लो क्रियाओं का अपरिवर्तनीय लॉग',
+    'audit.proof':'यह लॉग केवल जोड़ने योग्य और छेड़छाड़-रोधी है। कोई भी रिकॉर्ड संपादित या हटाया नहीं जा सकता।',
+    'modal.details':'विवरण','modal.timeline':'टाइमलाइन','modal.attachments':'संलग्नक',
+    'review.decision':'निर्णय','review.comment_label':'टिप्पणी / प्रतिक्रिया',
+    'review.comment_ph':'सबमिटर के लिए वैकल्पिक टिप्पणी…',
+    'review.to_review':'समीक्षाधीन में ले जाएं','review.approve':'स्वीकृत करें',
+    'review.reject':'अस्वीकार करें','review.implement':'कार्यान्वित के रूप में चिह्नित करें',
+    'admin.tab_overview':'अवलोकन','admin.tab_ideas':'विचार प्रबंधन',
+    'admin.tab_users':'उपयोगकर्ता सूची','admin.tab_system':'सिस्टम',
+    'admin.points_config':'अंक कॉन्फ़िगरेशन',
+    'admin.event_sub':'विचार सबमिट किया','admin.event_app':'विचार स्वीकृत हुआ','admin.event_impl':'विचार लागू हुआ',
+    'admin.db_status':'एचआर डेटाबेस सिंक स्थिति',
+    'admin.rescore_desc':'मौजूदा सभी विचारों के AI स्कोर पुनः गणना करें।',
+    'sa.console':'कमांड सेंटर','sa.signed_in':'के रूप में साइन इन',
+    'sa.tab_overview':'अवलोकन','sa.tab_hierarchy':'संगठन संरचना',
+    'sa.tab_users':'उपयोगकर्ता प्रबंधन','sa.tab_system':'सिस्टम',
+    'sa.status_dist':'विचार स्थिति वितरण','sa.recent':'हालिया गतिविधि',
+    'sa.org_tree':'संगठन वृक्ष — एडमिन → प्रबंधक → कर्मचारी',
+    'sa.all_employees':'सभी कर्मचारी','sa.ai_engine':'AI स्कोरिंग इंजन',
+    'sa.ai_desc':'मौजूदा सभी विचारों के AI गुणवत्ता स्कोर पुनः गणना करें।',
+    'sa.db_sync':'डेटाबेस और एचआर सिंक',
+    'placeholder.search_user':'नाम, ईमेल या आईडी से खोजें…',
+    'pa.overview':'प्लेटफ़ॉर्म अवलोकन','pa.private':'केवल कुल मेट्रिक्स — टेनेंट सामग्री निजी है',
+    'pa.signed_in':'के रूप में साइन इन','pa.all_tenants':'सभी टेनेंट — कुल आँकड़े',
+    'pa.tenant_hierarchy':'टेनेंट संरचना',
+    'pa.hierarchy_sub':'संगठन संरचना — केवल नाम, भूमिकाएँ, विभाग। कोई विचार सामग्री नहीं।',
+    'pa.user_hierarchy':'उपयोगकर्ता संरचना',
+    'msg.loading':'लोड हो रहा है…','msg.no_ideas':'कोई विचार नहीं मिला। अपना पहला विचार सबमिट करें!',
+    'msg.no_review':'समीक्षा के लिए कोई विचार लंबित नहीं है।','msg.no_audit':'कोई ऑडिट रिकॉर्ड नहीं।',
+    'msg.no_leaderboard':'अभी तक कोई स्कोर नहीं। रैंकिंग देखने के लिए विचार सबमिट करें।',
+    'msg.no_notif':'कोई सूचना नहीं','msg.draft_prefix':'मसौदा सहेजा! विचार कोड: ',
+    'msg.fill_situation':'कृपया शीर्षक और परिस्थिति विवरण भरें (न्यूनतम 20 अक्षर)।',
+    'msg.fill_solution':'कृपया प्रस्तावित समाधान भरें।',
+    'msg.server_error':'सर्वर त्रुटि। कृपया पुनः प्रयास करें।',
+    'msg.fail_dashboard':'डैशबोर्ड लोड नहीं हुआ। क्या सर्वर चल रहा है?',
+    'msg.fail_ideas':'विचार लोड नहीं हुए। सर्वर जाँचें।',
+    'msg.fail_queue':'समीक्षा सूची लोड नहीं हुई।','msg.fail_audit':'लोड नहीं हुआ। सर्वर जाँचें।',
+    'msg.fail_leaderboard':'लीडरबोर्ड लोड नहीं हुआ।',
+    'msg.fail_analytics':'विश्लेषण लोड नहीं हुआ।',
+    'msg.audit_restricted':'ऑडिट ट्रेल केवल प्रबंधकों, एडमिन और कार्यकारियों के लिए उपलब्ध है।',
+    'msg.analytics_restricted':'विश्लेषण केवल प्रबंधकों, एडमिन और कार्यकारियों के लिए उपलब्ध है।',
+    'msg.decision_ok':'निर्णय सबमिट किया','msg.idea_ok':'विचार सफलतापूर्वक सबमिट किया गया',
+    'pa.active_tenants':'सक्रिय टेनेंट','pa.total_users':'कुल उपयोगकर्ता','pa.ideas_submitted':'विचार सबमिट','msg.rescoring':'री-स्कोरिंग…',
+  },
+  mr: {
+    'app.name':'आयडिया टूल',
+    'nav.dashboard':'डॅशबोर्ड','nav.my_ideas':'माझ्या कल्पना','nav.submit':'कल्पना सादर करा',
+    'nav.review':'पुनरावलोकन रांग','nav.all_ideas':'सर्व कल्पना','nav.audit':'ऑडिट ट्रेल',
+    'nav.leaderboard':'लीडरबोर्ड','nav.analytics':'विश्लेषण','nav.admin':'प्रशासक पॅनेल',
+    'nav.super_admin':'संस्था श्रेणी','nav.profile':'माझी प्रोफाइल',
+    'section.main':'मुख्य','section.workflow':'वर्कफ्लो','section.insights':'अंतर्दृष्टी',
+    'section.admin':'प्रशासक','section.super_admin':'IFQM सुपर प्रशासक',
+    'login.app_title':'कर्मचारी कल्पना साधन','login.tagline':'उत्तम कल्पनांना खऱ्या सुधारणांमध्ये बदला.',
+    'login.welcome':'पुन्हा स्वागत आहे','login.subtitle':'सुरू ठेवण्यासाठी तुमच्या IFQM खात्यात साइन इन करा',
+    'login.email':'ईमेल पत्ता','login.password':'पासवर्ड','login.btn':'साइन इन',
+    'login.email_ph':'तुमचे.नाव@jain.com','login.password_ph':'तुमचा पासवर्ड प्रविष्ट करा',
+    'login.feat1_title':'कल्पना सादर करा आणि ट्रॅक करा','login.feat1_sub':'AI स्कोरिंगसह 5-टप्पा विझार्ड',
+    'login.feat2_title':'गुण आणि पुरस्कार मिळवा',
+    'login.feat3_title':'विश्लेषण आणि लीडरबोर्ड','login.feat3_sub':'विभागांमध्ये रिअल-टाइम माहिती',
+    'topbar.dark':'डार्क','topbar.light':'लाइट','topbar.notifications':'सूचना',
+    'topbar.logout':'लॉग आउट','topbar.mark_read':'सर्व वाचले म्हणून चिन्हांकित करा',
+    'dash.total':'एकूण कल्पना','dash.approved':'मंजूर','dash.implemented':'अंमलात आणले',
+    'dash.status_dist':'स्थिती वितरण','dash.recent':'अलीकडील क्रियाकलाप',
+    'status.submitted':'सादर केले','status.review':'पुनरावलोकनात','status.approved':'मंजूर',
+    'status.rejected':'नाकारले','status.implemented':'अंमलात आणले','status.draft':'मसुदा',
+    'idea.view':'पहा','idea.review':'पुनरावलोकन','idea.votes':'मते',
+    'vote.title':'समुदाय रेटिंग','vote.your_rating':'तुमचे रेटिंग','vote.avg':'सरासरी',
+    'vote.engagement_idx':'सहभाग निर्देशांक','vote.submit':'रेटिंग सादर करा',
+    'vote.no_self':'तुम्ही स्वतःच्या कल्पनेला रेट करू शकत नाही','vote.rated':'रेट केले','vote.stars':'तारे',
+    'lb.individual':'वैयक्तिक क्रमवारी','lb.dept':'विभाग क्रमवारी','lb.top_ideas':'शीर्ष गुण कल्पना',
+    'lb.points':'गुण','lb.ideas':'कल्पना','lb.avg_score':'सरासरी गुण','lb.engagement':'सहभाग',
+    'lb.all_time':'सर्वकाळ','lb.monthly':'मासिक','lb.quarterly':'तिमाही','lb.yearly':'वार्षिक',
+    'form.save_draft':'मसुदा जतन करा','form.next':'पुढे','form.back':'मागे','form.submit_idea':'नवीन कल्पना सादर करा',
+    'detail.submitted_by':'सादर केले','detail.situation':'सध्याची परिस्थिती','detail.solution':'प्रस्तावित उपाय',
+    'detail.impact_areas':'प्रभाव क्षेत्रे','detail.impact_level':'प्रभाव पातळी',
+    'detail.tangible':'मूर्त फायदा','detail.intangible':'अमूर्त फायदा','detail.co_suggesters':'सह-सूचक',
+    'detail.ai_eval':'AI मूल्यांकन','detail.score':'गुण','detail.close':'बंद करा',
+    'profile.title':'कर्मचारी प्रोफाइल','profile.stats':'माझी आकडेवारी',
+    'profile.dept':'विभाग','profile.email_lbl':'ईमेल','profile.phone':'फोन',
+    'profile.reports_to':'अहवाल देतो','profile.bu':'व्यवसाय युनिट','profile.loc':'स्थान',
+    'profile.hr_note':'एचआर डेटाबेसमधून स्वतः आणले. अपडेटसाठी प्रशासकाशी संपर्क करा.',
+    'profile.total_pts':'एकूण गुण',
+    'btn.new_idea':'नवीन कल्पना','btn.close':'बंद करा','btn.cancel':'रद्द करा',
+    'btn.submit_decision':'निर्णय सादर करा','btn.view_my_ideas':'माझ्या कल्पना पहा',
+    'btn.rescore_all':'सर्व कल्पना री-स्कोर करा','btn.back_tenants':'← सर्व टेनंट',
+    'page.my_ideas_sub':'तुम्ही सादर केलेल्या सर्व कल्पना ट्रॅक करा',
+    'placeholder.search_ideas':'कल्पना शोधा...','filter.all_status':'सर्व स्थिती',
+    'page.submit_sub':'तुमची सुधारणा कल्पना सादर करण्यासाठी सर्व टप्पे भरा',
+    'wizard.step1':'परिस्थिती','wizard.step2':'उपाय','wizard.step3':'प्रभाव',
+    'wizard.step4':'सह-सूचक','wizard.step5':'समीक्षा आणि सादर',
+    'step1.heading':'टप्पा 1: सद्यस्थितीचे वर्णन करा',
+    'step1.title_label':'परिस्थिती शीर्षक','step1.title_ph':'तुमच्या कल्पनेसाठी संक्षिप्त शीर्षक',
+    'step1.desc_label':'सद्यस्थिती वर्णन',
+    'step1.desc_ph':'सध्याची समस्या किंवा अकार्यक्षमतेचे तपशीलवार वर्णन करा (किमान 50 अक्षरे)…',
+    'step1.doc_label':'सहाय्यक दस्तऐवज (पर्यायी)',
+    'step1.upload':'अपलोड करण्यासाठी क्लिक करा किंवा ड्रॅग करा',
+    'step1.upload_types':'PDF, PNG, JPG, XLSX — कमाल 10 MB',
+    'step2.heading':'टप्पा 2: प्रस्तावित कल्पना / उपाय',
+    'step2.label':'प्रस्तावित उपाय','step2.ph':'तुमच्या प्रस्तावित सुधारणेचे तपशीलवार वर्णन करा…',
+    'step3.heading':'टप्पा 3: प्रभाव क्षेत्रे आणि मोजता येण्याजोगे फायदे',
+    'step3.impact_label':'प्रभाव क्षेत्रे निवडा','step3.impact_sub':'(सर्व लागू पर्याय निवडा)',
+    'step3.level':'एकूण प्रभाव पातळी',
+    'step3.tangible_label':'मूर्त फायदा (पर्यायी)','step3.tangible_ph':'उदा. ₹50,000 बचत/वर्ष',
+    'step3.intangible_label':'अमूर्त फायदे (पर्यायी)',
+    'step3.intangible_ph':'उदा. कर्मचाऱ्यांचा आत्मविश्वास सुधारणे',
+    'step4.heading':'टप्पा 4: सह-सूचक (पर्यायी, कमाल 2)',
+    'step4.co1':'सह-सूचक 1','step4.co2':'सह-सूचक 2','step4.co_ph':'नाव किंवा कर्मचारी आयडीने शोधा…',
+    'step5.heading':'टप्पा 5: समीक्षा आणि सादर',
+    'step5.note':'सादर करून तुम्ही पुष्टी करता की ही कल्पना मौलिक आहे. सादर केल्यावर तुम्हाला +10 गुण मिळतील.',
+    'impact.production':'उत्पादन','impact.quality':'गुणवत्ता','impact.cost':'खर्च',
+    'impact.delivery':'वितरण','impact.safety':'सुरक्षा','impact.environment':'पर्यावरण',
+    'impact.morale':'मनोबल','impact.low':'कमी','impact.medium':'मध्यम','impact.high':'उच्च',
+    'page.review_sub':'तुमच्या पुनरावलोकनासाठी प्रलंबित कल्पना — AI गुणवत्ता स्कोरनुसार क्रमबद्ध',
+    'placeholder.search':'शोधा…','filter.all_impact':'सर्व प्रभाव',
+    'table.idea_id':'कल्पना आयडी','table.title':'शीर्षक','table.submitted_by':'सादर केले',
+    'table.dept':'विभाग','table.impact':'प्रभाव','table.ai_score':'AI स्कोर',
+    'table.engagement':'सहभाग','table.status':'स्थिती','table.date':'दिनांक','table.action':'कृती',
+    'table.timestamp':'वेळ','table.actor':'कर्ता','table.comment_col':'टिप्पणी',
+    'table.event':'घटना','table.pts_awarded':'गुण प्रदान',
+    'table.employee':'कर्मचारी','table.emp_id':'आयडी','table.role':'भूमिका',
+    'table.bu':'व्यवसाय युनिट','table.email_col':'ईमेल',
+    'table.reports_to':'अहवाल देतो','table.points_col':'गुण','table.ideas_col':'कल्पना',
+    'page.audit_title':'सिस्टम ऑडिट ट्रेल',
+    'page.audit_sub':'सर्व वर्कफ्लो क्रियांचा अपरिवर्तनीय लॉग',
+    'audit.proof':'हा लॉग केवळ जोडण्यायोग्य आणि छेडछाड-रोधक आहे. कोणताही रेकॉर्ड संपादित किंवा हटविला जाऊ शकत नाही.',
+    'modal.details':'तपशील','modal.timeline':'टाइमलाइन','modal.attachments':'संलग्नक',
+    'review.decision':'निर्णय','review.comment_label':'टिप्पणी / अभिप्राय',
+    'review.comment_ph':'सादरकर्त्यासाठी पर्यायी टिप्पणी…',
+    'review.to_review':'पुनरावलोकनात हलवा','review.approve':'मंजूर करा',
+    'review.reject':'नाकारा','review.implement':'अंमलात आणले म्हणून चिन्हांकित करा',
+    'admin.tab_overview':'आढावा','admin.tab_ideas':'कल्पना व्यवस्थापन',
+    'admin.tab_users':'वापरकर्ता यादी','admin.tab_system':'सिस्टम',
+    'admin.points_config':'गुण कॉन्फिगरेशन',
+    'admin.event_sub':'कल्पना सादर केली','admin.event_app':'कल्पना मंजूर झाली','admin.event_impl':'कल्पना अंमलात आली',
+    'admin.db_status':'एचआर डेटाबेस सिंक स्थिती',
+    'admin.rescore_desc':'सध्याच्या स्कोरिंग मॉडेलचा वापर करून सर्व विद्यमान कल्पनांचे AI स्कोर पुन्हा गणना करा.',
+    'sa.console':'कमांड सेंटर','sa.signed_in':'म्हणून साइन इन',
+    'sa.tab_overview':'आढावा','sa.tab_hierarchy':'संस्था संरचना',
+    'sa.tab_users':'वापरकर्ता व्यवस्थापन','sa.tab_system':'सिस्टम',
+    'sa.status_dist':'कल्पना स्थिती वितरण','sa.recent':'अलीकडील क्रियाकलाप',
+    'sa.org_tree':'संस्था वृक्ष — प्रशासक → व्यवस्थापक → कर्मचारी',
+    'sa.all_employees':'सर्व कर्मचारी','sa.ai_engine':'AI स्कोरिंग इंजिन',
+    'sa.ai_desc':'सर्व विद्यमान कल्पनांचे AI गुणवत्ता स्कोर पुन्हा गणना करा.',
+    'sa.db_sync':'डेटाबेस आणि एचआर सिंक',
+    'placeholder.search_user':'नाव, ईमेल किंवा आयडीने शोधा…',
+    'pa.overview':'प्लॅटफॉर्म आढावा','pa.private':'केवळ एकत्रित मेट्रिक्स — टेनंट सामग्री खाजगी आहे',
+    'pa.signed_in':'म्हणून साइन इन','pa.all_tenants':'सर्व टेनंट — एकत्रित आकडेवारी',
+    'pa.tenant_hierarchy':'टेनंट संरचना',
+    'pa.hierarchy_sub':'संस्था संरचना — केवळ नावे, भूमिका, विभाग. कोणतीही कल्पना सामग्री नाही.',
+    'pa.user_hierarchy':'वापरकर्ता संरचना',
+    'msg.loading':'लोड होत आहे…','msg.no_ideas':'कोणतीही कल्पना सापडली नाही. तुमची पहिली कल्पना सादर करा!',
+    'msg.no_review':'पुनरावलोकनासाठी कोणतीही कल्पना प्रलंबित नाही.','msg.no_audit':'कोणताही ऑडिट रेकॉर्ड नाही.',
+    'msg.no_leaderboard':'अद्याप कोणते स्कोर नाहीत. रँकिंग पाहण्यासाठी कल्पना सादर करा.',
+    'msg.no_notif':'कोणत्याही सूचना नाहीत','msg.draft_prefix':'मसुदा जतन केला! कल्पना कोड: ',
+    'msg.fill_situation':'कृपया शीर्षक आणि परिस्थिती वर्णन भरा (किमान 20 अक्षरे).',
+    'msg.fill_solution':'कृपया प्रस्तावित उपाय भरा.',
+    'msg.server_error':'सर्व्हर त्रुटी. कृपया पुन्हा प्रयत्न करा.',
+    'msg.fail_dashboard':'डॅशबोर्ड लोड झाला नाही. सर्व्हर चालू आहे का?',
+    'msg.fail_ideas':'कल्पना लोड झाल्या नाहीत.','msg.fail_queue':'पुनरावलोकन रांग लोड झाली नाही.',
+    'msg.fail_audit':'लोड झाले नाही.','msg.fail_leaderboard':'लीडरबोर्ड लोड झाला नाही.',
+    'msg.fail_analytics':'विश्लेषण लोड झाले नाही.',
+    'msg.audit_restricted':'ऑडिट ट्रेल केवळ व्यवस्थापक, प्रशासक आणि कार्यकारी यांच्यासाठी उपलब्ध आहे.',
+    'msg.analytics_restricted':'विश्लेषण केवळ व्यवस्थापक, प्रशासक आणि कार्यकारी यांच्यासाठी उपलब्ध आहे.',
+    'msg.decision_ok':'निर्णय सादर केला','msg.idea_ok':'कल्पना यशस्वीरित्या सादर केली गेली',
+    'pa.active_tenants':'सक्रिय भाडेकरू','pa.total_users':'एकूण वापरकर्ते','pa.ideas_submitted':'सादर केलेल्या कल्पना','msg.rescoring':'पुन्हा स्कोरिंग…',
+  },
+  kn: {
+    'app.name':'ಐಡಿಯಾ ಟೂಲ್',
+    'nav.dashboard':'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್','nav.my_ideas':'ನನ್ನ ಆಲೋಚನೆಗಳು','nav.submit':'ಆಲೋಚನೆ ಸಲ್ಲಿಸಿ',
+    'nav.review':'ವಿಮರ್ಶೆ ಸರದಿ','nav.all_ideas':'ಎಲ್ಲಾ ಆಲೋಚನೆಗಳು','nav.audit':'ಆಡಿಟ್',
+    'nav.leaderboard':'ಲೀಡರ್‌ಬೋರ್ಡ್','nav.analytics':'ವಿಶ್ಲೇಷಣೆ','nav.admin':'ನಿರ್ವಾಹಕ ಫಲಕ',
+    'nav.super_admin':'ಸಂಸ್ಥೆ ಶ್ರೇಣಿ','nav.profile':'ನನ್ನ ಪ್ರೊಫೈಲ್',
+    'section.main':'ಮುಖ್ಯ','section.workflow':'ವರ್ಕ್‌ಫ್ಲೋ','section.insights':'ಒಳನೋಟಗಳು',
+    'section.admin':'ನಿರ್ವಾಹಕ','section.super_admin':'IFQM ಸೂಪರ್ ನಿರ್ವಾಹಕ',
+    'login.app_title':'ಉದ್ಯೋಗಿ ಆಲೋಚನೆ ಸಾಧನ','login.tagline':'ಉತ್ತಮ ಆಲೋಚನೆಗಳನ್ನು ನಿಜವಾದ ಸುಧಾರಣೆಗಳನ್ನಾಗಿ ಮಾಡಿ.',
+    'login.welcome':'ಮರಳಿ ಸ್ವಾಗತ','login.subtitle':'ಮುಂದುವರಿಯಲು ನಿಮ್ಮ IFQM ಖಾತೆಗೆ ಸೈನ್ ಇನ್ ಮಾಡಿ',
+    'login.email':'ಇಮೇಲ್ ವಿಳಾಸ','login.password':'ಪಾಸ್‌ವರ್ಡ್','login.btn':'ಸೈನ್ ಇನ್',
+    'topbar.dark':'ಡಾರ್ಕ್','topbar.light':'ಲೈಟ್','topbar.notifications':'ಅಧಿಸೂಚನೆಗಳು',
+    'topbar.logout':'ಲಾಗ್ ಔಟ್','topbar.mark_read':'ಎಲ್ಲಾ ಓದಿದಂತೆ ಗುರುತಿಸಿ',
+    'dash.total':'ಒಟ್ಟು ಆಲೋಚನೆಗಳು','dash.approved':'ಅನುಮೋದಿಸಲಾಗಿದೆ','dash.implemented':'ಅನುಷ್ಠಾನಗೊಳಿಸಲಾಗಿದೆ',
+    'dash.status_dist':'ಸ್ಥಿತಿ ವಿತರಣೆ','dash.recent':'ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ',
+    'status.submitted':'ಸಲ್ಲಿಸಲಾಗಿದೆ','status.review':'ವಿಮರ್ಶೆಯಲ್ಲಿದೆ','status.approved':'ಅನುಮೋದಿಸಲಾಗಿದೆ',
+    'status.rejected':'ತಿರಸ್ಕರಿಸಲಾಗಿದೆ','status.implemented':'ಅನುಷ್ಠಾನಗೊಳಿಸಲಾಗಿದೆ','status.draft':'ಕರಡು',
+    'idea.view':'ನೋಡಿ','idea.review':'ವಿಮರ್ಶೆ','idea.votes':'ಮತಗಳು',
+    'vote.title':'ಸಮುದಾಯ ರೇಟಿಂಗ್','vote.your_rating':'ನಿಮ್ಮ ರೇಟಿಂಗ್','vote.avg':'ಸರಾಸರಿ',
+    'vote.engagement_idx':'ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ ಸೂಚ್ಯಂಕ','vote.submit':'ರೇಟಿಂಗ್ ಸಲ್ಲಿಸಿ',
+    'form.save_draft':'ಕರಡು ಉಳಿಸಿ','form.next':'ಮುಂದೆ','form.back':'ಹಿಂದೆ','form.submit_idea':'ಹೊಸ ಆಲೋಚನೆ ಸಲ್ಲಿಸಿ',
+    'detail.submitted_by':'ಸಲ್ಲಿಸಿದವರು','detail.situation':'ಪ್ರಸ್ತುತ ಪರಿಸ್ಥಿತಿ','detail.solution':'ಪ್ರಸ್ತಾವಿತ ಪರಿಹಾರ',
+    'detail.ai_eval':'AI ಮೌಲ್ಯಮಾಪನ','detail.score':'ಸ್ಕೋರ್','detail.close':'ಮುಚ್ಚಿ',
+    'lb.individual':'ವೈಯಕ್ತಿಕ ಶ್ರೇಣಿ','lb.dept':'ವಿಭಾಗ ಶ್ರೇಣಿ','lb.top_ideas':'ಅಗ್ರ ಸ್ಕೋರ್ ಆಲೋಚನೆಗಳು',
+    'lb.points':'ಅಂಕಗಳು','lb.ideas':'ಆಲೋಚನೆಗಳು','lb.avg_score':'ಸರಾಸರಿ ಸ್ಕೋರ್','lb.engagement':'ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ',
+    'lb.all_time':'ಸರ್ವಕಾಲಿಕ','lb.monthly':'ಮಾಸಿಕ','lb.quarterly':'ತ್ರೈಮಾಸಿಕ','lb.yearly':'ವಾರ್ಷಿಕ',
+    'profile.title':'ಉದ್ಯೋಗಿ ಪ್ರೊಫೈಲ್','profile.stats':'ನನ್ನ ಅಂಕಿ-ಅಂಶಗಳು',
+    'profile.dept':'ವಿಭಾಗ','profile.email_lbl':'ಇಮೇಲ್','profile.phone':'ಫೋನ್',
+    'profile.reports_to':'ವರದಿ ಮಾಡುತ್ತಾರೆ','profile.bu':'ವ್ಯವಹಾರ ಘಟಕ','profile.loc':'ಸ್ಥಳ',
+    'profile.hr_note':'HR ಡೇಟಾಬೇಸ್‌ನಿಂದ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಪಡೆಯಲಾಗಿದೆ. ಅಪ್‌ಡೇಟ್ ಗಾಗಿ ಅಡ್ಮಿನ್ ಅನ್ನು ಸಂಪರ್ಕಿಸಿ.',
+    'profile.total_pts':'ಒಟ್ಟು ಅಂಕಗಳು',
+    'btn.new_idea':'ಹೊಸ ಆಲೋಚನೆ','btn.close':'ಮುಚ್ಚಿ','btn.cancel':'ರದ್ದುಮಾಡಿ',
+    'btn.submit_decision':'ನಿರ್ಧಾರ ಸಲ್ಲಿಸಿ','btn.view_my_ideas':'ನನ್ನ ಆಲೋಚನೆಗಳನ್ನು ನೋಡಿ',
+    'btn.rescore_all':'ಎಲ್ಲಾ ಆಲೋಚನೆಗಳನ್ನು ಮರು-ಸ್ಕೋರ್ ಮಾಡಿ','btn.back_tenants':'← ಎಲ್ಲಾ ಟೆನೆಂಟ್‌ಗಳು',
+    'page.my_ideas_sub':'ನೀವು ಸಲ್ಲಿಸಿದ ಎಲ್ಲಾ ಆಲೋಚನೆಗಳನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ',
+    'placeholder.search_ideas':'ಆಲೋಚನೆಗಳನ್ನು ಹುಡುಕಿ...','filter.all_status':'ಎಲ್ಲಾ ಸ್ಥಿತಿ',
+    'page.submit_sub':'ನಿಮ್ಮ ಸುಧಾರಣಾ ಆಲೋಚನೆ ಸಲ್ಲಿಸಲು ಎಲ್ಲಾ ಹಂತಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ',
+    'wizard.step1':'ಪರಿಸ್ಥಿತಿ','wizard.step2':'ಪರಿಹಾರ','wizard.step3':'ಪ್ರಭಾವ',
+    'wizard.step4':'ಸಹ-ಸೂಚಕರು','wizard.step5':'ಪರಿಶೀಲನೆ ಮತ್ತು ಸಲ್ಲಿಕೆ',
+    'step1.heading':'ಹಂತ 1: ಪ್ರಸ್ತುತ ಪರಿಸ್ಥಿತಿಯನ್ನು ವಿವರಿಸಿ',
+    'step1.title_label':'ಪರಿಸ್ಥಿತಿ ಶೀರ್ಷಿಕೆ','step1.title_ph':'ನಿಮ್ಮ ಆಲೋಚನೆಗೆ ಸಂಕ್ಷಿಪ್ತ ಶೀರ್ಷಿಕೆ',
+    'step1.desc_label':'ಪ್ರಸ್ತುತ ಪರಿಸ್ಥಿತಿ ವಿವರಣೆ',
+    'step1.desc_ph':'ಪ್ರಸ್ತುತ ಸಮಸ್ಯೆ ಅಥವಾ ಅಕಾರ್ಯಕ್ಷಮತೆಯನ್ನು ವಿವರವಾಗಿ ವಿವರಿಸಿ (ಕನಿಷ್ಠ 50 ಅಕ್ಷರಗಳು)…',
+    'step1.doc_label':'ಸಹಾಯಕ ದಾಖಲೆ (ಐಚ್ಛಿಕ)',
+    'step1.upload':'ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ ಅಥವಾ ಎಳೆದು ಬಿಡಿ',
+    'step1.upload_types':'PDF, PNG, JPG, XLSX — ಗರಿಷ್ಠ 10 MB',
+    'step2.heading':'ಹಂತ 2: ಪ್ರಸ್ತಾವಿತ ಆಲೋಚನೆ / ಪರಿಹಾರ',
+    'step2.label':'ಪ್ರಸ್ತಾವಿತ ಪರಿಹಾರ','step2.ph':'ನಿಮ್ಮ ಪ್ರಸ್ತಾವಿತ ಸುಧಾರಣೆಯನ್ನು ವಿವರವಾಗಿ ವಿವರಿಸಿ…',
+    'step3.heading':'ಹಂತ 3: ಪ್ರಭಾವ ಕ್ಷೇತ್ರಗಳು ಮತ್ತು ಅಳೆಯಬಹುದಾದ ಪ್ರಯೋಜನಗಳು',
+    'step3.impact_label':'ಪ್ರಭಾವ ಕ್ಷೇತ್ರಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ','step3.impact_sub':'(ಎಲ್ಲಾ ಅನ್ವಯಿಸುವ ಆಯ್ಕೆಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ)',
+    'step3.level':'ಒಟ್ಟಾರೆ ಪ್ರಭಾವ ಮಟ್ಟ',
+    'step3.tangible_label':'ಮೂರ್ತ ಪ್ರಯೋಜನ (ಐಚ್ಛಿಕ)','step3.tangible_ph':'ಉದಾ. ₹50,000 ಉಳಿತಾಯ/ವರ್ಷ',
+    'step3.intangible_label':'ಅಮೂರ್ತ ಪ್ರಯೋಜನಗಳು (ಐಚ್ಛಿಕ)',
+    'step3.intangible_ph':'ಉದಾ. ಕೆಲಸಗಾರರ ಆತ್ಮವಿಶ್ವಾಸ ಸುಧಾರಿಸುವುದು',
+    'step4.heading':'ಹಂತ 4: ಸಹ-ಸೂಚಕರು (ಐಚ್ಛಿಕ, ಗರಿಷ್ಠ 2)',
+    'step4.co1':'ಸಹ-ಸೂಚಕ 1','step4.co2':'ಸಹ-ಸೂಚಕ 2','step4.co_ph':'ಹೆಸರು ಅಥವಾ ಉದ್ಯೋಗಿ ID ಯಿಂದ ಹುಡುಕಿ…',
+    'step5.heading':'ಹಂತ 5: ಪರಿಶೀಲನೆ ಮತ್ತು ಸಲ್ಲಿಕೆ',
+    'step5.note':'ಸಲ್ಲಿಸುವ ಮೂಲಕ ನೀವು ಈ ಆಲೋಚನೆ ಮೂಲವಾದುದು ಎಂದು ದೃಢಪಡಿಸುತ್ತೀರಿ. ಸಲ್ಲಿಸಿದ ನಂತರ +10 ಅಂಕಗಳು ಸಿಗುತ್ತವೆ.',
+    'impact.production':'ಉತ್ಪಾದನೆ','impact.quality':'ಗುಣಮಟ್ಟ','impact.cost':'ವೆಚ್ಚ',
+    'impact.delivery':'ವಿತರಣೆ','impact.safety':'ಸುರಕ್ಷತೆ','impact.environment':'ಪರಿಸರ',
+    'impact.morale':'ಮನೋಬಲ','impact.low':'ಕಡಿಮೆ','impact.medium':'ಮಧ್ಯಮ','impact.high':'ಹೆಚ್ಚು',
+    'page.review_sub':'ನಿಮ್ಮ ಪರಿಶೀಲನೆಗಾಗಿ ಬಾಕಿ ಇರುವ ಆಲೋಚನೆಗಳು — AI ಗುಣಮಟ್ಟ ಸ್ಕೋರ್ ಪ್ರಕಾರ ವಿಂಗಡಿಸಲಾಗಿದೆ',
+    'placeholder.search':'ಹುಡುಕಿ…','filter.all_impact':'ಎಲ್ಲಾ ಪ್ರಭಾವ',
+    'table.idea_id':'ಆಲೋಚನೆ ID','table.title':'ಶೀರ್ಷಿಕೆ','table.submitted_by':'ಸಲ್ಲಿಸಿದವರು',
+    'table.dept':'ವಿಭಾಗ','table.impact':'ಪ್ರಭಾವ','table.ai_score':'AI ಸ್ಕೋರ್',
+    'table.engagement':'ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ','table.status':'ಸ್ಥಿತಿ','table.date':'ದಿನಾಂಕ','table.action':'ಕ್ರಿಯೆ',
+    'table.timestamp':'ಸಮಯ','table.actor':'ಕರ್ತೃ','table.comment_col':'ಟಿಪ್ಪಣಿ',
+    'table.event':'ಘಟನೆ','table.pts_awarded':'ಅಂಕಗಳು ನೀಡಲಾಯಿತು',
+    'table.employee':'ಉದ್ಯೋಗಿ','table.emp_id':'ID','table.role':'ಪಾತ್ರ',
+    'table.bu':'ವ್ಯವಹಾರ ಘಟಕ','table.email_col':'ಇಮೇಲ್',
+    'table.reports_to':'ವರದಿ ಮಾಡುತ್ತಾರೆ','table.points_col':'ಅಂಕಗಳು','table.ideas_col':'ಆಲೋಚನೆಗಳು',
+    'page.audit_title':'ಸಿಸ್ಟಂ ಆಡಿಟ್ ಟ್ರೇಲ್',
+    'page.audit_sub':'ಎಲ್ಲಾ ವರ್ಕ್‌ಫ್ಲೋ ಕ್ರಿಯೆಗಳ ಬದಲಾಯಿಸಲಾಗದ ಲಾಗ್',
+    'audit.proof':'ಈ ಲಾಗ್ ಕೇವಲ-ಸೇರ್ಪಡೆ ಮತ್ತು ತಿರಸ್ಕರಣ-ನಿರೋಧಕ. ಯಾವುದೇ ದಾಖಲೆ ಸಂಪಾದಿಸಲು ಅಥವಾ ಅಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.',
+    'modal.details':'ವಿವರಗಳು','modal.timeline':'ಟೈಮ್‌ಲೈನ್','modal.attachments':'ಲಗತ್ತುಗಳು',
+    'review.decision':'ನಿರ್ಧಾರ','review.comment_label':'ಟಿಪ್ಪಣಿ / ಪ್ರತಿಕ್ರಿಯೆ',
+    'review.comment_ph':'ಸಲ್ಲಿಸಿದವರಿಗೆ ಐಚ್ಛಿಕ ಟಿಪ್ಪಣಿಗಳು…',
+    'review.to_review':'ಪರಿಶೀಲನೆಯಲ್ಲಿ ಸರಿಸಿ','review.approve':'ಅನುಮೋದಿಸಿ',
+    'review.reject':'ತಿರಸ್ಕರಿಸಿ','review.implement':'ಅನುಷ್ಠಾನಗೊಂಡಿದೆ ಎಂದು ಗುರುತಿಸಿ',
+    'admin.tab_overview':'ಅವಲೋಕನ','admin.tab_ideas':'ಆಲೋಚನೆ ನಿರ್ವಹಣೆ',
+    'admin.tab_users':'ಬಳಕೆದಾರ ಪಟ್ಟಿ','admin.tab_system':'ಸಿಸ್ಟಂ',
+    'admin.points_config':'ಅಂಕ ಸಂರಚನೆ',
+    'admin.event_sub':'ಆಲೋಚನೆ ಸಲ್ಲಿಸಲಾಯಿತು','admin.event_app':'ಆಲೋಚನೆ ಅನುಮೋದಿಸಲಾಯಿತು','admin.event_impl':'ಆಲೋಚನೆ ಅನುಷ್ಠಾನಗೊಂಡಿತು',
+    'admin.db_status':'HR ಡೇಟಾಬೇಸ್ ಸಿಂಕ್ ಸ್ಥಿತಿ',
+    'admin.rescore_desc':'ಪ್ರಸ್ತುತ ಸ್ಕೋರಿಂಗ್ ಮಾದರಿ ಬಳಸಿ ಎಲ್ಲಾ ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಆಲೋಚನೆಗಳ AI ಸ್ಕೋರ್ ಮರು-ಲೆಕ್ಕಾಚಾರ ಮಾಡಿ.',
+    'sa.console':'ಕಮಾಂಡ್ ಸೆಂಟರ್','sa.signed_in':'ಎಂದು ಸೈನ್ ಇನ್',
+    'sa.tab_overview':'ಅವಲೋಕನ','sa.tab_hierarchy':'ಸಂಸ್ಥೆ ಶ್ರೇಣಿ',
+    'sa.tab_users':'ಬಳಕೆದಾರ ನಿರ್ವಹಣೆ','sa.tab_system':'ಸಿಸ್ಟಂ',
+    'sa.status_dist':'ಆಲೋಚನೆ ಸ್ಥಿತಿ ವಿತರಣೆ','sa.recent':'ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ',
+    'sa.org_tree':'ಸಂಘಟನೆ ವೃಕ್ಷ — ಅಡ್ಮಿನ್ → ಮ್ಯಾನೇಜರ್ → ಉದ್ಯೋಗಿ',
+    'sa.all_employees':'ಎಲ್ಲಾ ಉದ್ಯೋಗಿಗಳು','sa.ai_engine':'AI ಸ್ಕೋರಿಂಗ್ ಎಂಜಿನ್',
+    'sa.ai_desc':'ಎಲ್ಲಾ ಅಸ್ತಿತ್ವದಲ್ಲಿರುವ ಆಲೋಚನೆಗಳ AI ಗುಣಮಟ್ಟ ಸ್ಕೋರ್ ಮರು-ಲೆಕ್ಕಾಚಾರ ಮಾಡಿ.',
+    'sa.db_sync':'ಡೇಟಾಬೇಸ್ ಮತ್ತು HR ಸಿಂಕ್',
+    'placeholder.search_user':'ಹೆಸರು, ಇಮೇಲ್ ಅಥವಾ ID ಯಿಂದ ಹುಡುಕಿ…',
+    'pa.overview':'ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಅವಲೋಕನ','pa.private':'ಕೇವಲ ಒಟ್ಟು ಮೆಟ್ರಿಕ್‌ಗಳು — ಟೆನೆಂಟ್ ವಿಷಯ ಖಾಸಗಿ',
+    'pa.signed_in':'ಎಂದು ಸೈನ್ ಇನ್','pa.all_tenants':'ಎಲ್ಲಾ ಟೆನೆಂಟ್‌ಗಳು — ಒಟ್ಟು ಅಂಕಿಅಂಶಗಳು',
+    'pa.tenant_hierarchy':'ಟೆನೆಂಟ್ ಶ್ರೇಣಿ',
+    'pa.hierarchy_sub':'ಸಂಸ್ಥೆ ರಚನೆ — ಹೆಸರುಗಳು, ಪಾತ್ರಗಳು, ವಿಭಾಗಗಳು ಮಾತ್ರ. ಆಲೋಚನೆ ವಿಷಯ ಇಲ್ಲ.',
+    'pa.user_hierarchy':'ಬಳಕೆದಾರ ಶ್ರೇಣಿ',
+    'msg.loading':'ಲೋಡ್ ಆಗುತ್ತಿದೆ…','msg.no_ideas':'ಯಾವುದೇ ಆಲೋಚನೆ ಸಿಗಲಿಲ್ಲ. ನಿಮ್ಮ ಮೊದಲ ಆಲೋಚನೆ ಸಲ್ಲಿಸಿ!',
+    'msg.no_review':'ಪರಿಶೀಲನೆಗಾಗಿ ಯಾವುದೇ ಆಲೋಚನೆ ಬಾಕಿ ಇಲ್ಲ.','msg.no_audit':'ಯಾವುದೇ ಆಡಿಟ್ ದಾಖಲೆ ಇಲ್ಲ.',
+    'msg.no_leaderboard':'ಇನ್ನೂ ಯಾವುದೇ ಸ್ಕೋರ್ ಇಲ್ಲ. ರ್ಯಾಂಕಿಂಗ್ ನೋಡಲು ಆಲೋಚನೆಗಳನ್ನು ಸಲ್ಲಿಸಿ.',
+    'msg.no_notif':'ಯಾವುದೇ ಅಧಿಸೂಚನೆ ಇಲ್ಲ','msg.draft_prefix':'ಡ್ರಾಫ್ಟ್ ಉಳಿಸಲಾಗಿದೆ! ಆಲೋಚನೆ ಕೋಡ್: ',
+    'msg.fill_situation':'ಶೀರ್ಷಿಕೆ ಮತ್ತು ಪರಿಸ್ಥಿತಿ ವಿವರಣೆ ಭರ್ತಿ ಮಾಡಿ (ಕನಿಷ್ಠ 20 ಅಕ್ಷರ).',
+    'msg.fill_solution':'ಪ್ರಸ್ತಾವಿತ ಪರಿಹಾರ ಭರ್ತಿ ಮಾಡಿ.',
+    'msg.server_error':'ಸರ್ವರ್ ದೋಷ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+    'msg.fail_dashboard':'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಲೋಡ್ ಆಗಲಿಲ್ಲ. ಸರ್ವರ್ ಚಾಲನೆಯಲ್ಲಿದೆಯೇ?',
+    'msg.fail_ideas':'ಆಲೋಚನೆಗಳು ಲೋಡ್ ಆಗಲಿಲ್ಲ.','msg.fail_queue':'ಪರಿಶೀಲನೆ ಸಾಲು ಲೋಡ್ ಆಗಲಿಲ್ಲ.',
+    'msg.fail_audit':'ಲೋಡ್ ಆಗಲಿಲ್ಲ.','msg.fail_leaderboard':'ಲೀಡರ್‌ಬೋರ್ಡ್ ಲೋಡ್ ಆಗಲಿಲ್ಲ.',
+    'msg.fail_analytics':'ವಿಶ್ಲೇಷಣೆ ಲೋಡ್ ಆಗಲಿಲ್ಲ.',
+    'msg.audit_restricted':'ಆಡಿಟ್ ಟ್ರೇಲ್ ಕೇವಲ ಮ್ಯಾನೇಜರ್‌ಗಳು, ಅಡ್ಮಿನ್ ಮತ್ತು ಕಾರ್ಯನಿರ್ವಾಹಕರಿಗೆ ಲಭ್ಯ.',
+    'msg.analytics_restricted':'ವಿಶ್ಲೇಷಣೆ ಕೇವಲ ಮ್ಯಾನೇಜರ್‌ಗಳು, ಅಡ್ಮಿನ್ ಮತ್ತು ಕಾರ್ಯನಿರ್ವಾಹಕರಿಗೆ ಲಭ್ಯ.',
+    'msg.decision_ok':'ನಿರ್ಧಾರ ಸಲ್ಲಿಸಲಾಗಿದೆ','msg.idea_ok':'ಆಲೋಚನೆ ಯಶಸ್ವಿಯಾಗಿ ಸಲ್ಲಿಸಲಾಗಿದೆ',
+    'pa.active_tenants':'ಸಕ್ರಿಯ ಟೆನೆಂಟ್‌ಗಳು','pa.total_users':'ಒಟ್ಟು ಬಳಕೆದಾರರು','pa.ideas_submitted':'ಸಲ್ಲಿಸಿದ ಆಲೋಚನೆಗಳು','msg.rescoring':'ಮರು-ಸ್ಕೋರಿಂಗ್…',
+  },
+  te: {
+    'app.name':'ఐడియా టూల్',
+    'nav.dashboard':'డాష్‌బోర్డ్','nav.my_ideas':'నా ఆలోచనలు','nav.submit':'ఆలోచన సమర్పించు',
+    'nav.review':'సమీక్ష క్యూ','nav.all_ideas':'అన్ని ఆలోచనలు','nav.audit':'ఆడిట్',
+    'nav.leaderboard':'లీడర్‌బోర్డ్','nav.analytics':'విశ్లేషణ','nav.admin':'నిర్వాహకుడు',
+    'nav.super_admin':'సంస్థ క్రమానుగతం','nav.profile':'నా ప్రొఫైల్',
+    'section.main':'ప్రధాన','section.workflow':'వర్క్‌ఫ్లో','section.insights':'అంతర్దృష్టులు',
+    'section.admin':'నిర్వాహకుడు','section.super_admin':'IFQM సూపర్ అడ్మిన్',
+    'login.app_title':'ఉద్యోగి ఆలోచన సాధనం','login.tagline':'గొప్ప ఆలోచనలను నిజమైన మెరుగుదలలుగా మార్చండి.',
+    'login.welcome':'మళ్ళీ స్వాగతం','login.subtitle':'కొనసాగించడానికి మీ IFQM ఖాతాకు సైన్ ఇన్ చేయండి',
+    'login.email':'ఇమెయిల్ చిరునామా','login.password':'పాస్‌వర్డ్','login.btn':'సైన్ ఇన్',
+    'topbar.dark':'డార్క్','topbar.light':'లైట్','topbar.notifications':'నోటిఫికేషన్లు',
+    'topbar.logout':'లాగ్ అవుట్','topbar.mark_read':'అన్నీ చదివినట్లు గుర్తించు',
+    'dash.total':'మొత్తం ఆలోచనలు','dash.approved':'అనుమతించబడింది','dash.implemented':'అమలు చేయబడింది',
+    'dash.status_dist':'స్థితి పంపిణీ','dash.recent':'ఇటీవలి కార్యకలాపాలు',
+    'status.submitted':'సమర్పించబడింది','status.review':'సమీక్షలో','status.approved':'అనుమతించబడింది',
+    'status.rejected':'తిరస్కరించబడింది','status.implemented':'అమలు చేయబడింది','status.draft':'ముసాయిదా',
+    'idea.view':'చూడండి','idea.review':'సమీక్ష','idea.votes':'ఓట్లు',
+    'vote.title':'సమాజ రేటింగ్','vote.your_rating':'మీ రేటింగ్','vote.avg':'సగటు',
+    'vote.engagement_idx':'నిమగ్నత సూచిక','vote.submit':'రేటింగ్ సమర్పించు',
+    'form.save_draft':'ముసాయిదా సేవ్ చేయి','form.next':'తదుపరి','form.back':'వెనక్కి','form.submit_idea':'కొత్త ఆలోచన సమర్పించు',
+    'detail.submitted_by':'సమర్పించినవారు','detail.situation':'ప్రస్తుత పరిస్థితి','detail.solution':'ప్రతిపాదిత పరిష్కారం',
+    'detail.ai_eval':'AI మూల్యాంకనం','detail.score':'స్కోరు','detail.close':'మూసివేయి',
+    'lb.individual':'వ్యక్తిగత ర్యాంకింగ్','lb.dept':'విభాగ ర్యాంకింగ్','lb.top_ideas':'అగ్ర స్కోరు ఆలోచనలు',
+    'lb.points':'పాయింట్లు','lb.ideas':'ఆలోచనలు','lb.avg_score':'సగటు స్కోరు','lb.engagement':'నిమగ్నత',
+    'lb.all_time':'సర్వకాలిక','lb.monthly':'నెలవారీ','lb.quarterly':'త్రైమాసిక','lb.yearly':'వార్షిక',
+    'profile.title':'ఉద్యోగి ప్రొఫైల్','profile.stats':'నా గణాంకాలు',
+    'profile.dept':'విభాగం','profile.email_lbl':'ఇమెయిల్','profile.phone':'ఫోన్',
+    'profile.reports_to':'రిపోర్టింగ్ మేనేజర్','profile.bu':'వ్యాపార విభాగం','profile.loc':'స్థానం',
+    'profile.hr_note':'HR డేటాబేస్ నుండి స్వయంచాలకంగా తీసుకోబడింది. అప్‌డేట్ కోసం అడ్మిన్‌ని సంప్రదించండి.',
+    'profile.total_pts':'మొత్తం పాయింట్లు',
+    'btn.new_idea':'కొత్త ఆలోచన','btn.close':'మూసివేయి','btn.cancel':'రద్దు చేయి',
+    'btn.submit_decision':'నిర్ణయం సమర్పించు','btn.view_my_ideas':'నా ఆలోచనలు చూడండి',
+    'btn.rescore_all':'అన్ని ఆలోచనలను మళ్ళీ స్కోర్ చేయి','btn.back_tenants':'← అన్ని టెనెంట్లు',
+    'page.my_ideas_sub':'మీరు సమర్పించిన అన్ని ఆలోచనలను ట్రాక్ చేయండి',
+    'placeholder.search_ideas':'ఆలోచనలు వెతకండి...','filter.all_status':'అన్ని స్థితులు',
+    'page.submit_sub':'మీ మెరుగుదల ఆలోచనను సమర్పించడానికి అన్ని దశలు పూర్తి చేయండి',
+    'wizard.step1':'పరిస్థితి','wizard.step2':'పరిష్కారం','wizard.step3':'ప్రభావం',
+    'wizard.step4':'సహ-సూచికులు','wizard.step5':'సమీక్ష & సమర్పణ',
+    'step1.heading':'దశ 1: ప్రస్తుత పరిస్థితిని వివరించండి',
+    'step1.title_label':'పరిస్థితి శీర్షిక','step1.title_ph':'మీ ఆలోచనకు సంక్షిప్త శీర్షిక',
+    'step1.desc_label':'ప్రస్తుత పరిస్థితి వివరణ',
+    'step1.desc_ph':'ప్రస్తుత సమస్య లేదా అసమర్థతను వివరంగా వివరించండి (కనీసం 50 అక్షరాలు)…',
+    'step1.doc_label':'మద్దతు పత్రం (ఐచ్ఛికం)',
+    'step1.upload':'అప్‌లోడ్ చేయడానికి క్లిక్ చేయండి లేదా డ్రాగ్ చేయండి',
+    'step1.upload_types':'PDF, PNG, JPG, XLSX — గరిష్టం 10 MB',
+    'step2.heading':'దశ 2: ప్రతిపాదిత ఆలోచన / పరిష్కారం',
+    'step2.label':'ప్రతిపాదిత పరిష్కారం','step2.ph':'మీ ప్రతిపాదిత మెరుగుదలను వివరంగా వివరించండి…',
+    'step3.heading':'దశ 3: ప్రభావ ప్రాంతాలు & కొలవగల ప్రయోజనాలు',
+    'step3.impact_label':'ప్రభావ ప్రాంతాలను ఎంచుకోండి','step3.impact_sub':'(వర్తించే అన్నింటినీ ఎంచుకోండి)',
+    'step3.level':'మొత్తం ప్రభావ స్థాయి',
+    'step3.tangible_label':'స్పష్టమైన ప్రయోజనం (ఐచ్ఛికం)','step3.tangible_ph':'ఉదా. ₹50,000 ఆదా/సంవత్సరం',
+    'step3.intangible_label':'అస్పష్టమైన ప్రయోజనాలు (ఐచ్ఛికం)',
+    'step3.intangible_ph':'ఉదా. కార్మికుల ఆత్మవిశ్వాసం మెరుగుపడటం',
+    'step4.heading':'దశ 4: సహ-సూచికులు (ఐచ్ఛికం, గరిష్టం 2)',
+    'step4.co1':'సహ-సూచికుడు 1','step4.co2':'సహ-సూచికుడు 2','step4.co_ph':'పేరు లేదా ఉద్యోగి ID తో వెతకండి…',
+    'step5.heading':'దశ 5: సమీక్ష & సమర్పణ',
+    'step5.note':'సమర్పించడం ద్వారా ఈ ఆలోచన మౌలికమైనదని మీరు నిర్ధారిస్తున్నారు. సమర్పించిన తర్వాత +10 పాయింట్లు లభిస్తాయి.',
+    'impact.production':'ఉత్పత్తి','impact.quality':'నాణ్యత','impact.cost':'వ్యయం',
+    'impact.delivery':'డెలివరీ','impact.safety':'భద్రత','impact.environment':'పర్యావరణం',
+    'impact.morale':'మనోబలం','impact.low':'తక్కువ','impact.medium':'మధ్యమం','impact.high':'అధికం',
+    'page.review_sub':'మీ సమీక్షకు పెండింగ్‌లో ఉన్న ఆలోచనలు — AI నాణ్యత స్కోరు ప్రకారం క్రమీకరించబడింది',
+    'placeholder.search':'వెతకండి…','filter.all_impact':'అన్ని ప్రభావాలు',
+    'table.idea_id':'ఆలోచన ID','table.title':'శీర్షిక','table.submitted_by':'సమర్పించినవారు',
+    'table.dept':'విభాగం','table.impact':'ప్రభావం','table.ai_score':'AI స్కోరు',
+    'table.engagement':'నిమగ్నత','table.status':'స్థితి','table.date':'తేదీ','table.action':'చర్య',
+    'table.timestamp':'సమయం','table.actor':'నటుడు','table.comment_col':'వ్యాఖ్య',
+    'table.event':'సంఘటన','table.pts_awarded':'పాయింట్లు మంజూరు',
+    'table.employee':'ఉద్యోగి','table.emp_id':'ID','table.role':'పాత్ర',
+    'table.bu':'వ్యాపార విభాగం','table.email_col':'ఇమెయిల్',
+    'table.reports_to':'రిపోర్ట్ చేస్తారు','table.points_col':'పాయింట్లు','table.ideas_col':'ఆలోచనలు',
+    'page.audit_title':'సిస్టమ్ ఆడిట్ ట్రెయిల్',
+    'page.audit_sub':'అన్ని వర్క్‌ఫ్లో చర్యల మార్చలేని లాగ్',
+    'audit.proof':'ఈ లాగ్ కేవలం జోడింపు మాత్రమే మరియు తారుమారు-నిరోధక. ఏ రికార్డూ సవరించడం లేదా తొలగించడం సాధ్యం కాదు.',
+    'modal.details':'వివరాలు','modal.timeline':'టైమ్‌లైన్','modal.attachments':'జోడింపులు',
+    'review.decision':'నిర్ణయం','review.comment_label':'వ్యాఖ్య / అభిప్రాయం',
+    'review.comment_ph':'సమర్పించినవారికి ఐచ్ఛిక వ్యాఖ్యలు…',
+    'review.to_review':'సమీక్షలో ఉంచు','review.approve':'అనుమతించు',
+    'review.reject':'తిరస్కరించు','review.implement':'అమలు చేయబడిందిగా గుర్తించు',
+    'admin.tab_overview':'అవలోకనం','admin.tab_ideas':'ఆలోచన నిర్వహణ',
+    'admin.tab_users':'వినియోగదారు జాబితా','admin.tab_system':'సిస్టమ్',
+    'admin.points_config':'పాయింట్ కాన్ఫిగరేషన్',
+    'admin.event_sub':'ఆలోచన సమర్పించబడింది','admin.event_app':'ఆలోచన అనుమతించబడింది','admin.event_impl':'ఆలోచన అమలు చేయబడింది',
+    'admin.db_status':'HR డేటాబేస్ సమకాలీకరణ స్థితి',
+    'admin.rescore_desc':'ప్రస్తుత స్కోరింగ్ మోడల్ ఉపయోగించి అన్ని ఉన్న ఆలోచనల AI స్కోర్‌లను మళ్ళీ గణించండి.',
+    'sa.console':'కమాండ్ సెంటర్','sa.signed_in':'గా సైన్ ఇన్',
+    'sa.tab_overview':'అవలోకనం','sa.tab_hierarchy':'సంస్థ నిర్మాణం',
+    'sa.tab_users':'వినియోగదారు నిర్వహణ','sa.tab_system':'సిస్టమ్',
+    'sa.status_dist':'ఆలోచన స్థితి వితరణ','sa.recent':'ఇటీవలి కార్యకలాపాలు',
+    'sa.org_tree':'సంస్థ వృక్షం — అడ్మిన్ → మేనేజర్ → ఉద్యోగి',
+    'sa.all_employees':'అందరు ఉద్యోగులు','sa.ai_engine':'AI స్కోరింగ్ ఇంజన్',
+    'sa.ai_desc':'అన్ని ఉన్న ఆలోచనల AI నాణ్యత స్కోర్‌లను మళ్ళీ గణించండి.',
+    'sa.db_sync':'డేటాబేస్ & HR సమకాలీకరణ',
+    'placeholder.search_user':'పేరు, ఇమెయిల్ లేదా ID తో వెతకండి…',
+    'pa.overview':'ప్లాట్‌ఫారమ్ అవలోకనం','pa.private':'కేవలం మొత్తం మెట్రిక్‌లు — టెనెంట్ కంటెంట్ ప్రైవేట్',
+    'pa.signed_in':'గా సైన్ ఇన్','pa.all_tenants':'అన్ని టెనెంట్లు — మొత్తం గణాంకాలు',
+    'pa.tenant_hierarchy':'టెనెంట్ నిర్మాణం',
+    'pa.hierarchy_sub':'సంస్థ నిర్మాణం — పేర్లు, పాత్రలు, విభాగాలు మాత్రమే. ఆలోచన కంటెంట్ లేదు.',
+    'pa.user_hierarchy':'వినియోగదారు నిర్మాణం',
+    'msg.loading':'లోడ్ అవుతోంది…','msg.no_ideas':'ఆలోచనలు కనుగొనబడలేదు. మీ మొదటి ఆలోచనను సమర్పించండి!',
+    'msg.no_review':'సమీక్షకు పెండింగ్‌లో ఆలోచనలు లేవు.','msg.no_audit':'ఆడిట్ రికార్డులు లేవు.',
+    'msg.no_leaderboard':'ఇంకా స్కోర్‌లు లేవు. ర్యాంకింగ్‌లు చూడటానికి ఆలోచనలు సమర్పించండి.',
+    'msg.no_notif':'నోటిఫికేషన్లు లేవు','msg.draft_prefix':'డ్రాఫ్ట్ సేవ్ చేయబడింది! ఆలోచన కోడ్: ',
+    'msg.fill_situation':'శీర్షిక మరియు పరిస్థితి వివరణ నింపండి (కనీసం 20 అక్షరాలు).',
+    'msg.fill_solution':'ప్రతిపాదిత పరిష్కారాన్ని నింపండి.',
+    'msg.server_error':'సర్వర్ లోపం. దయచేసి మళ్ళీ ప్రయత్నించండి.',
+    'msg.fail_dashboard':'డాష్‌బోర్డ్ లోడ్ కాలేదు. సర్వర్ నడుస్తుందా?',
+    'msg.fail_ideas':'ఆలోచనలు లోడ్ కాలేదు.','msg.fail_queue':'సమీక్ష క్యూ లోడ్ కాలేదు.',
+    'msg.fail_audit':'లోడ్ కాలేదు.','msg.fail_leaderboard':'లీడర్‌బోర్డ్ లోడ్ కాలేదు.',
+    'msg.fail_analytics':'విశ్లేషణ లోడ్ కాలేదు.',
+    'msg.audit_restricted':'ఆడిట్ ట్రెయిల్ కేవలం మేనేజర్లు, అడ్మిన్లు మరియు ఎగ్జిక్యూటివ్‌లకు మాత్రమే అందుబాటులో ఉంటుంది.',
+    'msg.analytics_restricted':'విశ్లేషణ కేవలం మేనేజర్లు, అడ్మిన్లు మరియు ఎగ్జిక్యూటివ్‌లకు మాత్రమే అందుబాటులో ఉంటుంది.',
+    'msg.decision_ok':'నిర్ణయం సమర్పించబడింది','msg.idea_ok':'ఆలోచన విజయవంతంగా సమర్పించబడింది',
+    'pa.active_tenants':'యాక్టివ్ టెనెంట్‌లు','pa.total_users':'మొత్తం వినియోగదారులు','pa.ideas_submitted':'సమర్పించిన ఆలోచనలు','msg.rescoring':'మళ్ళీ స్కోరింగ్…',
+  },
+  ta: {
+    'app.name':'ஐடியா டூல்',
+    'nav.dashboard':'டாஷ்போர்டு','nav.my_ideas':'என் யோசனைகள்','nav.submit':'யோசனை சமர்ப்பி',
+    'nav.review':'மறுஆய்வு வரிசை','nav.all_ideas':'அனைத்து யோசனைகள்','nav.audit':'தணிக்கை',
+    'nav.leaderboard':'தலைமை பலகை','nav.analytics':'பகுப்பாய்வு','nav.admin':'நிர்வாகி பலகை',
+    'nav.super_admin':'நிறுவன படிநிலை','nav.profile':'என் சுயவிவரம்',
+    'section.main':'முக்கிய','section.workflow':'பணிப்பாய்வு','section.insights':'நுண்ணறிவுகள்',
+    'section.admin':'நிர்வாகி','section.super_admin':'IFQM சூப்பர் அட்மின்',
+    'login.app_title':'ஊழியர் யோசனை கருவி','login.tagline':'சிறந்த யோசனைகளை உண்மையான முன்னேற்றங்களாக மாற்றுங்கள்.',
+    'login.welcome':'மீண்டும் வரவேற்கிறோம்','login.subtitle':'தொடர உங்கள் IFQM கணக்கில் உள்நுழைக',
+    'login.email':'மின்னஞ்சல் முகவரி','login.password':'கடவுச்சொல்','login.btn':'உள்நுழை',
+    'topbar.dark':'இருள்','topbar.light':'ஒளி','topbar.notifications':'அறிவிப்புகள்',
+    'topbar.logout':'வெளியேறு','topbar.mark_read':'அனைத்தையும் படித்ததாக குறி',
+    'dash.total':'மொத்த யோசனைகள்','dash.approved':'அங்கீகரிக்கப்பட்டவை','dash.implemented':'செயல்படுத்தப்பட்டவை',
+    'dash.status_dist':'நிலை விநியோகம்','dash.recent':'சமீபத்திய செயல்பாடு',
+    'status.submitted':'சமர்ப்பிக்கப்பட்டது','status.review':'மறுஆய்வில்','status.approved':'அங்கீகரிக்கப்பட்டது',
+    'status.rejected':'நிராகரிக்கப்பட்டது','status.implemented':'செயல்படுத்தப்பட்டது','status.draft':'வரைவு',
+    'idea.view':'பார்க்க','idea.review':'மறுஆய்வு','idea.votes':'வாக்குகள்',
+    'vote.title':'சமூக மதிப்பீடு','vote.your_rating':'உங்கள் மதிப்பீடு','vote.avg':'சராசரி',
+    'vote.engagement_idx':'ஈடுபாட்டு குறியீடு','vote.submit':'மதிப்பீடு சமர்ப்பி',
+    'form.save_draft':'வரைவு சேமி','form.next':'அடுத்து','form.back':'பின்','form.submit_idea':'புதிய யோசனை சமர்ப்பி',
+    'detail.submitted_by':'சமர்ப்பித்தவர்','detail.situation':'தற்போதைய நிலை','detail.solution':'முன்மொழியப்பட்ட தீர்வு',
+    'detail.ai_eval':'AI மதிப்பீடு','detail.score':'மதிப்பெண்','detail.close':'மூடு',
+    'lb.individual':'தனிப்பட்ட தரவரிசை','lb.dept':'துறை தரவரிசை','lb.top_ideas':'சிறந்த மதிப்பெண் யோசனைகள்',
+    'lb.points':'புள்ளிகள்','lb.ideas':'யோசனைகள்','lb.avg_score':'சராசரி மதிப்பெண்','lb.engagement':'ஈடுபாடு',
+    'lb.all_time':'எல்லா காலமும்','lb.monthly':'மாதாந்திர','lb.quarterly':'காலாண்டு','lb.yearly':'வருடாந்திர',
+    'profile.title':'ஊழியர் சுயவிவரம்','profile.stats':'என் புள்ளிவிவரங்கள்',
+    'profile.dept':'துறை','profile.email_lbl':'மின்னஞ்சல்','profile.phone':'தொலைபேசி',
+    'profile.reports_to':'அறிக்கை மேலாளர்','profile.bu':'வணிக பிரிவு','profile.loc':'இடம்',
+    'profile.hr_note':'HR தரவுத்தளத்திலிருந்து தானாக பெறப்பட்டது. புதுப்பிக்க நிர்வாகியை தொடர்பு கொள்ளுங்கள்.',
+    'profile.total_pts':'மொத்த புள்ளிகள்',
+    'btn.new_idea':'புதிய யோசனை','btn.close':'மூடு','btn.cancel':'ரத்து செய்',
+    'btn.submit_decision':'முடிவு சமர்ப்பி','btn.view_my_ideas':'என் யோசனைகளை பார்',
+    'btn.rescore_all':'அனைத்து யோசனைகளையும் மீண்டும் மதிப்பிடு','btn.back_tenants':'← அனைத்து குத்தகைதாரர்கள்',
+    'page.my_ideas_sub':'நீங்கள் சமர்ப்பித்த அனைத்து யோசனைகளையும் கண்காணிக்கவும்',
+    'placeholder.search_ideas':'யோசனைகளை தேடு...','filter.all_status':'அனைத்து நிலைகள்',
+    'page.submit_sub':'உங்கள் மேம்பாட்டு யோசனையை சமர்ப்பிக்க அனைத்து படிகளையும் நிரப்பவும்',
+    'wizard.step1':'நிலைமை','wizard.step2':'தீர்வு','wizard.step3':'தாக்கம்',
+    'wizard.step4':'சக-பரிந்துரைப்பாளர்கள்','wizard.step5':'மதிப்பாய்வு & சமர்ப்பணம்',
+    'step1.heading':'படி 1: தற்போதைய நிலைமையை விவரிக்கவும்',
+    'step1.title_label':'நிலைமை தலைப்பு','step1.title_ph':'உங்கள் யோசனைக்கு சுருக்கமான தலைப்பு',
+    'step1.desc_label':'தற்போதைய நிலைமை விவரிப்பு',
+    'step1.desc_ph':'தற்போதைய பிரச்சனை அல்லது திறமையின்மையை விரிவாக விவரிக்கவும் (குறைந்தது 50 எழுத்துக்கள்)…',
+    'step1.doc_label':'ஆதார ஆவணம் (விருப்பம்)',
+    'step1.upload':'பதிவேற்ற கிளிக் செய்யவும் அல்லது இழுத்து விடவும்',
+    'step1.upload_types':'PDF, PNG, JPG, XLSX — அதிகபட்சம் 10 MB',
+    'step2.heading':'படி 2: முன்மொழியப்பட்ட யோசனை / தீர்வு',
+    'step2.label':'முன்மொழியப்பட்ட தீர்வு','step2.ph':'உங்கள் முன்மொழியப்பட்ட மேம்பாட்டை விரிவாக விவரிக்கவும்…',
+    'step3.heading':'படி 3: தாக்கப் பகுதிகள் & அளவிடக்கூடிய நன்மைகள்',
+    'step3.impact_label':'தாக்கப் பகுதிகளை தேர்ந்தெடுக்கவும்','step3.impact_sub':'(பொருந்தும் அனைத்தையும் தேர்ந்தெடுக்கவும்)',
+    'step3.level':'ஒட்டுமொத்த தாக்க நிலை',
+    'step3.tangible_label':'உறுதியான நன்மை (விருப்பம்)','step3.tangible_ph':'எ.கா. ₹50,000 சேமிப்பு/ஆண்டு',
+    'step3.intangible_label':'அருவமான நன்மைகள் (விருப்பம்)',
+    'step3.intangible_ph':'எ.கா. தொழிலாளர் நம்பிக்கையை மேம்படுத்துவது',
+    'step4.heading':'படி 4: சக-பரிந்துரைப்பாளர்கள் (விருப்பம், அதிகபட்சம் 2)',
+    'step4.co1':'சக-பரிந்துரைப்பாளர் 1','step4.co2':'சக-பரிந்துரைப்பாளர் 2',
+    'step4.co_ph':'பெயர் அல்லது ஊழியர் ID மூலம் தேடு…',
+    'step5.heading':'படி 5: மதிப்பாய்வு & சமர்ப்பணம்',
+    'step5.note':'சமர்ப்பிப்பதன் மூலம் இந்த யோசனை அசல் என்று உறுதிப்படுத்துகிறீர்கள். சமர்ப்பித்தால் +10 புள்ளிகள் கிடைக்கும்.',
+    'impact.production':'உற்பத்தி','impact.quality':'தரம்','impact.cost':'செலவு',
+    'impact.delivery':'டெலிவரி','impact.safety':'பாதுகாப்பு','impact.environment':'சுற்றுச்சூழல்',
+    'impact.morale':'மன உறுதி','impact.low':'குறைவு','impact.medium':'நடுத்தரம்','impact.high':'அதிகம்',
+    'page.review_sub':'உங்கள் மதிப்பாய்வுக்காக நிலுவையில் உள்ள யோசனைகள் — AI தர மதிப்பெண் வரிசையில்',
+    'placeholder.search':'தேடு…','filter.all_impact':'அனைத்து தாக்கங்கள்',
+    'table.idea_id':'யோசனை ID','table.title':'தலைப்பு','table.submitted_by':'சமர்ப்பித்தவர்',
+    'table.dept':'துறை','table.impact':'தாக்கம்','table.ai_score':'AI மதிப்பெண்',
+    'table.engagement':'ஈடுபாடு','table.status':'நிலை','table.date':'தேதி','table.action':'செயல்',
+    'table.timestamp':'நேரம்','table.actor':'நடிகர்','table.comment_col':'கருத்து',
+    'table.event':'நிகழ்வு','table.pts_awarded':'புள்ளிகள் வழங்கப்பட்டது',
+    'table.employee':'ஊழியர்','table.emp_id':'ID','table.role':'பதவி',
+    'table.bu':'வணிக பிரிவு','table.email_col':'மின்னஞ்சல்',
+    'table.reports_to':'அறிக்கை செய்கிறார்','table.points_col':'புள்ளிகள்','table.ideas_col':'யோசனைகள்',
+    'page.audit_title':'கணினி தணிக்கை பாதை',
+    'page.audit_sub':'அனைத்து பணிப்பாய்வு செயல்களின் மாற்ற முடியாத பதிவு',
+    'audit.proof':'இந்த பதிவு சேர்க்கை மட்டுமே மற்றும் சேதப்படுத்த முடியாதது. எந்த பதிவையும் திருத்தவோ நீக்கவோ முடியாது.',
+    'modal.details':'விவரங்கள்','modal.timeline':'காலவரிசை','modal.attachments':'இணைப்புகள்',
+    'review.decision':'முடிவு','review.comment_label':'கருத்து / பின்னூட்டம்',
+    'review.comment_ph':'சமர்ப்பிப்பாளருக்கு விருப்பமான கருத்துகள்…',
+    'review.to_review':'மதிப்பாய்வில் நகர்த்து','review.approve':'அங்கீகரிக்கவும்',
+    'review.reject':'நிராகரிக்கவும்','review.implement':'செயல்படுத்தப்பட்டதாக குறி',
+    'admin.tab_overview':'கண்ணோட்டம்','admin.tab_ideas':'யோசனை மேலாண்மை',
+    'admin.tab_users':'பயனர் பட்டியல்','admin.tab_system':'கணினி',
+    'admin.points_config':'புள்ளிகள் கட்டமைப்பு',
+    'admin.event_sub':'யோசனை சமர்ப்பிக்கப்பட்டது','admin.event_app':'யோசனை அங்கீகரிக்கப்பட்டது','admin.event_impl':'யோசனை செயல்படுத்தப்பட்டது',
+    'admin.db_status':'HR தரவுத்தள ஒத்திசைவு நிலை',
+    'admin.rescore_desc':'தற்போதைய மதிப்பீட்டு மாதிரியைப் பயன்படுத்தி அனைத்து யோசனைகளின் AI மதிப்பெண்களை மீண்டும் கணக்கிடவும்.',
+    'sa.console':'கட்டளை மையம்','sa.signed_in':'என உள்நுழைந்தீர்கள்',
+    'sa.tab_overview':'கண்ணோட்டம்','sa.tab_hierarchy':'நிறுவன படிநிலை',
+    'sa.tab_users':'பயனர் மேலாண்மை','sa.tab_system':'கணினி',
+    'sa.status_dist':'யோசனை நிலை விநியோகம்','sa.recent':'சமீபத்திய செயல்பாடு',
+    'sa.org_tree':'நிறுவன மரம் — நிர்வாகி → மேலாளர் → ஊழியர்',
+    'sa.all_employees':'அனைத்து ஊழியர்கள்','sa.ai_engine':'AI மதிப்பீட்டு இயந்திரம்',
+    'sa.ai_desc':'அனைத்து யோசனைகளின் AI தர மதிப்பெண்களை மீண்டும் கணக்கிடவும்.',
+    'sa.db_sync':'தரவுத்தளம் & HR ஒத்திசைவு',
+    'placeholder.search_user':'பெயர், மின்னஞ்சல் அல்லது ID மூலம் தேடு…',
+    'pa.overview':'தளம் கண்ணோட்டம்','pa.private':'மொத்த அளவீடுகள் மட்டும் — குத்தகை உள்ளடக்கம் தனியார்',
+    'pa.signed_in':'என உள்நுழைந்தீர்கள்','pa.all_tenants':'அனைத்து குத்தகைதாரர்கள் — மொத்த புள்ளிவிவரங்கள்',
+    'pa.tenant_hierarchy':'குத்தகைதாரர் படிநிலை',
+    'pa.hierarchy_sub':'நிறுவன அமைப்பு — பெயர்கள், பதவிகள், துறைகள் மட்டும். யோசனை உள்ளடக்கம் இல்லை.',
+    'pa.user_hierarchy':'பயனர் படிநிலை',
+    'msg.loading':'ஏற்றுகிறது…','msg.no_ideas':'யோசனைகள் கிடைக்கவில்லை. உங்கள் முதல் யோசனையை சமர்ப்பிக்கவும்!',
+    'msg.no_review':'மதிப்பாய்வுக்கு நிலுவையில் யோசனைகள் இல்லை.','msg.no_audit':'தணிக்கை பதிவுகள் இல்லை.',
+    'msg.no_leaderboard':'இன்னும் மதிப்பெண்கள் இல்லை. தரவரிசைகளை காண யோசனைகளை சமர்ப்பிக்கவும்.',
+    'msg.no_notif':'அறிவிப்புகள் இல்லை','msg.draft_prefix':'வரைவு சேமிக்கப்பட்டது! யோசனை குறியீடு: ',
+    'msg.fill_situation':'தலைப்பு மற்றும் நிலைமை விவரிப்பை நிரப்பவும் (குறைந்தது 20 எழுத்துக்கள்).',
+    'msg.fill_solution':'முன்மொழியப்பட்ட தீர்வை நிரப்பவும்.',
+    'msg.server_error':'சேவையக பிழை. மீண்டும் முயற்சிக்கவும்.',
+    'msg.fail_dashboard':'டாஷ்போர்டு ஏற்றப்படவில்லை. சேவையகம் இயங்குகிறதா?',
+    'msg.fail_ideas':'யோசனைகள் ஏற்றப்படவில்லை.','msg.fail_queue':'மதிப்பாய்வு வரிசை ஏற்றப்படவில்லை.',
+    'msg.fail_audit':'ஏற்றப்படவில்லை.','msg.fail_leaderboard':'தலைமை பலகை ஏற்றப்படவில்லை.',
+    'msg.fail_analytics':'பகுப்பாய்வு ஏற்றப்படவில்லை.',
+    'msg.audit_restricted':'தணிக்கை பாதை மேலாளர்கள், நிர்வாகிகள் மற்றும் நிர்வாகிகளுக்கு மட்டுமே கிடைக்கும்.',
+    'msg.analytics_restricted':'பகுப்பாய்வு மேலாளர்கள், நிர்வாகிகள் மற்றும் நிர்வாகிகளுக்கு மட்டுமே கிடைக்கும்.',
+    'msg.decision_ok':'முடிவு சமர்ப்பிக்கப்பட்டது','msg.idea_ok':'யோசனை வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது',
+    'pa.active_tenants':'செயலில் உள்ள வாடகையாளர்கள்','pa.total_users':'மொத்த பயனர்கள்','pa.ideas_submitted':'சமர்ப்பிக்கப்பட்ட யோசனைகள்','msg.rescoring':'மீண்டும் மதிப்பெண் இடுகிறது…',
+  },
+  ml: {
+    'app.name':'ഐഡിയ ടൂൾ',
+    'nav.dashboard':'ഡാഷ്‌ബോർഡ്','nav.my_ideas':'എന്റെ ആശയങ്ങൾ','nav.submit':'ആശയം സമർപ്പിക്കുക',
+    'nav.review':'അവലോകന ക്യൂ','nav.all_ideas':'എല്ലാ ആശയങ്ങൾ','nav.audit':'ഓഡിറ്റ്',
+    'nav.leaderboard':'ലീഡർബോർഡ്','nav.analytics':'വിശകലനം','nav.admin':'അഡ്മിൻ പാനൽ',
+    'nav.super_admin':'സ്ഥാപന ഘടന','nav.profile':'എന്റെ പ്രൊഫൈൽ',
+    'section.main':'പ്രധാന','section.workflow':'വർക്ക്ഫ്ലോ','section.insights':'ഉൾക്കാഴ്ചകൾ',
+    'section.admin':'അഡ്മിൻ','section.super_admin':'IFQM സൂപ്പർ അഡ്മിൻ',
+    'login.app_title':'ജീവനക്കാരുടെ ആശയ ഉപകരണം','login.tagline':'മികച്ച ആശയങ്ങളെ യഥാർത്ഥ മെച്ചപ്പെടുത്തലുകളാക്കി മാറ്റുക.',
+    'login.welcome':'തിരിച്ചു സ്വാഗതം','login.subtitle':'തുടരാൻ നിങ്ങളുടെ IFQM അക്കൗണ്ടിൽ സൈൻ ഇൻ ചെയ്യുക',
+    'login.email':'ഇ-മെയിൽ വിലാസം','login.password':'പാസ്‌വേഡ്','login.btn':'സൈൻ ഇൻ',
+    'topbar.dark':'ഡാർക്ക്','topbar.light':'ലൈറ്റ്','topbar.notifications':'അറിയിപ്പുകൾ',
+    'topbar.logout':'ലോഗ് ഔട്ട്','topbar.mark_read':'എല്ലാം വായിച്ചതായി അടയാളപ്പെടുത്തുക',
+    'dash.total':'മൊത്തം ആശയങ്ങൾ','dash.approved':'അംഗീകരിച്ചവ','dash.implemented':'നടപ്പാക്കിയവ',
+    'dash.status_dist':'സ്ഥിതി വിതരണം','dash.recent':'സമീപകാല പ്രവർത്തനം',
+    'status.submitted':'സമർപ്പിച്ചു','status.review':'അവലോകനത്തിൽ','status.approved':'അംഗീകരിച്ചു',
+    'status.rejected':'നിരസിച്ചു','status.implemented':'നടപ്പാക്കി','status.draft':'ഡ്രാഫ്റ്റ്',
+    'idea.view':'കാണുക','idea.review':'അവലോകനം','idea.votes':'വോട്ടുകൾ',
+    'vote.title':'കമ്മ്യൂണിറ്റി റേറ്റിംഗ്','vote.your_rating':'നിങ്ങളുടെ റേറ്റിംഗ്','vote.avg':'ശരാശരി',
+    'vote.engagement_idx':'ഇടപഴകൽ സൂചിക','vote.submit':'റേറ്റിംഗ് സമർപ്പിക്കുക',
+    'form.save_draft':'ഡ്രാഫ്റ്റ് സേവ് ചെയ്യുക','form.next':'അടുത്തത്','form.back':'തിരിച്ച്','form.submit_idea':'പുതിയ ആശയം സമർപ്പിക്കുക',
+    'detail.submitted_by':'സമർപ്പിച്ചത്','detail.situation':'നിലവിലെ സ്ഥിതി','detail.solution':'നിർദ്ദേശിച്ച പരിഹാരം',
+    'detail.ai_eval':'AI മൂല്യനിർണ്ണയം','detail.score':'സ്കോർ','detail.close':'അടയ്ക്കുക',
+    'lb.individual':'വ്യക്തിഗത റാങ്കിംഗ്','lb.dept':'വകുപ്പ് റാങ്കിംഗ്','lb.top_ideas':'ടോപ്പ് സ്കോർ ആശയങ്ങൾ',
+    'lb.points':'പോയിന്റുകൾ','lb.ideas':'ആശയങ്ങൾ','lb.avg_score':'ശരാശരി സ്കോർ','lb.engagement':'ഇടപഴകൽ',
+    'lb.all_time':'എല്ലാ കാലവും','lb.monthly':'മാസികം','lb.quarterly':'ത്രൈമാസികം','lb.yearly':'വാർഷികം',
+    'profile.title':'ജീവനക്കാരുടെ പ്രൊഫൈൽ','profile.stats':'എന്റെ സ്ഥിതിവിവരക്കണക്കുകൾ',
+    'profile.dept':'വകുപ്പ്','profile.email_lbl':'ഇ-മെയിൽ','profile.phone':'ഫോൺ',
+    'profile.reports_to':'റിപ്പോർട്ടിംഗ് മേലധികാരി','profile.bu':'ബിസിനസ് യൂണിറ്റ്','profile.loc':'സ്ഥലം',
+    'profile.hr_note':'HR ഡേറ്റാബേസിൽ നിന്ന് സ്വയം ലഭിച്ചത്. അപ്‌ഡേറ്റ് ചെയ്യാൻ അഡ്മിനെ ബന്ധപ്പെടുക.',
+    'profile.total_pts':'ആകെ പോയിന്റുകൾ',
+    'btn.new_idea':'പുതിയ ആശയം','btn.close':'അടയ്ക്കുക','btn.cancel':'റദ്ദ് ചെയ്യുക',
+    'btn.submit_decision':'തീരുമാനം സമർപ്പിക്കുക','btn.view_my_ideas':'എന്റെ ആശയങ്ങൾ കാണുക',
+    'btn.rescore_all':'എല്ലാ ആശയങ്ങളും വീണ്ടും സ്കോർ ചെയ്യുക','btn.back_tenants':'← എല്ലാ ടെനന്റുകളും',
+    'page.my_ideas_sub':'നിങ്ങൾ സമർപ്പിച്ച എല്ലാ ആശയങ്ങളും ട്രാക്ക് ചെയ്യുക',
+    'placeholder.search_ideas':'ആശയങ്ങൾ തിരയുക...','filter.all_status':'എല്ലാ സ്ഥിതികളും',
+    'page.submit_sub':'നിങ്ങളുടെ മെച്ചപ്പെടുത്തൽ ആശയം സമർപ്പിക്കാൻ എല്ലാ ഘട്ടങ്ങളും പൂരിപ്പിക്കുക',
+    'wizard.step1':'സ്ഥിതി','wizard.step2':'പരിഹാരം','wizard.step3':'ആഘാതം',
+    'wizard.step4':'സഹ-നിർദ്ദേശകർ','wizard.step5':'അവലോകനം & സമർപ്പണം',
+    'step1.heading':'ഘട്ടം 1: നിലവിലെ സ്ഥിതി വിവരിക്കുക',
+    'step1.title_label':'സ്ഥിതി തലക്കെട്ട്','step1.title_ph':'നിങ്ങളുടെ ആശയത്തിന് ഒരു ചുരുക്കം തലക്കെട്ട്',
+    'step1.desc_label':'നിലവിലെ സ്ഥിതി വിവരണം',
+    'step1.desc_ph':'നിലവിലെ പ്രശ്നം അല്ലെങ്കിൽ അക്ഷമത വിശദമായി വിവരിക്കുക (കുറഞ്ഞത് 50 അക്ഷരങ്ങൾ)…',
+    'step1.doc_label':'പിന്തുണ ഡോക്യുമെന്റ് (ഐച്ഛികം)',
+    'step1.upload':'അപ്‌ലോഡ് ചെയ്യാൻ ക്ലിക്ക് ചെയ്യുക അല്ലെങ്കിൽ വലിച്ചിടുക',
+    'step1.upload_types':'PDF, PNG, JPG, XLSX — പരമാവധി 10 MB',
+    'step2.heading':'ഘട്ടം 2: നിർദ്ദേശിച്ച ആശയം / പരിഹാരം',
+    'step2.label':'നിർദ്ദേശിച്ച പരിഹാരം','step2.ph':'നിങ്ങളുടെ നിർദ്ദേശിച്ച മെച്ചപ്പെടുത്തൽ വിശദമായി വിവരിക്കുക…',
+    'step3.heading':'ഘട്ടം 3: ആഘാത മേഖലകളും അളക്കാവുന്ന നേട്ടങ്ങളും',
+    'step3.impact_label':'ആഘാത മേഖലകൾ തിരഞ്ഞെടുക്കുക','step3.impact_sub':'(ബാധകമായ എല്ലാം തിരഞ്ഞെടുക്കുക)',
+    'step3.level':'മൊത്തത്തിലുള്ള ആഘാത നില',
+    'step3.tangible_label':'ഖരമായ നേട്ടം (ഐച്ഛികം)','step3.tangible_ph':'ഉദാ. ₹50,000 ലാഭം/വർഷം',
+    'step3.intangible_label':'അഖര നേട്ടങ്ങൾ (ഐച്ഛികം)',
+    'step3.intangible_ph':'ഉദാ. തൊഴിലാളികളുടെ ആത്മവിശ്വാസം മെച്ചപ്പെടൽ',
+    'step4.heading':'ഘട്ടം 4: സഹ-നിർദ്ദേശകർ (ഐച്ഛികം, പരമാവധി 2)',
+    'step4.co1':'സഹ-നിർദ്ദേശകൻ 1','step4.co2':'സഹ-നിർദ്ദേശകൻ 2',
+    'step4.co_ph':'പേര് അല്ലെങ്കിൽ ജീവനക്കാരൻ ID കൊണ്ട് തിരയുക…',
+    'step5.heading':'ഘട്ടം 5: അവലോകനം & സമർപ്പണം',
+    'step5.note':'സമർപ്പിക്കുന്നതിലൂടെ ഈ ആശയം യഥാർത്ഥം ആണെന്ന് നിങ്ങൾ ഉറപ്പിക്കുന്നു. സമർപ്പിച്ചാൽ +10 പോയിന്റുകൾ ലഭിക്കും.',
+    'impact.production':'ഉൽപ്പാദനം','impact.quality':'ഗുണനിലവാരം','impact.cost':'ചെലവ്',
+    'impact.delivery':'ഡെലിവറി','impact.safety':'സുരക്ഷ','impact.environment':'പരിസ്ഥിതി',
+    'impact.morale':'മനോബലം','impact.low':'കുറഞ്ഞ','impact.medium':'ഇടത്തരം','impact.high':'ഉയർന്ന',
+    'page.review_sub':'നിങ്ങളുടെ അവലോകനത്തിനായി തീർച്ചകൂടാത്ത ആശയങ്ങൾ — AI ഗുണ സ്കോർ അടിസ്ഥാനത്തിൽ',
+    'placeholder.search':'തിരയുക…','filter.all_impact':'എല്ലാ ആഘാതങ്ങളും',
+    'table.idea_id':'ആശയ ID','table.title':'തലക്കെട്ട്','table.submitted_by':'സമർപ്പിച്ചത്',
+    'table.dept':'വകുപ്പ്','table.impact':'ആഘാതം','table.ai_score':'AI സ്കോർ',
+    'table.engagement':'ഇടപഴകൽ','table.status':'സ്ഥിതി','table.date':'തീയതി','table.action':'നടപടി',
+    'table.timestamp':'സമയം','table.actor':'അഭിനേതാവ്','table.comment_col':'അഭിപ്രായം',
+    'table.event':'സംഭവം','table.pts_awarded':'പോയിന്റുകൾ നൽകി',
+    'table.employee':'ജീവനക്കാരൻ','table.emp_id':'ID','table.role':'പദവി',
+    'table.bu':'ബിസിനസ് യൂണിറ്റ്','table.email_col':'ഇ-മെയിൽ',
+    'table.reports_to':'റിപ്പോർട്ട് ചെയ്യുന്നു','table.points_col':'പോയിന്റുകൾ','table.ideas_col':'ആശയങ്ങൾ',
+    'page.audit_title':'സിസ്റ്റം ഓഡിറ്റ് ട്രെയിൽ',
+    'page.audit_sub':'എല്ലാ വർക്ക്ഫ്ലോ പ്രവർത്തനങ്ങളുടെ മാറ്റാനാകാത്ത ലോഗ്',
+    'audit.proof':'ഈ ലോഗ് ചേർക്കൽ-മാത്രം ആണ്. ഒരു രേഖയും തിരുത്തുകയോ ഇല്ലാതാക്കുകയോ ചെയ്യാൻ കഴിയില്ല.',
+    'modal.details':'വിശദാംശങ്ങൾ','modal.timeline':'ടൈംലൈൻ','modal.attachments':'അനുബന്ധങ്ങൾ',
+    'review.decision':'തീരുമാനം','review.comment_label':'അഭിപ്രായം / ഫീഡ്‌ബാക്ക്',
+    'review.comment_ph':'സമർപ്പിച്ചവർക്ക് ഐച്ഛിക അഭിപ്രായങ്ങൾ…',
+    'review.to_review':'അവലോകനത്തിലേക്ക് നീക്കുക','review.approve':'അംഗീകരിക്കുക',
+    'review.reject':'നിരസിക്കുക','review.implement':'നടപ്പാക്കിയതായി അടയാളപ്പെടുത്തുക',
+    'admin.tab_overview':'അവലോകനം','admin.tab_ideas':'ആശയ മാനേജ്മെന്റ്',
+    'admin.tab_users':'ഉപയോക്തൃ പട്ടിക','admin.tab_system':'സിസ്റ്റം',
+    'admin.points_config':'പോയിന്റ് കോൺഫിഗറേഷൻ',
+    'admin.event_sub':'ആശയം സമർപ്പിച്ചു','admin.event_app':'ആശയം അംഗീകരിച്ചു','admin.event_impl':'ആശയം നടപ്പാക്കി',
+    'admin.db_status':'HR ഡേറ്റാബേസ് സമന്വയ സ്ഥിതി',
+    'admin.rescore_desc':'നിലവിലെ സ്കോറിംഗ് മോഡൽ ഉപയോഗിച്ച് എല്ലാ ആശയങ്ങളുടെ AI സ്കോർ വീണ്ടും കണക്കാക്കുക.',
+    'sa.console':'കമാൻഡ് സെന്റർ','sa.signed_in':'ആയി സൈൻ ഇൻ ചെയ്തു',
+    'sa.tab_overview':'അവലോകനം','sa.tab_hierarchy':'സ്ഥാപന ഘടന',
+    'sa.tab_users':'ഉപയോക്തൃ മാനേജ്മെന്റ്','sa.tab_system':'സിസ്റ്റം',
+    'sa.status_dist':'ആശയ സ്ഥിതി വിതരണം','sa.recent':'സമീപകാല പ്രവർത്തനം',
+    'sa.org_tree':'സ്ഥാപന വൃക്ഷം — അഡ്മിൻ → മാനേജർ → ജീവനക്കാരൻ',
+    'sa.all_employees':'എല്ലാ ജീവനക്കാരും','sa.ai_engine':'AI സ്കോറിംഗ് എഞ്ചിൻ',
+    'sa.ai_desc':'എല്ലാ ആശയങ്ങളുടെ AI ഗുണ സ്കോർ വീണ്ടും കണക്കാക്കുക.',
+    'sa.db_sync':'ഡേറ്റാബേസ് & HR സമന്വയം',
+    'placeholder.search_user':'പേര്, ഇ-മെയിൽ അല്ലെങ്കിൽ ID കൊണ്ട് തിരയുക…',
+    'pa.overview':'പ്ലാറ്റ്ഫോം അവലോകനം','pa.private':'മൊത്ത അളവുകൾ മാത്രം — ടെനന്റ് ഉള്ളടക്കം സ്വകാര്യം',
+    'pa.signed_in':'ആയി സൈൻ ഇൻ ചെയ്തു','pa.all_tenants':'എല്ലാ ടെനന്റുകളും — മൊത്ത കണക്കുകൾ',
+    'pa.tenant_hierarchy':'ടെനന്റ് ഘടന',
+    'pa.hierarchy_sub':'സ്ഥാപന ഘടന — പേരുകൾ, പദവികൾ, വകുപ്പുകൾ മാത്രം. ആശയ ഉള്ളടക്കം ഇല്ല.',
+    'pa.user_hierarchy':'ഉപയോക്തൃ ഘടന',
+    'msg.loading':'ലോഡ് ചെയ്യുന്നു…','msg.no_ideas':'ആശയങ്ങൾ കണ്ടെത്തിയില്ല. നിങ്ങളുടെ ആദ്യ ആശയം സമർപ്പിക്കുക!',
+    'msg.no_review':'അവലോകനത്തിനായി ആശയങ്ങൾ ഇല്ല.','msg.no_audit':'ഓഡിറ്റ് രേഖകൾ ഇല്ല.',
+    'msg.no_leaderboard':'ഇതുവരെ സ്കോർ ഇല്ല. റാങ്കിംഗ് കാണാൻ ആശയങ്ങൾ സമർപ്പിക്കുക.',
+    'msg.no_notif':'അറിയിപ്പുകൾ ഇല്ല','msg.draft_prefix':'ഡ്രാഫ്റ്റ് സേവ് ചെയ്തു! ആശയ കോഡ്: ',
+    'msg.fill_situation':'തലക്കെട്ടും സ്ഥിതി വിവരണവും പൂരിപ്പിക്കുക (കുറഞ്ഞത് 20 അക്ഷരങ്ങൾ).',
+    'msg.fill_solution':'നിർദ്ദേശിച്ച പരിഹാരം പൂരിപ്പിക്കുക.',
+    'msg.server_error':'സർവർ പിശക്. ദയവായി വീണ്ടും ശ്രമിക്കുക.',
+    'msg.fail_dashboard':'ഡാഷ്‌ബോർഡ് ലോഡ് ആയില്ല. സർവർ പ്രവർത്തിക്കുന്നുണ്ടോ?',
+    'msg.fail_ideas':'ആശയങ്ങൾ ലോഡ് ആയില്ല.','msg.fail_queue':'അവലോകന ക്യൂ ലോഡ് ആയില്ല.',
+    'msg.fail_audit':'ലോഡ് ആയില്ല.','msg.fail_leaderboard':'ലീഡർബോർഡ് ലോഡ് ആയില്ല.',
+    'msg.fail_analytics':'വിശകലനം ലോഡ് ആയില്ല.',
+    'msg.audit_restricted':'ഓഡിറ്റ് ട്രെയിൽ മാനേജർമാർ, അഡ്മിൻ, എക്സിക്യൂട്ടിവ്‌മാർക്ക് മാത്രം ലഭ്യമാണ്.',
+    'msg.analytics_restricted':'വിശകലനം മാനേജർമാർ, അഡ്മിൻ, എക്സിക്യൂട്ടിവ്‌മാർക്ക് മാത്രം ലഭ്യമാണ്.',
+    'msg.decision_ok':'തീരുമാനം സമർപ്പിച്ചു','msg.idea_ok':'ആശയം വിജയകരമായി സമർപ്പിച്ചു',
+    'pa.active_tenants':'സജീവ ടെനൻ്റുകൾ','pa.total_users':'മൊത്തം ഉപയോക്താക്കൾ','pa.ideas_submitted':'സമർപ്പിച്ച ആശയങ്ങൾ','msg.rescoring':'വീണ്ടും സ്കോർ ചെയ്യുന്നു…',
   }
 };
 
 function t(key) {
   return (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || TRANSLATIONS.en[key] || key;
 }
+const LANG_NAMES = {en:'English',hi:'हिन्दी',mr:'मराठी',kn:'ಕನ್ನಡ',te:'తెలుగు',ta:'தமிழ்',ml:'മലയാളം'};
+
 function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const k = el.dataset.i18n;
     const v = t(k);
-    if (el.tagName === 'INPUT' || el.tagName === 'BUTTON') el.value = v;
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.value = v;
     else el.textContent = v;
   });
-  document.getElementById('lang-btn').textContent = lang === 'en' ? 'हि' : 'EN';
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
+  document.getElementById('lang-btn').textContent = LANG_LABELS[lang] || lang.toUpperCase();
   document.getElementById('dm-label').textContent = document.getElementById('dm-track').classList.contains('on') ? t('topbar.light') : t('topbar.dark');
+  document.querySelectorAll('.lang-opt').forEach(o => o.classList.toggle('active', o.dataset.lang === lang));
 }
-function toggleLang() {
-  lang = lang === 'en' ? 'hi' : 'en';
+
+function buildLangMenu() {
+  const menu = document.getElementById('lang-menu');
+  menu.innerHTML = SUPPORTED_LANGS.map(l => `
+    <div class="lang-opt${l === lang ? ' active' : ''}" data-lang="${l}" onclick="selectLang('${l}')">
+      <span class="lang-opt-code">${LANG_LABELS[l]}</span>
+      <span>${LANG_NAMES[l]}</span>
+    </div>`).join('');
+}
+
+function toggleLangMenu(e) {
+  e.stopPropagation();
+  const wrap = document.getElementById('lang-wrap');
+  const isOpen = wrap.classList.contains('open');
+  if (!isOpen) {
+    buildLangMenu();
+    wrap.classList.add('open');
+    // position menu below button
+    const btn = document.getElementById('lang-btn');
+    const r = btn.getBoundingClientRect();
+    const menu = document.getElementById('lang-menu');
+    menu.style.top = (r.bottom + 6) + 'px';
+    menu.style.left = 'auto';
+    menu.style.right = (window.innerWidth - r.right) + 'px';
+  } else {
+    wrap.classList.remove('open');
+  }
+}
+
+function selectLang(l) {
+  lang = l;
   localStorage.setItem('ifqm-lang', lang);
+  document.getElementById('lang-wrap').classList.remove('open');
   applyTranslations();
 }
 function getPageTitle(page) {
@@ -1454,6 +2327,155 @@ function hoverStar(el) {
 }
 function unhoverStar(el) {
   el.closest('.star-rating').querySelectorAll('.star').forEach(s => s.classList.remove('hover'));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMMUNITY UPVOTE / DOWNVOTE
+// ═══════════════════════════════════════════════════════════════
+
+// Compute community-adjusted score: ai_score ± (net_votes × 3), capped at ±20, range 0-100
+function communityScore(aiScore, upvotes, downvotes) {
+  const net = (parseInt(upvotes) || 0) - (parseInt(downvotes) || 0);
+  const adj = Math.max(-20, Math.min(20, net * 3));
+  return Math.max(0, Math.min(100, (parseInt(aiScore) || 0) + adj));
+}
+
+// Render community vote widget (▲ upvote | net | ▼ downvote)
+function voteWidget(ideaId, isSelf, upvotes, downvotes, userVote) {
+  const up  = parseInt(upvotes)   || 0;
+  const dn  = parseInt(downvotes) || 0;
+  const net = up - dn;
+  const netColor = net > 0 ? '#15803d' : net < 0 ? '#b91c1c' : 'var(--text-muted)';
+  const netStr   = (net > 0 ? '+' : '') + net;
+
+  if (isSelf) {
+    return `<div class="vote-widget" title="Cannot vote on your own idea">
+      <span class="vote-btn up vote-disabled">&#9650; ${up}</span>
+      <span class="vote-net" style="color:${netColor}">${netStr}</span>
+      <span class="vote-btn down vote-disabled">&#9660; ${dn}</span>
+    </div>`;
+  }
+
+  const upCls = userVote === 'up'   ? ' up-active'   : '';
+  const dnCls = userVote === 'down' ? ' down-active' : '';
+  return `<div class="vote-widget" id="vw-${ideaId}">
+    <span class="vote-btn up${upCls}" id="vbup-${ideaId}"
+          onclick="event.stopPropagation();castCommunityVote(${ideaId},'up')"
+          title="Upvote this idea">&#9650; <span id="upc-${ideaId}">${up}</span></span>
+    <span class="vote-net" id="vnet-${ideaId}" style="color:${netColor}">${netStr}</span>
+    <span class="vote-btn down${dnCls}" id="vbdn-${ideaId}"
+          onclick="event.stopPropagation();castCommunityVote(${ideaId},'down')"
+          title="Downvote this idea">&#9660; <span id="dnc-${ideaId}">${dn}</span></span>
+  </div>`;
+}
+
+// Cast a community upvote or downvote
+async function castCommunityVote(ideaId, type) {
+  const btn = document.getElementById(type === 'up' ? 'vbup-' + ideaId : 'vbdn-' + ideaId);
+  if (btn) { btn.style.pointerEvents = 'none'; btn.style.opacity = '.6'; }
+  try {
+    const r = await fetch('api/votes.php?action=' + type + 'vote', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'same-origin',
+      body: JSON.stringify({idea_id: ideaId})
+    });
+    const d = await r.json();
+    if (d.success) {
+      updateVoteWidget(ideaId, d.upvotes, d.downvotes, d.user_vote, d.community_score);
+      const label = d.user_vote === 'up' ? 'Upvoted!' : (d.user_vote === 'down' ? 'Downvoted!' : 'Vote removed');
+      const toastType = d.user_vote === 'up' ? 'success' : (d.user_vote === 'down' ? 'warning' : 'info');
+      showToast(label, toastType);
+    } else {
+      showToast(d.error || 'Vote failed.', 'danger');
+    }
+  } catch(e) {
+    showToast('Vote failed. Check connection.', 'danger');
+  } finally {
+    if (btn) { btn.style.pointerEvents = ''; btn.style.opacity = ''; }
+  }
+}
+
+// Update vote widget DOM elements after a vote
+function updateVoteWidget(ideaId, upvotes, downvotes, userVote, newScore) {
+  const up  = parseInt(upvotes)   || 0;
+  const dn  = parseInt(downvotes) || 0;
+  const net = up - dn;
+  const netColor = net > 0 ? '#15803d' : net < 0 ? '#b91c1c' : 'var(--text-muted)';
+
+  const upc  = document.getElementById('upc-'  + ideaId);
+  const dnc  = document.getElementById('dnc-'  + ideaId);
+  const vnet = document.getElementById('vnet-' + ideaId);
+  const vbup = document.getElementById('vbup-' + ideaId);
+  const vbdn = document.getElementById('vbdn-' + ideaId);
+
+  if (upc)  { upc.textContent  = up; }
+  if (dnc)  { dnc.textContent  = dn; }
+  if (vnet) { vnet.textContent = (net > 0 ? '+' : '') + net; vnet.style.color = netColor; }
+  if (vbup) {
+    vbup.classList.toggle('up-active', userVote === 'up');
+    vbup.classList.add('vote-pop');
+    vbup.addEventListener('animationend', () => vbup.classList.remove('vote-pop'), {once:true});
+  }
+  if (vbdn) {
+    vbdn.classList.toggle('down-active', userVote === 'down');
+    if (userVote === 'down') {
+      vbdn.classList.add('vote-pop');
+      vbdn.addEventListener('animationend', () => vbdn.classList.remove('vote-pop'), {once:true});
+    }
+  }
+
+  // Update displayed community score in the All Ideas table
+  if (newScore !== undefined) {
+    const scoreEl = document.getElementById('cscore-' + ideaId);
+    if (scoreEl) {
+      scoreEl.textContent = newScore + '/100';
+      scoreEl.className   = scoreBadgeClass(newScore);
+      scoreEl.title       = 'Community Score (AI + votes)';
+    }
+  }
+
+  // Update community score in the detail modal if it's open for this idea
+  const modalScoreEl = document.getElementById('modal-community-score');
+  if (modalScoreEl && pendingIdeaId === ideaId && newScore !== undefined) {
+    modalScoreEl.textContent = newScore + '/100';
+    modalScoreEl.className   = scoreBadgeClass(newScore);
+  }
+}
+
+// ── Real-time polling (updates All Ideas table every 10 s) ────
+let _votePollTimer = null;
+function startVotePoll() {
+  stopVotePoll();
+  _votePollTimer = setInterval(async () => {
+    try {
+      const r = await fetch('api/votes.php?action=poll_all', {credentials:'same-origin'});
+      const d = await r.json();
+      if (!d.success || !d.votes) return;
+      Object.entries(d.votes).forEach(([ideaId, v]) => {
+        const id  = parseInt(ideaId);
+        const up  = v.upvotes   || 0;
+        const dn  = v.downvotes || 0;
+        const net = up - dn;
+        const netColor = net > 0 ? '#15803d' : net < 0 ? '#b91c1c' : 'var(--text-muted)';
+        const upc  = document.getElementById('upc-'  + id);
+        const dnc  = document.getElementById('dnc-'  + id);
+        const vnet = document.getElementById('vnet-' + id);
+        if (upc)  upc.textContent  = up;
+        if (dnc)  dnc.textContent  = dn;
+        if (vnet) { vnet.textContent = (net > 0 ? '+' : '') + net; vnet.style.color = netColor; }
+        // Update community score badge
+        const scoreEl = document.getElementById('cscore-' + id);
+        if (scoreEl && v.community_score !== undefined) {
+          scoreEl.textContent = v.community_score + '/100';
+          scoreEl.className   = scoreBadgeClass(v.community_score);
+        }
+      });
+    } catch(e) { /* silent — non-critical */ }
+  }, 10000);
+}
+function stopVotePoll() {
+  if (_votePollTimer) { clearInterval(_votePollTimer); _votePollTimer = null; }
 }
 
 // ── COMMITTEE / MULTI-REVIEWER WORKFLOW ────────────────────────────
@@ -1587,7 +2609,7 @@ async function submitReviewerDecision() {
   const label = decision === 'approved' ? 'Approve' : 'Reject';
   if (!confirm(`Confirm: ${label} this idea? Your decision is final and will be recorded in the audit trail.`)) return;
   const btn = document.getElementById('rd-submit-btn');
-  btn.disabled = true; btn.textContent = 'Submitting…';
+  btn.disabled = true; btn.textContent = t('msg.loading');
   try {
     const r = await fetch('api/ideas.php?action=reviewer_decision', {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -1600,17 +2622,132 @@ async function submitReviewerDecision() {
       const statusPart = d.new_status
         ? ` — idea is now <strong>${d.new_status}</strong> (${d.approved}/${d.total} approved)`
         : ` — ${d.pending} reviewer${d.pending!==1?'s':''} still pending`;
-      showToast('Decision recorded' + statusPart, 'success');
+      showToast(t('msg.decision_ok') + statusPart, 'success');
       loadReviewQueue();
       loadNotifications();
     } else {
-      showToast(d.error || 'Failed to submit decision.', 'danger');
-      btn.disabled = false; btn.textContent = 'Submit Decision';
+      showToast(d.error || t('msg.fail_queue'), 'danger');
+      btn.disabled = false; btn.textContent = t('btn.submit_decision');
     }
   } catch(e) {
-    showToast('Network error.', 'danger');
-    btn.disabled = false; btn.textContent = 'Submit Decision';
+    showToast(t('msg.server_error'), 'danger');
+    btn.disabled = false; btn.textContent = t('btn.submit_decision');
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PLATFORM ADMIN — aggregate-only, no tenant idea content
+// ═══════════════════════════════════════════════════════════════
+let platformTenants = [];
+
+async function loadPlatformDashboard() {
+  document.getElementById('pa-tenant-list').innerHTML = '<div class="spinner"></div>';
+  document.getElementById('pa-kpi-strip').innerHTML = `
+    <div class="kpi-card" style="border-left-color:#4f46e5"><div class="spinner"></div></div>
+    <div class="kpi-card" style="border-left-color:#059669"><div class="spinner"></div></div>
+    <div class="kpi-card" style="border-left-color:#d97706"><div class="spinner"></div></div>`;
+  const r = await fetch('api/platform.php?action=tenants');
+  const d = await r.json();
+  if (!d.success) { document.getElementById('pa-tenant-list').innerHTML = `<div class="alert alert-danger">${d.error}</div>`; return; }
+  platformTenants = d.tenants || [];
+
+  const totalUsers = platformTenants.reduce((s,t) => s + (t.user_count||0), 0);
+  const totalIdeas = platformTenants.reduce((s,t) => s + (t.idea_count||0), 0);
+  const totalImpl  = platformTenants.reduce((s,t) => s + (t.implemented_count||0), 0);
+
+  document.getElementById('pa-kpi-strip').innerHTML = `
+    <div class="kpi-card" style="border-left-color:#4f46e5">
+      <div class="kpi-icon" style="background:#eef2ff;color:#4f46e5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+      <div class="kpi-body"><div class="kpi-val">${platformTenants.length}</div><div class="kpi-label">${t('pa.active_tenants')}</div></div>
+    </div>
+    <div class="kpi-card" style="border-left-color:#059669">
+      <div class="kpi-icon" style="background:#dcfce7;color:#059669"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+      <div class="kpi-body"><div class="kpi-val">${totalUsers}</div><div class="kpi-label">${t('pa.total_users')}</div></div>
+    </div>
+    <div class="kpi-card" style="border-left-color:#d97706">
+      <div class="kpi-icon" style="background:#fef3c7;color:#d97706"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M9 21h6M12 3a6 6 0 016 6c0 2.2-1.1 3.8-2.5 5L15 16H9l-.5-2C7 12.8 6 11.2 6 9a6 6 0 016-6z"/></svg></div>
+      <div class="kpi-body"><div class="kpi-val">${totalIdeas}</div><div class="kpi-label">${t('pa.ideas_submitted')}</div></div>
+    </div>`;
+
+  if (platformTenants.length === 0) {
+    document.getElementById('pa-tenant-list').innerHTML = `<div class="empty-state">${t('msg.no_ideas')}</div>`;
+    return;
+  }
+  document.getElementById('pa-tenant-list').innerHTML = platformTenants.map(t => {
+    const implPct = t.idea_count > 0 ? Math.round(t.implemented_count / t.idea_count * 100) : 0;
+    const lastAct = t.last_activity ? new Date(t.last_activity).toLocaleDateString() : 'No activity';
+    const statusDot = t.db_error
+      ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc2626;margin-right:6px"></span>DB unreachable`
+      : `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#059669;margin-right:6px"></span>Active`;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;color:var(--heading)">${escHtml(t.name)}</div>
+        <div style="font-size:12px;color:var(--subtle);margin-top:2px">${escHtml(t.domain)} &middot; /${escHtml(t.slug)}</div>
+        <div style="font-size:11px;color:var(--label);margin-top:4px;display:flex;align-items:center">${statusDot}</div>
+      </div>
+      <div style="display:flex;gap:24px;text-align:center">
+        <div><div style="font-size:18px;font-weight:800;color:var(--heading)">${t.user_count||0}</div><div style="font-size:11px;color:var(--subtle)">Users</div></div>
+        <div><div style="font-size:18px;font-weight:800;color:var(--heading)">${t.idea_count||0}</div><div style="font-size:11px;color:var(--subtle)">Ideas</div></div>
+        <div><div style="font-size:18px;font-weight:800;color:#7c3aed">${implPct}%</div><div style="font-size:11px;color:var(--subtle)">Implemented</div></div>
+        <div><div style="font-size:12px;color:var(--subtext);font-weight:500">${lastAct}</div><div style="font-size:11px;color:var(--subtle)">Last activity</div></div>
+        <div><button class="btn btn-outline btn-sm" onclick="loadTenantHierarchy(${t.id},'${escHtml(t.name)}')">View Org</button></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadTenantHierarchy(tenantId, tenantName) {
+  document.getElementById('pt-tenant-name').textContent = tenantName + ' — Org Hierarchy';
+  document.getElementById('pt-stats-strip').innerHTML = '';
+  document.getElementById('pt-hierarchy-body').innerHTML = '<div class="spinner"></div>';
+  navigate('platform-tenants', document.getElementById('nav-platform-tenants'));
+
+  const r = await fetch(`api/platform.php?action=tenant_hierarchy&id=${tenantId}`);
+  const d = await r.json();
+  if (!d.success) {
+    document.getElementById('pt-hierarchy-body').innerHTML = `<div class="alert alert-danger">${d.error}</div>`;
+    return;
+  }
+  const users = d.users || [];
+  const byRole = {admin:[],executive:[],manager:[],employee:[]};
+  users.forEach(u => { if (byRole[u.role]) byRole[u.role].push(u); });
+
+  document.getElementById('pt-stats-strip').innerHTML = [
+    ['Admins',    byRole.admin.length,     '#4f46e5','#eef2ff'],
+    ['Executives',byRole.executive.length, '#7c3aed','#f3e8ff'],
+    ['Managers',  byRole.manager.length,   '#d97706','#fef3c7'],
+    ['Employees', byRole.employee.length,  '#059669','#dcfce7'],
+  ].map(([label,count,color,bg]) => `
+    <div class="kpi-card" style="border-left-color:${color}">
+      <div class="kpi-body"><div class="kpi-val" style="color:${color}">${count}</div><div class="kpi-label">${label}</div></div>
+    </div>`).join('');
+
+  if (users.length === 0) {
+    document.getElementById('pt-hierarchy-body').innerHTML = `<div class="empty-state">${t('msg.no_ideas')}</div>`;
+    return;
+  }
+
+  const roleColors = {admin:'#4f46e5',executive:'#7c3aed',manager:'#d97706',employee:'#059669'};
+  const roleOrder  = ['admin','executive','manager','employee'];
+  let html = '';
+  roleOrder.forEach(role => {
+    if (!byRole[role].length) return;
+    html += `<div style="margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${roleColors[role]};margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ${roleColors[role]}22">${role}s (${byRole[role].length})</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+        ${byRole[role].map(u => `
+          <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border)">
+            <div style="width:36px;height:36px;border-radius:50%;background:${roleColors[u.role]}22;color:${roleColors[u.role]};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">${escHtml(u.avatar_initials||u.name[0])}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(u.name)}</div>
+              <div style="font-size:11px;color:var(--subtle);margin-top:2px">${escHtml(u.department||'—')} ${u.manager_name ? '· Reports to: '+escHtml(u.manager_name) : ''}</div>
+              <div style="font-size:11px;color:#d97706;margin-top:2px;font-weight:600">${u.idea_count} idea${u.idea_count!=1?'s':''}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  });
+  document.getElementById('pt-hierarchy-body').innerHTML = html;
 }
 
 async function doLogout() {
@@ -1646,20 +2783,34 @@ function initApp() {
   document.getElementById('submit-user-banner').innerHTML =
     `Auto-fetched from HR Database: <strong>${u.name}</strong> &middot; ${u.employee_id} &middot; ${u.department || '–'} &middot; Reporting to: ${u.manager_name || '–'} &middot; ${u.business_unit || '–'}`;
 
-  const isPriv       = ['manager','admin','executive','super_admin'].includes(u.role);
-  const isAdmin      = u.role === 'admin';
-  const isSuperAdmin = u.role === 'super_admin';
+  const isPlatformAdmin = u.role === 'platform_admin';
+  const isPriv          = ['manager','admin','executive','super_admin'].includes(u.role);
+  const isAdmin         = u.role === 'admin';
+  const isSuperAdmin    = u.role === 'super_admin';
 
-  document.getElementById('nav-my-ideas').style.display           = isSuperAdmin ? 'none' : '';
-  document.getElementById('nav-submit').style.display             = isSuperAdmin ? 'none' : '';
-  document.getElementById('nav-review').style.display             = isPriv ? '' : 'none';
-  document.getElementById('nav-analytics').style.display          = isPriv ? '' : 'none';
-  document.getElementById('nav-audit').style.display              = isPriv ? '' : 'none';
-  document.getElementById('nav-admin').style.display              = isAdmin ? '' : 'none';
-  document.getElementById('nav-section-admin').style.display      = isAdmin ? '' : 'none';
-  document.getElementById('nav-super-admin').style.display        = isSuperAdmin ? '' : 'none';
-  document.getElementById('nav-section-super-admin').style.display= isSuperAdmin ? '' : 'none';
+  // For platform admin: hide all tenant-specific nav, show only platform nav
+  const tenantNavIds = ['nav-my-ideas','nav-submit','nav-review','nav-all',
+                        'nav-analytics','nav-audit','nav-admin','nav-super-admin',
+                        'nav-section-admin','nav-section-super-admin'];
+  tenantNavIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isPlatformAdmin ? 'none' : (
+      id === 'nav-review' || id === 'nav-analytics' || id === 'nav-audit' ? (isPriv ? '' : 'none') :
+      (id === 'nav-admin' || id === 'nav-section-admin') ? (isAdmin ? '' : 'none') :
+      (id === 'nav-super-admin' || id === 'nav-section-super-admin') ? (isSuperAdmin ? '' : 'none') :
+      (id === 'nav-my-ideas' || id === 'nav-submit') ? (isSuperAdmin ? 'none' : '') : ''
+    );
+  });
 
+  document.getElementById('nav-section-platform').style.display = isPlatformAdmin ? '' : 'none';
+  document.getElementById('nav-platform-dash').style.display    = isPlatformAdmin ? '' : 'none';
+  document.getElementById('nav-platform-tenants').style.display = isPlatformAdmin ? '' : 'none';
+  document.getElementById('nav-profile').style.display          = isPlatformAdmin ? 'none' : '';
+
+  if (isPlatformAdmin) {
+    document.getElementById('pa-name').textContent = u.name;
+    document.getElementById('sb-points').style.display = 'none';
+  }
   if (isSuperAdmin) {
     document.getElementById('sa-session-user').textContent = u.name;
     document.getElementById('sb-points').style.display = 'none';
@@ -1667,7 +2818,10 @@ function initApp() {
 
   loadNotifications();
   applyTranslations();
-  if (isSuperAdmin) {
+  if (isPlatformAdmin) {
+    loadPlatformDashboard();
+    navigate('platform-dash', document.getElementById('nav-platform-dash'));
+  } else if (isSuperAdmin) {
     navigate('super-admin', document.getElementById('nav-super-admin'));
   } else {
     loadDashboard();
@@ -1679,7 +2833,8 @@ const pageTitles = {
   dashboard:'Dashboard', 'my-ideas':'My Ideas', submit:'Submit New Idea',
   review:'Review Queue', 'ideas-all':'All Ideas', audit:'Audit Trail',
   leaderboard:'Leaderboard & Gamification', analytics:'Analytics Dashboard',
-  admin:'Admin Panel', 'super-admin':'Command Center', profile:'My Profile'
+  admin:'Admin Panel', 'super-admin':'Command Center', profile:'My Profile',
+  'platform-dash':'Platform Overview', 'platform-tenants':'Tenant Hierarchy'
 };
 
 function navigate(page, navEl) {
@@ -1695,7 +2850,7 @@ function navigate(page, navEl) {
   if (page === 'dashboard')   loadDashboard();
   if (page === 'my-ideas')    loadMyIdeas();
   if (page === 'review')      loadReviewQueue();
-  if (page === 'ideas-all')   loadAllIdeas();
+  if (page === 'ideas-all')   { loadAllIdeas(); startVotePoll(); } else stopVotePoll();
   if (page === 'audit')       loadAudit();
   if (page === 'leaderboard') loadLeaderboard();
   if (page === 'analytics')   loadAnalytics();
@@ -1732,8 +2887,10 @@ function toggleNotif() {
   document.getElementById('notif-panel').classList.toggle('open');
 }
 document.addEventListener('click', e => {
-  if (!e.target.closest('.topbar-right'))
+  if (!e.target.closest('.topbar-right') && !e.target.closest('#notif-panel'))
     document.getElementById('notif-panel').classList.remove('open');
+  if (!e.target.closest('#lang-wrap') && !e.target.closest('#lang-menu'))
+    document.getElementById('lang-wrap')?.classList.remove('open');
 });
 
 async function loadDashboard() {
@@ -1742,7 +2899,7 @@ async function loadDashboard() {
     r = await fetch('api/ideas.php?action=dashboard', {credentials:'same-origin'});
     d = await r.json();
   } catch(e) {
-    document.getElementById('dash-kpis').innerHTML = '<div class="alert alert-danger" style="grid-column:1/-1">Failed to load dashboard. Is the server running?</div>';
+    document.getElementById('dash-kpis').innerHTML = `<div class="alert alert-danger" style="grid-column:1/-1">${t('msg.fail_dashboard')}</div>`;
     return;
   }
   if (!d.success) return;
@@ -1756,7 +2913,7 @@ async function loadDashboard() {
     </div>
     <div class="kpi-card" style="border-left-color:#d97706">
       <div class="kpi-icon" style="background:#fef3c7;color:#d97706"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-      <div class="kpi-body"><div class="kpi-val" data-target="${counts['Under Review']||0}">0</div><div class="kpi-label" data-i18n="dash.review">Under Review</div></div>
+      <div class="kpi-body"><div class="kpi-val" data-target="${counts['Under Review']||0}">0</div><div class="kpi-label" data-i18n="status.review">Under Review</div></div>
     </div>
     <div class="kpi-card" style="border-left-color:#059669">
       <div class="kpi-icon" style="background:#dcfce7;color:#059669"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
@@ -1800,8 +2957,9 @@ async function loadDashboard() {
             ${r.comment ? `<div class="tl-comment">${escHtml(r.comment)}</div>` : ''}
           </div>
         </div>`).join('')
-    : '<div class="empty-state">No activity yet</div>';
+    : `<div class="empty-state">${t('msg.no_ideas')}</div>`;
   staggerAnimate([...actEl.querySelectorAll('.tl-item')], 70);
+  applyTranslations();
 }
 
 async function loadMyIdeas() {
@@ -1810,7 +2968,7 @@ async function loadMyIdeas() {
     r = await fetch('api/ideas.php?action=my', {credentials:'same-origin'});
     d = await r.json();
   } catch(e) {
-    document.getElementById('my-ideas-list').innerHTML = '<div class="alert alert-danger">Failed to load ideas. Check server.</div>';
+    document.getElementById('my-ideas-list').innerHTML = `<div class="alert alert-danger">${t('msg.fail_ideas')}</div>`;
     return;
   }
   allMyIdeas = d.ideas || [];
@@ -1828,7 +2986,7 @@ function filterMyIdeas() {
 
 function renderMyIdeas(ideas) {
   const el = document.getElementById('my-ideas-list');
-  if (!ideas.length) { el.innerHTML = '<div class="empty-state">No ideas found. Submit your first idea!</div>'; return; }
+  if (!ideas.length) { el.innerHTML = `<div class="empty-state">${t('msg.no_ideas')}</div>`; return; }
   el.innerHTML = ideas.map(i => `
     <div class="idea-card" data-status="${i.status}" onclick="openIdeaDetail(${i.id})">
       <div class="idea-card-header">
@@ -1870,22 +3028,30 @@ async function loadAllIdeas() {
     r = await fetch('api/ideas.php?' + p, {credentials:'same-origin'});
     d = await r.json();
   } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center"><div class="alert alert-danger">Failed to load ideas.</div></td></tr>';
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center"><div class="alert alert-danger">${t('msg.fail_ideas')}</div></td></tr>`;
     return;
   }
-  tbody.innerHTML = (d.ideas||[]).map(i => `
+  tbody.innerHTML = (d.ideas||[]).map(i => {
+    const isSelf   = parseInt(i.submitter_id) === parseInt(currentUser?.id);
+    const cScore   = communityScore(i.ai_score, i.upvotes||0, i.downvotes||0);
+    const scoreTip = i.ai_score > 0 ? `AI Score: ${i.ai_score}/100 · Community adjustment: ${cScore - i.ai_score >= 0 ? '+' : ''}${cScore - i.ai_score}` : '';
+    const scoreCell = i.ai_score > 0
+      ? `<span id="cscore-${i.id}" class="${scoreBadgeClass(cScore)}" title="${scoreTip}">${cScore}/100</span>`
+      : '<span class="score-none score-badge">—</span>';
+    return `
     <tr>
       <td><strong>${i.idea_code}</strong></td>
       <td title="${escHtml(i.title)}">${i.title.length > 60 ? escHtml(i.title).substring(0,60) + '…' : escHtml(i.title)}</td>
       <td>${escHtml(i.submitter_name)}</td>
       <td>${i.department||'–'}</td>
       <td><span class="badge ${impactBadge(i.impact_level)}">${i.impact_level||'–'}</span></td>
-      <td>${i.ai_score > 0 ? `<span class="${scoreBadgeClass(i.ai_score)}">${i.ai_score}/100</span>` : '<span class="score-none">—</span>'}</td>
-      <td>${engMiniStats(i.avg_rating, i.vote_count)}</td>
+      <td>${scoreCell}</td>
+      <td>${i.status !== 'Draft' ? voteWidget(i.id, isSelf, i.upvotes||0, i.downvotes||0, i.user_community_vote||null) : '<span style="font-size:11px;color:var(--subtle)">—</span>'}</td>
       <td><span class="badge ${statusBadge(i.status)}">${i.status}</span></td>
       <td>${i.submitted_at ? fmtDate(i.submitted_at) : '–'}</td>
       <td><button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">View</button></td>
-    </tr>`).join('') || '<tr><td colspan="10" class="text-center">No ideas found.</td></tr>';
+    </tr>`;
+  }).join('') || `<tr><td colspan="10" class="text-center">${t('msg.no_ideas')}</td></tr>`;
   staggerAnimate([...tbody.querySelectorAll('tr')], 40);
 }
 
@@ -1904,9 +3070,22 @@ async function openIdeaDetail(id) {
 
   document.getElementById('modal-idea-detail').classList.add('open');
 
-  const r = await fetch('api/ideas.php?action=get&id=' + id, {credentials:'same-origin'});
-  const d = await r.json();
-  if (!d.success) { document.getElementById('modal-detail-body').textContent = 'Error loading idea.'; return; }
+  let d;
+  try {
+    const r = await fetch('api/ideas.php?action=get&id=' + id, {credentials:'same-origin'});
+    d = await r.json();
+  } catch(e) {
+    document.getElementById('modal-detail-body').innerHTML = '<div class="alert alert-danger">Failed to load idea. Please try again.</div>';
+    document.getElementById('modal-timeline').innerHTML = '';
+    document.getElementById('modal-attachments').innerHTML = '';
+    return;
+  }
+  if (!d.success) {
+    document.getElementById('modal-detail-body').innerHTML = `<div class="alert alert-danger">${escHtml(d.error || 'Error loading idea.')}</div>`;
+    document.getElementById('modal-timeline').innerHTML = '';
+    document.getElementById('modal-attachments').innerHTML = '';
+    return;
+  }
   const idea = d.idea;
 
   document.getElementById('modal-idea-code').textContent      = '#' + idea.idea_code;
@@ -1974,38 +3153,74 @@ async function openIdeaDetail(id) {
 
   // Community engagement panel + voting widget
   try {
-    const vr = await fetch('api/votes.php?action=stats&idea_id=' + id, {credentials:'same-origin'});
+    const [vr, cr] = await Promise.all([
+      fetch('api/votes.php?action=stats&idea_id=' + id, {credentials:'same-origin'}),
+      fetch('api/votes.php?action=community_stats&idea_id=' + id, {credentials:'same-origin'})
+    ]);
     const vd = await vr.json();
-    const isSelf = parseInt(idea.submitter_id) === parseInt(currentUser?.id);
-    const vc  = vd.vote_count  || 0;
-    const ar  = vd.avg_rating  || 0;
-    const ur  = vd.user_rating ?? null;
-    const ei  = engagementIndex(idea.ai_score, ar, vc);
+    const cd = await cr.json();
+    const isSelf    = parseInt(idea.submitter_id) === parseInt(currentUser?.id);
+    const vc        = vd.vote_count  || 0;
+    const ar        = vd.avg_rating  || 0;
+    const ur        = vd.user_rating ?? null;
+    const upvotes   = cd.upvotes    || 0;
+    const downvotes = cd.downvotes  || 0;
+    const userVote  = cd.user_vote  || null;
+    const cScoreVal = cd.community_score !== undefined ? cd.community_score : communityScore(idea.ai_score, upvotes, downvotes);
+    const net       = upvotes - downvotes;
+    const adjStr    = (cScoreVal - (parseInt(idea.ai_score)||0)) >= 0
+                        ? `+${cScoreVal - (parseInt(idea.ai_score)||0)}`
+                        : `${cScoreVal - (parseInt(idea.ai_score)||0)}`;
     const panel = document.getElementById('community-engagement-panel');
     if (panel) {
       panel.innerHTML = `
         <div class="ai-panel" style="border-left-color:#7c3aed">
-          <div class="ai-panel-title" style="color:#7c3aed">Community Engagement</div>
-          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+          <div class="ai-panel-title" style="color:#7c3aed">&#9650;&#9660; Community Vote &amp; Score</div>
+
+          <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:14px">
             <div style="text-align:center">
-              <div style="font-size:20px;font-weight:700;color:#4f46e5">${vc}</div>
-              <div style="font-size:11px;color:var(--subtle)">Votes</div>
+              <div style="font-size:22px;font-weight:800;color:#15803d">&#9650; ${upvotes}</div>
+              <div style="font-size:11px;color:var(--subtle)">Upvotes</div>
             </div>
             <div style="text-align:center">
-              <div style="font-size:20px;font-weight:700;color:#d97706">${ar > 0 ? ar.toFixed(1) : '—'}</div>
-              <div style="font-size:11px;color:var(--subtle)">Avg Rating</div>
+              <div style="font-size:22px;font-weight:800;color:${net >= 0 ? '#15803d' : '#b91c1c'}">${net >= 0 ? '+' : ''}${net}</div>
+              <div style="font-size:11px;color:var(--subtle)">Net Score</div>
             </div>
             <div style="text-align:center">
-              <div style="font-size:20px;font-weight:700;color:#7c3aed">${ei}</div>
-              <div style="font-size:11px;color:var(--subtle)">Engagement Index</div>
+              <div style="font-size:22px;font-weight:800;color:#b91c1c">&#9660; ${downvotes}</div>
+              <div style="font-size:11px;color:var(--subtle)">Downvotes</div>
             </div>
-            <div style="margin-left:auto">${engBadge(idea.ai_score, ar, vc)}</div>
+            <div style="margin-left:auto;text-align:right">
+              <div style="font-size:11px;color:var(--subtle);margin-bottom:4px">Community Score</div>
+              <span id="modal-community-score" class="${scoreBadgeClass(cScoreVal)}" style="font-size:15px;padding:4px 12px">${cScoreVal}/100</span>
+              ${idea.ai_score > 0 ? `<div style="font-size:10px;color:var(--subtle);margin-top:3px">AI: ${idea.ai_score} · Votes: ${adjStr}</div>` : ''}
+            </div>
           </div>
-          ${!isSelf && idea.status !== 'Draft' ? `
-            <div style="margin-top:8px">
-              <div style="font-size:12px;color:var(--subtle);margin-bottom:6px">${ur ? 'Your rating:' : 'Rate this idea:'}</div>
-              ${starWidget(id, false, ur)}
-            </div>` : (isSelf ? `<div style="font-size:12px;color:var(--subtle);font-style:italic">You cannot rate your own idea.</div>` : '')}
+
+          ${idea.status !== 'Draft' ? `
+          <div style="border-top:1px solid var(--border);padding-top:12px">
+            <div style="font-size:12px;color:var(--subtle);margin-bottom:8px;font-weight:600">
+              ${isSelf ? 'Community votes on your idea:' : 'Vote on this idea:'}
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              ${voteWidget(id, isSelf, upvotes, downvotes, userVote)}
+              ${!isSelf ? `<span style="font-size:11px;color:var(--subtle)">Click ▲ or ▼ · Click again to remove your vote</span>` : ''}
+            </div>
+          </div>` : ''}
+
+          ${vc > 0 ? `
+          <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:10px">
+            <div style="font-size:11px;color:var(--subtle);margin-bottom:6px;font-weight:600">COMMUNITY RATING (1–5 stars)</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="color:#d97706;font-weight:700">${ar > 0 ? ar.toFixed(1) : '—'} &#9733;</span>
+              <span style="font-size:11px;color:var(--subtle)">${vc} ${t('idea.votes')}</span>
+              ${!isSelf && idea.status !== 'Draft' ? starWidget(id, false, ur) : ''}
+            </div>
+          </div>` : (!isSelf && idea.status !== 'Draft' ? `
+          <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:10px">
+            <div style="font-size:11px;color:var(--subtle);margin-bottom:6px;font-weight:600">COMMUNITY RATING (1–5 stars)</div>
+            ${starWidget(id, false, ur)}
+          </div>` : '')}
         </div>`;
     }
   } catch(e) { /* vote stats non-critical */ }
@@ -2066,20 +3281,20 @@ async function openIdeaDetail(id) {
 
 async function loadReviewQueue() {
   const el = document.getElementById('review-list');
-  el.innerHTML = '<div class="empty-state"><div class="spinner"></div> Loading review queue…</div>';
+  el.innerHTML = `<div class="empty-state"><div class="spinner"></div> ${t('msg.loading')}</div>`;
   let r, d;
   try {
     r = await fetch('api/ideas.php?action=review', {credentials:'same-origin'});
     d = await r.json();
   } catch(e) {
-    el.innerHTML = '<div class="alert alert-danger">Failed to load review queue. Check server connection.</div>';
+    el.innerHTML = `<div class="alert alert-danger">${t('msg.fail_queue')}</div>`;
     return;
   }
   if (!d.success) {
     el.innerHTML = `<div class="alert alert-danger">${d.error||'Error loading review queue.'}</div>`;
     return;
   }
-  if (!d.ideas?.length) { el.innerHTML = '<div class="empty-state">No ideas pending review.</div>'; return; }
+  if (!d.ideas?.length) { el.innerHTML = `<div class="empty-state">${t('msg.no_review')}</div>`; return; }
   el.innerHTML = d.ideas.map(i => {
     const isSelf        = parseInt(i.submitter_id) === parseInt(currentUser?.id);
     const isMultiRv     = i.workflow_type === 'multi_reviewer';
@@ -2133,7 +3348,7 @@ function openReviewModal(id, code) {
   document.getElementById('review-comment').value     = '';
   document.getElementById('review-decision').value    = 'Approved';
   const submitBtn = document.querySelector('#modal-review .modal-footer .btn-primary');
-  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Decision'; }
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('btn.submit_decision'); }
   document.getElementById('modal-review').classList.add('open');
 }
 
@@ -2145,7 +3360,7 @@ async function submitReview() {
   const label = {'Approved':'Approve','Rejected':'Reject','Implemented':'Mark as Implemented','Under Review':'Move to Under Review'}[decision] || decision;
   if (!confirm(`Confirm: ${label} this idea?\n\nThis action will be recorded in the audit trail and the submitter will be notified.`)) return;
 
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting…'; }
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('msg.loading'); }
 
   let r, d;
   try {
@@ -2157,22 +3372,22 @@ async function submitReview() {
     });
     d = await r.json();
   } catch(e) {
-    alert('Server error. Please try again.');
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Decision'; }
+    alert(t('msg.server_error'));
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('btn.submit_decision'); }
     return;
   }
 
   closeModal('modal-review');
   if (d.success) {
-    document.getElementById('success-title').textContent = 'Decision Submitted';
+    document.getElementById('success-title').textContent = t('msg.decision_ok');
     document.getElementById('success-msg').textContent   = `Idea marked as "${decision}". Submitter notified.${d.points_awarded ? ' +' + d.points_awarded + ' pts awarded.' : ''}`;
     document.getElementById('modal-success').classList.add('open');
-    showToast(`Decision recorded: ${decision}${d.points_awarded ? ` · +${d.points_awarded} pts` : ''}`, decision === 'Approved' || decision === 'Implemented' ? 'success' : 'info');
+    showToast(`${t('msg.decision_ok')}: ${decision}${d.points_awarded ? ` · +${d.points_awarded} pts` : ''}`, decision === 'Approved' || decision === 'Implemented' ? 'success' : 'info');
     loadReviewQueue();
     loadDashboard();
   } else {
     showToast('Error: ' + (d.error || 'Unknown error'), 'danger');
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Decision'; }
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('btn.submit_decision'); }
   }
 }
 
@@ -2227,11 +3442,11 @@ function nextStep() {
   if (currentStep === 1) {
     if (!document.getElementById('idea-title').value.trim() ||
         document.getElementById('idea-situation').value.trim().length < 20) {
-      alert('Please fill in the title and situation description (min 20 chars).'); return;
+      alert(t('msg.fill_situation')); return;
     }
   }
   if (currentStep === 2 && !document.getElementById('idea-solution').value.trim()) {
-    alert('Please fill in the proposed solution.'); return;
+    alert(t('msg.fill_solution')); return;
   }
   if (currentStep < totalSteps) goStep(currentStep + 1);
 }
@@ -2260,12 +3475,12 @@ async function saveDraft() {
     method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(body)
   });
   const d = await r.json();
-  if (d.success) { draftIdeaId = d.idea_id; alert('Draft saved! Idea code: ' + d.idea_code); }
+  if (d.success) { draftIdeaId = d.idea_id; alert(t('msg.draft_prefix') + d.idea_code); }
 }
 
 async function submitIdea() {
   const submitBtn = document.querySelector('#wizard-submit-row .btn-success');
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting…'; }
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('msg.loading'); }
 
   const body = buildIdeaPayload();
   body.id = draftIdeaId;
@@ -2277,8 +3492,8 @@ async function submitIdea() {
     });
     d = await r.json();
   } catch(e) {
-    alert('Server error. Please try again.');
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Idea'; }
+    alert(t('msg.server_error'));
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('form.submit_idea'); }
     return;
   }
 
@@ -2287,7 +3502,7 @@ async function submitIdea() {
     currentUser.points += (d.points_added || 0);
     document.getElementById('sb-points').textContent = currentUser.points + ' pts';
     closeModal('modal-idea-detail');
-    document.getElementById('success-title').textContent = 'Idea Submitted Successfully';
+    document.getElementById('success-title').textContent = t('msg.idea_ok');
     document.getElementById('success-msg').textContent   = `Idea #${d.idea_code} submitted and routed to your manager for review. +${d.points_added} points credited. AI Quality Score: ${d.ai_score}/100.`;
     document.getElementById('modal-success').classList.add('open');
     showToast(`Idea #${d.idea_code} submitted! +${d.points_added} pts earned`, 'success');
@@ -2296,7 +3511,7 @@ async function submitIdea() {
     loadDashboard();
   } else {
     alert('Error: ' + d.error);
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Idea'; }
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('form.submit_idea'); }
   }
 }
 
@@ -2336,7 +3551,7 @@ async function searchUsers(input, resultsId, hiddenId, displayId) {
   searchTimers[resultsId] = setTimeout(async () => {
     const r = await fetch('api/users.php?action=list&q=' + encodeURIComponent(q), {credentials:'same-origin'});
     const d = await r.json();
-    if (!d.users?.length) { el.innerHTML = '<div class="uitem">No users found.</div>'; el.style.display = 'block'; return; }
+    if (!d.users?.length) { el.innerHTML = `<div class="uitem">${t('msg.no_ideas')}</div>`; el.style.display = 'block'; return; }
     el.innerHTML = d.users.map(u => `
       <div class="uitem"
         data-id="${u.id}"
@@ -2373,20 +3588,20 @@ document.addEventListener('click', e => {
 
 async function loadAudit() {
   if (!['manager','admin','executive'].includes(currentUser?.role)) {
-    document.getElementById('audit-tbody').innerHTML = '<tr><td colspan="5" class="text-center"><div class="alert alert-warning">Audit Trail is only available to Managers, Admins and Executives.</div></td></tr>';
+    document.getElementById('audit-tbody').innerHTML = `<tr><td colspan="5" class="text-center"><div class="alert alert-warning">${t('msg.audit_restricted')}</div></td></tr>`;
     return;
   }
-  document.getElementById('audit-tbody').innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner"></div> Loading audit records…</td></tr>';
+  document.getElementById('audit-tbody').innerHTML = `<tr><td colspan="5" class="text-center"><div class="spinner"></div> ${t('msg.loading')}</td></tr>`;
   let r, d;
   try {
     r = await fetch('api/users.php?action=audit', {credentials:'same-origin'});
     d = await r.json();
   } catch(e) {
-    document.getElementById('audit-tbody').innerHTML = '<tr><td colspan="5" class="text-center alert alert-danger">Failed to load. Check server connection.</td></tr>';
+    document.getElementById('audit-tbody').innerHTML = `<tr><td colspan="5" class="text-center alert alert-danger">${t('msg.fail_audit')}</td></tr>`;
     return;
   }
   if (!d.success) {
-    document.getElementById('audit-tbody').innerHTML = `<tr><td colspan="5" class="text-center"><div class="alert alert-danger">${d.error||'Error loading audit.'}</div></td></tr>`;
+    document.getElementById('audit-tbody').innerHTML = `<tr><td colspan="5" class="text-center"><div class="alert alert-danger">${d.error||t('msg.fail_audit')}</div></td></tr>`;
     return;
   }
   document.getElementById('audit-tbody').innerHTML = (d.audit||[]).map(w => `
@@ -2396,7 +3611,7 @@ async function loadAudit() {
       <td><span class="badge ${statusBadge(w.action)}">${w.action}</span></td>
       <td>${escHtml(w.actor_name)} <small>(${w.actor_role})</small></td>
       <td>${w.comment ? escHtml(w.comment) : '—'}</td>
-    </tr>`).join('') || '<tr><td colspan="5" class="text-center">No audit records.</td></tr>';
+    </tr>`).join('') || `<tr><td colspan="5" class="text-center">${t('msg.no_audit')}</td></tr>`;
 }
 
 let lbPeriod = 'all';
@@ -2409,7 +3624,7 @@ async function loadLeaderboard() {
     r = await fetch('api/users.php?action=leaderboard&period=' + lbPeriod, {credentials:'same-origin'});
     d = await r.json();
   } catch(e) {
-    document.getElementById('lb-individuals').innerHTML = '<div class="alert alert-danger">Failed to load leaderboard.</div>';
+    document.getElementById('lb-individuals').innerHTML = `<div class="alert alert-danger">${t('msg.fail_leaderboard')}</div>`;
     return;
   }
 
@@ -2434,7 +3649,7 @@ async function loadLeaderboard() {
         <div style="margin-top:4px">${engBadge(u.avg_score, u.avg_community_rating, u.total_votes_received)}</div>
       </div>
     </div>`;
-  }).join('') || '<div class="empty-state">No data yet.</div>';
+  }).join('') || `<div class="empty-state">${t('msg.no_leaderboard')}</div>`;
   staggerAnimate([...lbEl.querySelectorAll('.lb-row')], 60);
   setTimeout(() => {
     lbEl.querySelectorAll('.progress-fill[data-w]').forEach(bar => {
@@ -2474,7 +3689,7 @@ async function loadLeaderboard() {
         </div>
       </div>`).join('');
   } else {
-    document.getElementById('lb-top-ideas').innerHTML = '<div class="empty-state">No scored ideas yet. Submit ideas to see rankings.</div>';
+    document.getElementById('lb-top-ideas').innerHTML = `<div class="empty-state">${t('msg.no_leaderboard')}</div>`;
   }
 }
 
@@ -2486,7 +3701,7 @@ function activateChip(el, group) {
 
 async function loadAnalytics() {
   if (!['manager','admin','executive'].includes(currentUser?.role)) {
-    document.getElementById('analytics-kpis').innerHTML = '<div class="alert alert-warning" style="grid-column:1/-1">Analytics is only available to Managers, Admins and Executives.</div>';
+    document.getElementById('analytics-kpis').innerHTML = `<div class="alert alert-warning" style="grid-column:1/-1">${t('msg.analytics_restricted')}</div>`;
     return;
   }
   document.getElementById('analytics-kpis').innerHTML = '<div class="kpi-card"><div class="spinner"></div></div><div class="kpi-card"><div class="spinner"></div></div><div class="kpi-card"><div class="spinner"></div></div><div class="kpi-card"><div class="spinner"></div></div>';
@@ -2499,11 +3714,11 @@ async function loadAnalytics() {
     r = await fetch('api/users.php?action=analytics', {credentials:'same-origin'});
     d = await r.json();
   } catch(e) {
-    document.getElementById('analytics-kpis').innerHTML = '<div class="alert alert-danger" style="grid-column:1/-1">Failed to load analytics. Check server connection.</div>';
+    document.getElementById('analytics-kpis').innerHTML = `<div class="alert alert-danger" style="grid-column:1/-1">${t('msg.fail_analytics')}</div>`;
     return;
   }
   if (!d.success) {
-    document.getElementById('analytics-kpis').innerHTML = `<div class="alert alert-danger" style="grid-column:1/-1">${d.error || 'Failed to load analytics.'}</div>`;
+    document.getElementById('analytics-kpis').innerHTML = `<div class="alert alert-danger" style="grid-column:1/-1">${d.error || t('msg.fail_analytics')}</div>`;
     return;
   }
 
@@ -2517,19 +3732,19 @@ async function loadAnalytics() {
   document.getElementById('analytics-kpis').innerHTML = `
     <div class="kpi-card" style="border-left-color:#4f46e5">
       <div class="kpi-icon" style="background:#eef2ff;color:#4f46e5"><svg viewBox="0 0 24 24"><path d="M9 21h6M12 3a6 6 0 016 6c0 2.2-1.1 3.8-2.5 5L15 16H9l-.5-2C7 12.8 6 11.2 6 9a6 6 0 016-6z"/></svg></div>
-      <div class="kpi-body"><div class="kpi-val" data-target="${total}">0</div><div class="kpi-label">Total Ideas</div></div>
+      <div class="kpi-body"><div class="kpi-val" data-target="${total}">0</div><div class="kpi-label">${t('dash.total')}</div></div>
     </div>
     <div class="kpi-card" style="border-left-color:#059669">
       <div class="kpi-icon" style="background:#dcfce7;color:#059669"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div class="kpi-body"><div class="kpi-val" data-target="${total ? Math.round(approved/total*100) : 0}" data-suffix="%">0%</div><div class="kpi-label">Approval Rate</div></div>
+      <div class="kpi-body"><div class="kpi-val" data-target="${total ? Math.round(approved/total*100) : 0}" data-suffix="%">0%</div><div class="kpi-label">${t('analytics.approval_rate')}</div></div>
     </div>
     <div class="kpi-card" style="border-left-color:#7c3aed">
       <div class="kpi-icon" style="background:#f3e8ff;color:#7c3aed"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-      <div class="kpi-body"><div class="kpi-val" data-target="${total ? Math.round(impl/total*100) : 0}" data-suffix="%">0%</div><div class="kpi-label">Implementation Rate</div></div>
+      <div class="kpi-body"><div class="kpi-val" data-target="${total ? Math.round(impl/total*100) : 0}" data-suffix="%">0%</div><div class="kpi-label">${t('analytics.impl_rate')}</div></div>
     </div>
     <div class="kpi-card" style="border-left-color:#4f46e5">
       <div class="kpi-icon" style="background:#eef2ff;color:#4f46e5"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg></div>
-      <div class="kpi-body"><div class="kpi-val" data-target="${ss.overall_avg || 0}">0</div><div class="kpi-label">Avg AI Quality Score</div></div>
+      <div class="kpi-body"><div class="kpi-val" data-target="${ss.overall_avg || 0}">0</div><div class="kpi-label">${t('analytics.avg_score')}</div></div>
     </div>
   `;
   document.querySelectorAll('#analytics-kpis .kpi-val[data-target]').forEach(el => {
@@ -2551,7 +3766,7 @@ async function loadAnalytics() {
       <span class="bar-label">${k}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/maxImp*100)}%;background:${impColors[i%impColors.length]}"></div></div>
       <span class="bar-val">${v}</span>
-    </div>`).join('') || '<div class="empty-state">No data yet.</div>';
+    </div>`).join('') || `<div class="empty-state">${t('msg.no_ideas')}</div>`;
 
   const statusColors = {'Submitted':'#4f46e5','Under Review':'#d97706','Approved':'#059669','Rejected':'#dc2626','Implemented':'#7c3aed','Draft':'#94a3b8'};
   document.getElementById('analytics-status').innerHTML = `
@@ -2608,7 +3823,7 @@ async function loadAdminUsers() {
       <td>${escHtml(u.email)}</td>
       <td><span class="badge badge-submitted">${formatRole(u.role)}</span></td>
       <td>${u.points}</td>
-    </tr>`).join('') || '<tr><td colspan="5" class="text-center">No users found.</td></tr>';
+    </tr>`).join('') || `<tr><td colspan="5" class="text-center">${t('msg.no_ideas')}</td></tr>`;
 }
 
 const ROLE_COLORS = {admin:'#4f46e5',manager:'#d97706',employee:'#059669',executive:'#7c3aed'};
@@ -2679,12 +3894,12 @@ async function loadHierarchy() {
   document.getElementById('sa-last-updated').textContent =
     'Last refreshed: ' + new Date().toLocaleTimeString();
   document.getElementById('sa-kpi-strip').innerHTML = [
-    ['Total Ideas',    dash.total||0,            '#4f46e5', 'Excluding drafts'],
-    ['Pending Review', pending,                  '#dc2626', 'Submitted + Under Review'],
-    ['Approved',       counts['Approved']||0,    '#d97706', 'Awaiting implementation'],
-    ['Implemented',    counts['Implemented']||0, '#059669', 'Completed ideas'],
-    ['Total Users',    s.total,                  '#7c3aed', `${s.admins} admins · ${s.managers} mgrs · ${s.employees} emp`],
-    ['Executives',     s.executives,             '#2563eb', 'Executive-level accounts'],
+    [t('dash.total'),       dash.total||0,            '#4f46e5', 'Excluding drafts'],
+    [t('status.review'),    pending,                  '#dc2626', 'Submitted + Under Review'],
+    [t('dash.approved'),    counts['Approved']||0,    '#d97706', 'Awaiting implementation'],
+    [t('dash.implemented'), counts['Implemented']||0, '#059669', 'Completed ideas'],
+    [t('pa.total_users'),   s.total,                  '#7c3aed', `${s.admins} admins · ${s.managers} mgrs · ${s.employees} emp`],
+    ['Executives',          s.executives,             '#2563eb', 'Executive-level accounts'],
   ].map(([label, val, color, sub]) => `
     <div class="kpi-card" style="border-left-color:${color}">
       <div class="kpi-val" style="color:${color}">${val}</div>
@@ -2718,7 +3933,7 @@ async function loadHierarchy() {
             <div style="font-size:11px;color:var(--subtle);margin-top:2px">${r.action} by <strong>${escHtml(r.actor_name)}</strong> &middot; ${timeAgo(r.created_at)}</div>
           </div>
         </div>`).join('')
-    : '<div style="color:var(--subtle);font-size:13px;padding:10px 0">No recent activity.</div>';
+    : `<div style="color:var(--subtle);font-size:13px;padding:10px 0">${t('msg.no_ideas')}</div>`;
 
   // ── Hierarchy Tree ─────────────────────────────────────────────
   const byId = {};
@@ -2732,7 +3947,7 @@ async function loadHierarchy() {
   roots.sort((a,b) => (rootOrder[a.role]??9) - (rootOrder[b.role]??9) || a.name.localeCompare(b.name));
   document.getElementById('hierarchy-tree').innerHTML = roots.length
     ? roots.map(n => renderHierarchyNode(n, 0)).join('')
-    : '<div style="color:var(--subtle);padding:16px">No users found.</div>';
+    : `<div style="color:var(--subtle);padding:16px">${t('msg.no_ideas')}</div>`;
 
   // ── User Management Table ──────────────────────────────────────
   _saUsersData = hier.users;
@@ -2753,12 +3968,12 @@ async function loadHierarchy() {
       <td style="font-size:12px;color:var(--subtle)">${escHtml(u.manager_name||'—')}</td>
       <td><strong>${u.points}</strong></td>
       <td>${u.idea_count}</td>
-    </tr>`).join('') || `<tr><td colspan="9" class="text-center">No users found.</td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="9" class="text-center">${t('msg.no_ideas')}</td></tr>`;
 }
 
 async function batchRescoreSa() {
   const btn = document.getElementById('sa-rescore-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Rescoring…'; }
+  if (btn) { btn.disabled = true; btn.querySelector('span').textContent = t('msg.rescoring'); }
   try {
     const r = await fetch('api/score.php?action=batch_rescore', {method:'POST', credentials:'same-origin'});
     const d = await r.json();
@@ -2766,17 +3981,17 @@ async function batchRescoreSa() {
       ? `<span class="alert alert-success" style="display:inline-block;padding:6px 14px">Rescored ${d.updated} ideas successfully.</span>`
       : `<span class="alert alert-danger"  style="display:inline-block;padding:6px 14px">${escHtml(d.error||'Error.')}</span>`;
   } catch(e) {
-    document.getElementById('sa-rescore-result').innerHTML = '<span class="alert alert-danger" style="display:inline-block;padding:6px 14px">Server error — check API connection.</span>';
+    document.getElementById('sa-rescore-result').innerHTML = `<span class="alert alert-danger" style="display:inline-block;padding:6px 14px">${t('msg.server_error')}</span>`;
   }
   if (btn) {
     btn.disabled = false;
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Rescore All Ideas';
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> <span data-i18n="btn.rescore_all">${t('btn.rescore_all')}</span>`;
   }
 }
 
 async function batchRescore() {
   const btn = document.querySelector('#atab4 .btn-warning');
-  if (btn) { btn.disabled = true; btn.textContent = 'Rescoring…'; }
+  if (btn) { btn.disabled = true; btn.textContent = t('msg.rescoring'); }
   try {
     const r = await fetch('api/score.php?action=batch_rescore', {method:'POST', credentials:'same-origin'});
     const d = await r.json();
@@ -2784,9 +3999,9 @@ async function batchRescore() {
       ? `<span class="alert alert-success" style="display:inline-block">Rescored ${d.updated} ideas successfully.</span>`
       : `<span class="alert alert-danger" style="display:inline-block">${d.error || 'Error.'}</span>`;
   } catch(e) {
-    document.getElementById('rescore-result').innerHTML = '<span class="alert alert-danger" style="display:inline-block">Server error.</span>';
+    document.getElementById('rescore-result').innerHTML = `<span class="alert alert-danger" style="display:inline-block">${t('msg.server_error')}</span>`;
   }
-  if (btn) { btn.disabled = false; btn.textContent = 'Rescore All Ideas'; }
+  if (btn) { btn.disabled = false; btn.textContent = t('btn.rescore_all'); }
 }
 
 function renderProfile() {
@@ -2797,15 +4012,15 @@ function renderProfile() {
   document.getElementById('profile-empid').textContent    = u.employee_id;
   document.getElementById('profile-role-badge').textContent = formatRole(u.role);
   document.getElementById('profile-table').innerHTML = `
-    <tr><td style="color:var(--subtle);padding:5px 0">Department</td><td>${u.department||'–'}</td></tr>
-    <tr><td style="color:var(--subtle);padding:5px 0">Email</td><td>${u.email}</td></tr>
-    <tr><td style="color:var(--subtle);padding:5px 0">Phone</td><td>${u.phone||'–'}</td></tr>
-    <tr><td style="color:var(--subtle);padding:5px 0">Reporting To</td><td>${u.manager_name||'–'}</td></tr>
-    <tr><td style="color:var(--subtle);padding:5px 0">Business Unit</td><td>${u.business_unit||'–'}</td></tr>
-    <tr><td style="color:var(--subtle);padding:5px 0">Location</td><td>${u.location||'–'}</td></tr>
+    <tr><td style="color:var(--subtle);padding:5px 0">${t('profile.dept')}</td><td>${u.department||'–'}</td></tr>
+    <tr><td style="color:var(--subtle);padding:5px 0">${t('profile.email_lbl')}</td><td>${u.email}</td></tr>
+    <tr><td style="color:var(--subtle);padding:5px 0">${t('profile.phone')}</td><td>${u.phone||'–'}</td></tr>
+    <tr><td style="color:var(--subtle);padding:5px 0">${t('profile.reports_to')}</td><td>${u.manager_name||'–'}</td></tr>
+    <tr><td style="color:var(--subtle);padding:5px 0">${t('profile.bu')}</td><td>${u.business_unit||'–'}</td></tr>
+    <tr><td style="color:var(--subtle);padding:5px 0">${t('profile.loc')}</td><td>${u.location||'–'}</td></tr>
   `;
   document.getElementById('profile-stats').innerHTML = `
-    <div class="mini-stat"><div class="mini-stat-val">${u.points}</div><div class="mini-stat-label">Total Points</div></div>
+    <div class="mini-stat"><div class="mini-stat-val">${u.points}</div><div class="mini-stat-label">${t('profile.total_pts')}</div></div>
   `;
 }
 
@@ -2821,7 +4036,7 @@ async function loadNotifications() {
       <div class="notif-item-title">${escHtml(n.title)}</div>
       <div class="notif-item-meta">${n.message ? escHtml(n.message).substring(0,80) : ''}</div>
       <div class="notif-item-meta">${timeAgo(n.created_at)}</div>
-    </div>`).join('') || '<div class="empty-state">No notifications</div>';
+    </div>`).join('') || `<div class="empty-state">${t('msg.no_notif')}</div>`;
 }
 
 async function markAllRead() {

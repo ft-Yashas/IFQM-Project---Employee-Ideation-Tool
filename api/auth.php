@@ -22,6 +22,32 @@ if ($action === 'login') {
         respond(['success' => false, 'error' => 'Email and password are required.'], 400);
     }
 
+    // ── Try platform admin first (ifqm_master.platform_admins) ────────────
+    try {
+        $master = masterDb();
+        $paStmt = $master->prepare("SELECT * FROM platform_admins WHERE email = ? LIMIT 1");
+        $paStmt->execute([$email]);
+        $pa = $paStmt->fetch();
+        if ($pa && password_verify($pass, $pa['password_hash'])) {
+            $initials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', $pa['name']), 0, 2)));
+            $session = [
+                'id'              => 'pa_' . $pa['id'],
+                'name'            => $pa['name'],
+                'email'           => $pa['email'],
+                'role'            => 'platform_admin',
+                'avatar_initials' => $initials ?: 'PA',
+                'points'          => 0,
+            ];
+            $_SESSION['platform_admin'] = true;
+            $_SESSION['user_id']        = $session['id'];
+            $_SESSION['user']           = $session;
+            respond(['success' => true, 'user' => $session]);
+        }
+    } catch (Exception $e) {
+        // ifqm_master unavailable — fall through to tenant auth
+    }
+
+    // ── Tenant user auth ───────────────────────────────────────────────────
     $stmt = db()->prepare(
         "SELECT u.*, m.name AS manager_name
          FROM users u

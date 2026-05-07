@@ -496,7 +496,7 @@ function buildFallbackReason(array $bd): string
         ? implode('. ', $parts) . '.'
         : 'Scored using the structured heuristic model.';
 
-    return "Heuristic evaluation: {$body} (AI service unavailable.)";
+    return "Heuristic: {$body}";
 }
 
 
@@ -531,7 +531,9 @@ function computeAIScoreWithReason(array $idea): array
 Evaluate this employee improvement idea for an operations/manufacturing company.
 
 Return ONLY valid JSON in this exact format — no markdown, no code fences, no extra text:
-{"score": <integer 0-100>, "reason": "<2-3 sentence explanation>"}
+{"score": <integer 0-100>, "reason": "<one sentence explanation>"}
+
+The reason must be a single sentence (max 20 words) summarising the key strength or weakness that most influenced the score.
 
 Score based on:
 - Innovation: Is it a fresh or creative approach?
@@ -546,7 +548,7 @@ Impact Areas: {$areas}
 Impact Level: {$level}
 PROMPT;
 
-    $content = callOpenAI($prompt);
+    $content = callGemini($prompt);
 
     if ($content !== null) {
         $cleaned = trim($content);
@@ -565,19 +567,18 @@ PROMPT;
                 $score  = max(0, min(100, (int)round((float)$parsed['score'])));
                 $reason = trim((string)($parsed['reason'] ?? 'Evaluated by AI.'));
 
-                // Run heuristic model in parallel to return a breakdown even for OpenAI scores
                 $heuristic = scoreIdeaWithBreakdown($idea);
 
                 return [
                     'score'     => $score,
                     'reason'    => $reason !== '' ? $reason : 'Evaluated by AI.',
-                    'source'    => 'openai',
+                    'source'    => 'gemini',
                     'breakdown' => $heuristic['breakdown'],
                 ];
             }
         }
 
-        error_log('OpenAI score parse failed. Cleaned content: ' . $cleaned);
+        error_log('Gemini score parse failed. Cleaned content: ' . $cleaned);
     }
 
     // Heuristic fallback

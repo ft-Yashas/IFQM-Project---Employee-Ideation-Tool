@@ -37,10 +37,12 @@ if ($action === 'list') {
         $params[] = $_GET['impact'];
     }
 
+    $uid = (int)$user['id'];
     $sql = "SELECT i.*, u.name AS submitter_name, u.department, u.avatar_initials,
                    c1.name AS co1_name, c2.name AS co2_name,
                    (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
-                   (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating
+                   (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating,
+                   (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id={$uid}) AS user_community_vote
             FROM ideas i
             JOIN users u ON u.id = i.submitter_id
             LEFT JOIN users c1 ON c1.id = i.co_suggester_1_id
@@ -55,10 +57,12 @@ if ($action === 'list') {
 
 // ── MY ideas ──────────────────────────────────────────────────────
 if ($action === 'my') {
+    $uid = (int)$user['id'];
     $stmt = db()->prepare(
         "SELECT i.*, c1.name AS co1_name, c2.name AS co2_name,
                 (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
-                (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating
+                (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating,
+                (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id={$uid}) AS user_community_vote
          FROM ideas i
          LEFT JOIN users c1 ON c1.id = i.co_suggester_1_id
          LEFT JOIN users c2 ON c2.id = i.co_suggester_2_id
@@ -75,13 +79,15 @@ if ($action === 'review') {
     $pdo = db();
     $uid = $user['id'];
 
+    $uid  = (int)$user['id'];
     $cols = "SELECT DISTINCT i.*, u.name AS submitter_name, u.department, u.avatar_initials,
                     ir.decision AS my_reviewer_decision,
                     (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
                     (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating,
                     (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id) AS reviewer_count,
                     (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id AND decision='approved') AS approved_count,
-                    (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id AND decision='rejected') AS rejected_count
+                    (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id AND decision='rejected') AS rejected_count,
+                    (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id={$uid}) AS user_community_vote
              FROM ideas i
              JOIN users u ON u.id = i.submitter_id
              LEFT JOIN idea_reviewers ir ON ir.idea_id = i.id AND ir.reviewer_id = ?";
@@ -105,13 +111,15 @@ if ($action === 'review') {
 // ── GET single idea detail ─────────────────────────────────────────
 if ($action === 'get') {
     $id   = (int)($_GET['id'] ?? 0);
+    $uid  = (int)$user['id'];
     $stmt = db()->prepare(
         "SELECT i.*, u.name AS submitter_name, u.department, u.business_unit,
                 u.avatar_initials, u.email AS submitter_email,
                 c1.name AS co1_name, c2.name AS co2_name,
                 m.name AS manager_name,
                 (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
-                (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating
+                (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating,
+                (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id={$uid}) AS user_community_vote
          FROM ideas i
          JOIN  users u  ON u.id  = i.submitter_id
          LEFT JOIN users c1 ON c1.id = i.co_suggester_1_id
@@ -138,15 +146,19 @@ if ($action === 'get') {
     $idea['workflow'] = $wf->fetchAll();
 
     // Reviewer assignments (multi-reviewer workflow)
-    $rv = db()->prepare(
-        "SELECT ir.*, u.name AS reviewer_name, u.role AS reviewer_role,
-                u.avatar_initials, u.department
-         FROM idea_reviewers ir
-         JOIN users u ON u.id = ir.reviewer_id
-         WHERE ir.idea_id = ? ORDER BY ir.assigned_at ASC"
-    );
-    $rv->execute([$id]);
-    $idea['reviewers'] = $rv->fetchAll();
+    try {
+        $rv = db()->prepare(
+            "SELECT ir.*, u.name AS reviewer_name, u.role AS reviewer_role,
+                    u.avatar_initials, u.department
+             FROM idea_reviewers ir
+             JOIN users u ON u.id = ir.reviewer_id
+             WHERE ir.idea_id = ? ORDER BY ir.assigned_at ASC"
+        );
+        $rv->execute([$id]);
+        $idea['reviewers'] = $rv->fetchAll();
+    } catch (Exception $e) {
+        $idea['reviewers'] = [];
+    }
 
     respond(['success' => true, 'idea' => $idea]);
 }

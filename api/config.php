@@ -11,7 +11,7 @@ define('FALLBACK_DB_USER', 'root');
 define('FALLBACK_DB_PASS', '');
 define('FALLBACK_DB_NAME', 'ifqm_ideation');
 
-define('OPENAI_API_KEY', getenv('OPENAI_API_KEY'));
+define('GEMINI_API_KEY', 'AIzaSyA8PMepwppjPfwPFOlAuvUrPcaVLX6WClU');
 
 define('MAX_FILE_MB',       10);
 define('SESSION_LIFETIME',  28800);
@@ -146,6 +146,15 @@ function requireRole(string ...$roles): array {
     return $user;
 }
 
+// Platform-level auth — only for IFQM vendor staff (ifqm_master.platform_admins)
+function requirePlatformAuth(): array {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    if (empty($_SESSION['platform_admin']) || empty($_SESSION['user'])) {
+        respond(['success' => false, 'error' => 'Not authenticated as platform admin'], 401);
+    }
+    return $_SESSION['user'];
+}
+
 function generateIdeaCode(): string {
     $year = (int)date('Y');
     $stmt = db()->prepare("SELECT COUNT(*) FROM ideas WHERE YEAR(created_at) = ?");
@@ -168,30 +177,26 @@ function addPoints(int $userId, int $pts): void {
     db()->prepare("UPDATE users SET points = points + ? WHERE id = ?")->execute([$pts, $userId]);
 }
 
-function callOpenAI(string $prompt): ?string {
-    $apiKey = OPENAI_API_KEY;
+function callGemini(string $prompt): ?string {
+    $apiKey = GEMINI_API_KEY;
     if (!$apiKey) return null;
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . urlencode($apiKey);
     $payload = [
-        'model'       => 'gpt-4o-mini',
-        'messages'    => [
-            ['role'=>'system','content'=>'You are an expert evaluator. Always respond with valid JSON only. No markdown, no code fences, no extra text.'],
-            ['role'=>'user','content'=>$prompt],
-        ],
-        'temperature' => 0.3,
-        'max_tokens'  => 250,
+        'contents'         => [['parts' => [['text' => $prompt]]]],
+        'generationConfig' => ['temperature' => 0.3, 'maxOutputTokens' => 150],
     ];
-    $ch = curl_init('https://api.openai.com/v1/chat/completions');
+    $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true,
         CURLOPT_POSTFIELDS     => json_encode($payload),
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json','Authorization: Bearer '.$apiKey],
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
         CURLOPT_TIMEOUT => 20, CURLOPT_CONNECTTIMEOUT => 10,
     ]);
     $raw = curl_exec($ch); $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch); curl_close($ch);
-    if ($err) { error_log('OpenAI cURL error: '.$err); return null; }
-    if ($httpCode !== 200) { error_log('OpenAI HTTP '.$httpCode.': '.$raw); return null; }
+    if ($err) { error_log('Gemini cURL error: ' . $err); return null; }
+    if ($httpCode !== 200) { error_log('Gemini HTTP ' . $httpCode . ': ' . $raw); return null; }
     $decoded = json_decode($raw, true);
-    $content = $decoded['choices'][0]['message']['content'] ?? null;
-    if ($content !== null) error_log('OpenAI raw content: '.$content);
+    $content = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? null;
+    if ($content !== null) error_log('Gemini raw content: ' . $content);
     return $content;
 }

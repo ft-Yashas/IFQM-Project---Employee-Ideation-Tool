@@ -24,3 +24,22 @@ CREATE TABLE IF NOT EXISTS tenants (
 -- Default tenant for local XAMPP development
 INSERT IGNORE INTO tenants (name, slug, domain, db_host, db_name, db_user, db_pass, status, is_default)
 VALUES ('IFQM', 'ifqm', 'localhost', 'localhost', 'ifqm_ideation', 'root', '', 'active', 1);
+
+-- ── Platform Admins (IFQM vendor staff — NOT tenant users) ────────────────
+-- These are the SaaS platform operators. They live in ifqm_master,
+-- not inside any tenant database, and can only see aggregate stats.
+CREATE TABLE IF NOT EXISTS platform_admins (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  name          VARCHAR(100) NOT NULL,
+  email         VARCHAR(150) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed: password = "password"
+INSERT IGNORE INTO platform_admins (name, email, password_hash)
+VALUES (
+  'IFQM Platform Admin',
+  'platform@ifqm.io',
+  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
+);

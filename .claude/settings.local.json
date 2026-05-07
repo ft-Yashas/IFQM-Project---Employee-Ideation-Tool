@@ -11,7 +11,10 @@
       "Bash(C:/xampp/mysql/bin/mysql.exe *)",
       "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -l api/config.php)",
       "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -l api/ideas.php)",
-      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -l provision_tenant.php)"
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -l provision_tenant.php)",
+      "Bash(Test-Path *)",
+      "WebSearch",
+      "PowerShell(C:\\\\xampp\\\\php\\\\php.exe -l \"C:\\\\xampp\\\\htdocs\\\\ifqm\\\\index.php\" 2>&1)"
     ]
   }
 }

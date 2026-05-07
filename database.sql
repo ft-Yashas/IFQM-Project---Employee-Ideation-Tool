@@ -121,12 +121,12 @@ ORDER BY u.points DESC;
 INSERT INTO users
   (employee_id, name, email, password_hash, phone, department, business_unit, location, role, manager_id, points, avatar_initials)
 VALUES
-  ('EMP-003', 'Bhuvan K H',       'bhuvan.kh@ifqm.com',      '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543212', 'Administration', 'BU-South', 'Bengaluru', 'admin',    NULL, 500, 'BK'),
-  ('EMP-002', 'Priya Sharma',     'priya.sharma@ifqm.com',   '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543211', 'Production',     'BU-South', 'Bengaluru', 'manager',  NULL, 320, 'PS'),
-  ('EMP-001', 'Yashas R',         'yashas.r@ifqm.com',        '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543210', 'Production',     'BU-South', 'Bengaluru', 'employee', NULL, 145, 'YR'),
-  ('EMP-004', 'Adrish Chowdhury', 'adrish.c@ifqm.com',        '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543213', 'Strategy',       'BU-East',  'Kolkata',   'executive',NULL, 750, 'AC'),
-  ('EMP-005', 'Rahul Mehta',      'rahul.mehta@ifqm.com',     '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543214', 'Quality',        'BU-South', 'Bengaluru', 'employee', NULL, 210, 'RM'),
-  ('EMP-006', 'Arjun Chopra',     'arjun.chopra@ifqm.com',    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543215', 'Safety',         'BU-North', 'Delhi',     'employee', NULL,  80, 'AC');
+  ('EMP-003', 'Bhuvan K H',       'bhuvan.kh@jain.com',      '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543212', 'Administration', 'BU-South', 'Bengaluru', 'admin',    NULL, 500, 'BK'),
+  ('EMP-002', 'Priya Sharma',     'priya.sharma@jain.com',   '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543211', 'Production',     'BU-South', 'Bengaluru', 'manager',  NULL, 320, 'PS'),
+  ('EMP-001', 'Yashas R',         'yashas.r@jain.com',        '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543210', 'Production',     'BU-South', 'Bengaluru', 'employee', NULL, 145, 'YR'),
+  ('EMP-004', 'Adrish Chowdhury', 'adrish.c@jain.com',        '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543213', 'Strategy',       'BU-East',  'Kolkata',   'executive',NULL, 750, 'AC'),
+  ('EMP-005', 'Rahul Mehta',      'rahul.mehta@jain.com',     '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543214', 'Quality',        'BU-South', 'Bengaluru', 'employee', NULL, 210, 'RM'),
+  ('EMP-006', 'Arjun Chopra',     'arjun.chopra@jain.com',    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543215', 'Safety',         'BU-North', 'Delhi',     'employee', NULL,  80, 'AC');
 
 -- ============================================================
 -- Step 2: Set manager relationships AFTER all rows exist
@@ -169,13 +169,29 @@ VALUES (
 INSERT IGNORE INTO users
   (employee_id, name, email, password_hash, phone, department, business_unit, location, role, manager_id, points, avatar_initials)
 VALUES
-  ('SA-001', 'IFQM Super Admin', 'superadmin@ifqm.com',
+  ('SA-001', 'IFQM Super Admin', 'superadmin@jain.com',
    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
    NULL, 'IFQM Corporate', 'All Units', 'Bengaluru', 'super_admin', NULL, 0, 'SA');
 
 -- ── Migrations: run these once on existing databases ──────────────
 -- ALTER TABLE ideas ADD COLUMN IF NOT EXISTS ai_reason TEXT AFTER ai_score;
 -- ALTER TABLE users MODIFY COLUMN role ENUM('employee','manager','admin','executive','super_admin') NOT NULL DEFAULT 'employee';
+
+-- ── Community Upvote / Downvote ────────────────────────────────
+CREATE TABLE IF NOT EXISTS idea_community_votes (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  idea_id    INT NOT NULL,
+  user_id    INT NOT NULL,
+  vote_type  ENUM('up','down') NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_cv (idea_id, user_id),
+  FOREIGN KEY (idea_id) REFERENCES ideas(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+ALTER TABLE ideas
+  ADD COLUMN IF NOT EXISTS upvotes   INT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS downvotes INT NOT NULL DEFAULT 0;
 
 -- ── Dual Workflow Migration (run once on existing databases) ───────
 ALTER TABLE ideas ADD COLUMN IF NOT EXISTS workflow_type      ENUM('hierarchical','multi_reviewer') NOT NULL DEFAULT 'hierarchical';

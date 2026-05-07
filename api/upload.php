@@ -35,10 +35,10 @@ if ($action === 'upload' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         respond(['success' => false, 'error' => 'File type not allowed.'], 400);
     }
 
-    if (!is_dir(UPLOAD_DIR)) mkdir(UPLOAD_DIR, 0755, true);
+    $dir = uploadDir();
 
     $safeName = uniqid('attach_', true) . '.' . $ext;
-    $destPath = UPLOAD_DIR . $safeName;
+    $destPath = $dir . $safeName;
 
     if (!move_uploaded_file($file['tmp_name'], $destPath)) {
         respond(['success' => false, 'error' => 'Failed to save file.'], 500);
@@ -48,7 +48,7 @@ if ($action === 'upload' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         "INSERT INTO idea_attachments (idea_id,section,filename,filepath) VALUES (?,?,?,?)"
     )->execute([$ideaId, $section, $file['name'], $safeName]);
 
-    respond(['success' => true, 'filename' => $file['name'], 'url' => UPLOAD_URL . $safeName]);
+    respond(['success' => true, 'filename' => $file['name'], 'url' => uploadUrl() . $safeName]);
 }
 
 if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -64,7 +64,7 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $att = $stmt->fetch();
     if (!$att) respond(['success' => false, 'error' => 'Not found or unauthorized.'], 403);
 
-    @unlink(UPLOAD_DIR . $att['filepath']);
+    @unlink(uploadDir() . $att['filepath']);
     db()->prepare("DELETE FROM idea_attachments WHERE id=?")->execute([$aid]);
     respond(['success' => true]);
 }
