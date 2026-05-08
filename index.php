@@ -629,10 +629,12 @@ $user     = $_SESSION['user'] ?? [];
     <div class="nav-item active" id="nav-dashboard" data-label="Dashboard" onclick="navigate('dashboard',this)"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="label" data-i18n="nav.dashboard">Dashboard</span></div>
     <div class="nav-item" id="nav-my-ideas" data-label="My Ideas" onclick="navigate('my-ideas',this)"><span class="icon"><svg viewBox="0 0 24 24"><path d="M9 21h6M12 3a6 6 0 016 6c0 2.2-1.1 3.8-2.5 5L15 16H9l-.5-2C7 12.8 6 11.2 6 9a6 6 0 016-6z"/></svg></span><span class="label" data-i18n="nav.my_ideas">My Ideas</span></div>
     <div class="nav-item" data-label="Submit Idea" id="nav-submit" onclick="navigate('submit',this)"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span><span class="label" data-i18n="nav.submit">Submit Idea</span></div>
+    <div class="nav-item" data-label="Challenges" id="nav-challenges" onclick="navigate('challenges',this)"><span class="icon"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M17 3h3l-1 5a4 4 0 01-4 3M7 3H4l1 5a4 4 0 004 3"/><path d="M7 11a5 5 0 0010 0V3H7v8z"/><line x1="12" y1="11" x2="12" y2="7"/></svg></span><span class="label">Challenges</span></div>
 
     <div class="nav-section" data-i18n="section.workflow">Workflow</div>
     <div class="nav-item" data-label="Review Queue" id="nav-review" onclick="navigate('review',this)" style="display:none"><span class="icon"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><polyline points="9 14 11 16 15 12"/></svg></span><span class="label" data-i18n="nav.review">Review Queue</span></div>
     <div class="nav-item" data-label="All Ideas" id="nav-all" onclick="navigate('ideas-all',this)"><span class="icon"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r="1" fill="currentColor" stroke="none"/></svg></span><span class="label" data-i18n="nav.all_ideas">All Ideas</span></div>
+    <div class="nav-item" data-label="Idea Board" id="nav-board" onclick="navigate('board',this)"><span class="icon"><svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg></span><span class="label">Idea Board</span></div>
     <div class="nav-item" data-label="Audit Trail" id="nav-audit" onclick="navigate('audit',this)"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span class="label" data-i18n="nav.audit">Audit Trail</span></div>
 
     <div class="nav-section" data-i18n="section.insights">Insights</div>
@@ -751,7 +753,8 @@ $user     = $_SESSION['user'] ?? [];
             <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px" data-i18n="step1.heading">Step 1: Describe the Present Situation</h3>
             <div class="form-group">
               <label data-i18n="step1.title_label">Situation Title</label> <span style="color:red">*</span>
-              <input class="form-control" id="idea-title" data-i18n-ph="step1.title_ph" placeholder="Brief title for your idea"/>
+              <input class="form-control" id="idea-title" data-i18n-ph="step1.title_ph" placeholder="Brief title for your idea" oninput="checkDuplicateTitle(this.value)"/>
+              <div id="duplicate-warning" style="display:none;margin-top:6px;padding:8px 12px;background:#fef3c7;border:1px solid #fde68a;border-radius:var(--r);font-size:12px;color:#92400e"></div>
             </div>
             <div class="form-group">
               <label data-i18n="step1.desc_label">Current Situation Description</label> <span style="color:red">*</span>
@@ -836,6 +839,36 @@ $user     = $_SESSION['user'] ?? [];
               <input type="hidden" id="co2-id"/>
             </div>
           </div>
+          <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px">
+            <h4 style="font-size:13px;font-weight:600;color:var(--heading);margin-bottom:12px">Submission Options</h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Idea Template</label>
+                <select class="form-control" id="idea-template">
+                  <option value="">— No Template —</option>
+                  <option value="cost_reduction">Cost Reduction</option>
+                  <option value="process_improvement">Process Improvement</option>
+                  <option value="safety_improvement">Safety Improvement</option>
+                  <option value="quality_improvement">Quality Improvement</option>
+                  <option value="revenue_growth">Revenue Growth</option>
+                  <option value="waste_reduction">Waste Reduction</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Link to Challenge</label>
+                <select class="form-control" id="idea-challenge">
+                  <option value="">— No Challenge —</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:4px">
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:500;margin:0">
+                <input type="checkbox" id="idea-anonymous" style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)"/>
+                Submit Anonymously
+              </label>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px;margin-left:26px">Your identity will be hidden from other employees. Managers can still see who submitted the idea.</div>
+            </div>
+          </div>
 
           <div class="wizard-body" id="step-5" style="display:none">
             <h3 style="font-size:14px;color:var(--heading);margin-bottom:12px" data-i18n="step5.heading">Step 5: Review &amp; Submit</h3>
@@ -857,15 +890,30 @@ $user     = $_SESSION['user'] ?? [];
       </div>
 
       <div class="page" id="page-review">
-        <div class="section-header">
-          <div><div class="page-title" data-i18n="nav.review">Review Queue</div><div class="text-muted" data-i18n="page.review_sub">Ideas pending your review — sorted by AI quality score (highest first)</div></div>
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="page-title" data-i18n="nav.review">Review Queue</div><div class="text-muted">Ideas pending your review — sorted by due date, then AI score</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer">
+              <input type="checkbox" id="bulk-select-all" style="accent-color:var(--primary)" onchange="toggleBulkAll(this.checked)"/> Select All
+            </label>
+          </div>
         </div>
         <div id="review-list"><div class="empty-state"><div class="spinner"></div> Loading…</div></div>
+        <div id="bulk-action-bar" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 20px;box-shadow:var(--shadow-xl);display:flex;gap:12px;align-items:center;z-index:200">
+          <span id="bulk-count-label" style="font-size:13px;font-weight:600;color:var(--heading)">0 selected</span>
+          <button class="btn btn-success btn-sm" onclick="submitBulkReview('Approved')">Approve All</button>
+          <button class="btn btn-danger btn-sm" onclick="submitBulkReview('Rejected')">Reject All</button>
+          <button class="btn btn-outline btn-sm" onclick="clearBulkSelection()">Clear</button>
+        </div>
       </div>
 
       <div class="page" id="page-ideas-all">
-        <div class="section-header">
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start">
           <div><div class="page-title" data-i18n="nav.all_ideas">All Ideas</div></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="window.open('api/export.php?action=ideas','_blank')">⬇ Export CSV</button>
+            <button class="btn btn-outline btn-sm" onclick="window.open('api/export.php?action=analytics','_blank')">⬇ Print Report</button>
+          </div>
         </div>
         <div class="filter-bar">
           <input id="all-search" data-i18n-ph="placeholder.search" placeholder="Search…" style="flex:1" oninput="loadAllIdeas()"/>
@@ -882,6 +930,26 @@ $user     = $_SESSION['user'] ?? [];
             <tbody id="all-ideas-tbody"><tr><td colspan="10" class="text-center"><div class="spinner"></div></td></tr></tbody>
           </table>
         </div>
+      </div>
+
+      <div class="page" id="page-challenges">
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="page-title">Innovation Challenges</div><div class="text-muted">Active campaigns — submit ideas aligned to company goals</div></div>
+          <button class="btn btn-primary btn-sm" id="btn-new-challenge" style="display:none" onclick="openChallengeModal()">+ New Challenge</button>
+        </div>
+        <div id="challenges-list"><div class="empty-state"><div class="spinner"></div> Loading…</div></div>
+      </div>
+
+      <div class="page" id="page-board">
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="page-title">Idea Board</div><div class="text-muted">Community voting board — upvote the ideas you support</div></div>
+          <select id="board-sort" class="form-control" style="width:150px" onchange="loadBoard()">
+            <option value="votes">Most Voted</option>
+            <option value="recent">Most Recent</option>
+            <option value="score">Highest AI Score</option>
+          </select>
+        </div>
+        <div id="board-list"><div class="empty-state"><div class="spinner"></div> Loading…</div></div>
       </div>
 
       <div class="page" id="page-audit">
@@ -963,6 +1031,7 @@ $user     = $_SESSION['user'] ?? [];
           <div class="tab" onclick="switchTab(this,'atab2')" data-i18n="admin.points_config">Points Config</div>
           <div class="tab" onclick="switchTab(this,'atab3')" data-i18n="admin.db_status">DB Status</div>
           <div class="tab" onclick="switchTab(this,'atab4')" data-i18n="btn.rescore_all">Rescore Ideas</div>
+          <div class="tab" onclick="switchTab(this,'atab5');loadOrgSettings()">Org Settings</div>
         </div>
 
         <!-- User Management Tab -->
@@ -1017,6 +1086,11 @@ $user     = $_SESSION['user'] ?? [];
           <div class="alert alert-info" data-i18n="admin.rescore_info">Recompute AI quality scores for all existing ideas using the current scoring model.</div>
           <button class="btn btn-warning" onclick="batchRescore()" data-i18n="btn.rescore_all">Rescore All Ideas</button>
           <div id="rescore-result" style="margin-top:12px;font-size:13px"></div>
+        </div>
+
+        <!-- Org Settings Tab -->
+        <div class="tab-content" id="atab5">
+          <div id="org-settings-form"><div class="spinner"></div></div>
         </div>
       </div>
 
@@ -2642,6 +2716,8 @@ function selectLang(l) {
     'platform-dash': () => loadPlatformDashboard(),
     admin:       () => loadAdminUsers(),
     profile:     () => renderProfile(),
+    challenges:  () => loadChallenges(),
+    board:       () => loadBoard(),
   };
   const fn = reloaders[_activePage];
   if (fn) fn();
@@ -3180,8 +3256,9 @@ function initApp() {
   const isSuperAdmin    = u.role === 'super_admin';
 
   // For platform admin: hide all tenant-specific nav, show only platform nav
-  const tenantNavIds = ['nav-my-ideas','nav-submit','nav-review','nav-all',
-                        'nav-analytics','nav-audit','nav-admin','nav-super-admin',
+  const tenantNavIds = ['nav-my-ideas','nav-submit','nav-challenges','nav-board',
+                        'nav-review','nav-all','nav-analytics','nav-audit',
+                        'nav-admin','nav-super-admin',
                         'nav-section-admin','nav-section-super-admin'];
   tenantNavIds.forEach(id => {
     const el = document.getElementById(id);
@@ -3230,7 +3307,8 @@ const pageTitles = {
   review:'Review Queue', 'ideas-all':'All Ideas', audit:'Audit Trail',
   leaderboard:'Leaderboard & Gamification', analytics:'Analytics Dashboard',
   admin:'Admin Panel', 'super-admin':'Command Center', profile:'My Profile',
-  'platform-dash':'Platform Overview', 'platform-tenants':'Tenant Hierarchy'
+  'platform-dash':'Platform Overview', 'platform-tenants':'Tenant Hierarchy',
+  challenges:'Innovation Challenges', board:'Idea Board'
 };
 
 function navigate(page, navEl) {
@@ -3254,7 +3332,9 @@ function navigate(page, navEl) {
   if (page === 'admin')       loadAdminUsers();
   if (page === 'super-admin') loadHierarchy();
   if (page === 'profile')     renderProfile();
-  if (page === 'submit')      resetWizard();
+  if (page === 'submit')      { resetWizard(); loadChallengesIntoSelect(); }
+  if (page === 'challenges')  loadChallenges();
+  if (page === 'board')       loadBoard();
 }
 
 function toggleDarkMode() {
@@ -3327,6 +3407,17 @@ async function loadDashboard() {
 
   const counts = d.counts;
   const total  = Object.values(counts).reduce((a,b)=>a+b,0);
+  const isReviewer = ['team_lead','project_lead','manager','senior_manager','executive','admin','super_admin'].includes(currentUser?.role);
+  const reviewerKpis = isReviewer && (d.pending_reviews > 0 || d.overdue_reviews > 0) ? `
+    <div class="kpi-card" style="border-left-color:#2563eb;cursor:pointer" onclick="navigate('review',document.getElementById('nav-review'))">
+      <div class="kpi-icon" style="background:#eff6ff;color:#2563eb"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><polyline points="9 14 11 16 15 12"/></svg></div>
+      <div class="kpi-body"><div class="kpi-val" data-target="${d.pending_reviews||0}">0</div><div class="kpi-label">Pending Review</div></div>
+    </div>
+    ${d.overdue_reviews > 0 ? `
+    <div class="kpi-card" style="border-left-color:#dc2626;cursor:pointer" onclick="navigate('review',document.getElementById('nav-review'))">
+      <div class="kpi-icon" style="background:#fee2e2;color:#dc2626"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div class="kpi-body"><div class="kpi-val" data-target="${d.overdue_reviews||0}">0</div><div class="kpi-label">Overdue Reviews</div></div>
+    </div>` : ''}` : '';
   document.getElementById('dash-kpis').innerHTML = `
     <div class="kpi-card" style="border-left-color:#4f46e5">
       <div class="kpi-icon" style="background:#eef2ff;color:#4f46e5"><svg viewBox="0 0 24 24"><path d="M9 21h6M12 3a6 6 0 016 6c0 2.2-1.1 3.8-2.5 5L15 16H9l-.5-2C7 12.8 6 11.2 6 9a6 6 0 016-6z"/></svg></div>
@@ -3344,6 +3435,7 @@ async function loadDashboard() {
       <div class="kpi-icon" style="background:#f3e8ff;color:#7c3aed"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
       <div class="kpi-body"><div class="kpi-val" data-target="${counts['Implemented']||0}">0</div><div class="kpi-label" data-i18n="dash.implemented">Implemented</div></div>
     </div>
+    ${reviewerKpis}
   `;
   document.querySelectorAll('#dash-kpis .kpi-val[data-target]').forEach(el => {
     animateCounter(el, parseInt(el.dataset.target), 900);
@@ -3721,6 +3813,14 @@ async function loadReviewQueue() {
     const isMultiRv     = i.workflow_type === 'multi_reviewer';
     const isMyPending   = i.my_reviewer_decision === 'pending';
     const pending       = Math.max(0, (parseInt(i.reviewer_count)||0) - (parseInt(i.approved_count)||0) - (parseInt(i.rejected_count)||0));
+
+    // SLA badge
+    const dueDate  = i.review_due_date ? new Date(i.review_due_date) : null;
+    const isOverdue = dueDate && dueDate < new Date();
+    const slaBadge  = dueDate ? `<span style="font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;border:1px solid ${isOverdue?'#fecaca':'#e2e8f0'};background:${isOverdue?'#fee2e2':'var(--chip-bg)'};color:${isOverdue?'#dc2626':'var(--text-muted)'}">${isOverdue?'⚠ Overdue':'⏱ Due'} ${fmtDate(i.review_due_date)}</span>` : '';
+    // Escalation badge
+    const escalBadge = (parseInt(i.escalation_level) > 0) ? `<span style="font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;border:1px solid #e9d5ff;background:#f5f3ff;color:#7c3aed">↑ L${i.escalation_level}</span>` : '';
+
     const committeeInfo = isMultiRv ? `
       <div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-size:11px;background:#eff6ff;color:#1d4ed8;padding:2px 9px;border-radius:var(--r-full);font-weight:600;border:1px solid #bfdbfe">${t('review.committee_badge')}</span>
@@ -3738,11 +3838,14 @@ async function loadReviewQueue() {
       : `<button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">${t('review.view_details')}</button>
          <button class="btn btn-success btn-sm" onclick="openReviewModal(${i.id},'${i.idea_code}')">${t('review.review_btn')}</button>`;
     return `
-    <div class="idea-card" data-status="${i.status}">
+    <div class="idea-card" data-status="${i.status}" data-id="${i.id}">
       <div class="idea-card-header">
-        <div>
-          <div class="idea-card-id">#${i.idea_code}</div>
-          <div class="idea-card-title">${escHtml(i.title)}</div>
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          ${!isSelf && !isMultiRv ? `<input type="checkbox" class="bulk-chk" data-id="${i.id}" style="margin-top:4px;accent-color:var(--primary)" onchange="updateBulkBar()"/>` : ''}
+          <div>
+            <div class="idea-card-id">#${i.idea_code}</div>
+            <div class="idea-card-title">${escHtml(i.title)}</div>
+          </div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           <span class="badge ${statusBadge(i.status)}">${translateStatus(i.status)}</span>
@@ -3750,6 +3853,7 @@ async function loadReviewQueue() {
         </div>
       </div>
       <div class="idea-card-meta">By ${escHtml(i.submitter_name)} · ${i.department||'–'} · ${i.submitted_at ? fmtDate(i.submitted_at) : '–'}</div>
+      ${slaBadge || escalBadge ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${slaBadge}${escalBadge}</div>` : ''}
       ${committeeInfo}
       <div style="margin-top:4px">${engMiniStats(i.avg_rating, i.vote_count)}</div>
       <div class="idea-card-footer">
@@ -3800,10 +3904,14 @@ async function submitReview() {
 
   closeModal('modal-review');
   if (d.success) {
-    document.getElementById('success-title').textContent = t('msg.decision_ok');
-    document.getElementById('success-msg').textContent   = `Idea marked as "${decision}". Submitter notified.${d.points_awarded ? ' +' + d.points_awarded + ' pts awarded.' : ''}`;
+    const isEscalated = d.decision === 'Escalated';
+    const successMsg  = isEscalated
+      ? `Approved at this level. Escalated to ${d.escalated_to} for final decision.`
+      : `Idea marked as "${decision}". Submitter notified.${d.points_awarded ? ' +' + d.points_awarded + ' pts awarded.' : ''}`;
+    document.getElementById('success-title').textContent = isEscalated ? 'Escalated for Final Review' : t('msg.decision_ok');
+    document.getElementById('success-msg').textContent   = successMsg;
     document.getElementById('modal-success').classList.add('open');
-    showToast(`${t('msg.decision_ok')}: ${decision}${d.points_awarded ? ` · +${d.points_awarded} pts` : ''}`, decision === 'Approved' || decision === 'Implemented' ? 'success' : 'info');
+    showToast(isEscalated ? `Escalated to ${d.escalated_to}` : `${t('msg.decision_ok')}: ${decision}${d.points_awarded ? ` · +${d.points_awarded} pts` : ''}`, 'success');
     loadReviewQueue();
     loadDashboard();
   } else {
@@ -3829,6 +3937,14 @@ function resetWizard() {
     const lbl = document.getElementById('file-'+s+'-name');
     if (lbl) lbl.textContent = '';
   });
+  const anonEl = document.getElementById('idea-anonymous');
+  if (anonEl) anonEl.checked = false;
+  const tmplEl = document.getElementById('idea-template');
+  if (tmplEl) tmplEl.value = '';
+  const chalEl = document.getElementById('idea-challenge');
+  if (chalEl) chalEl.value = '';
+  const dupW = document.getElementById('duplicate-warning');
+  if (dupW) dupW.style.display = 'none';
   goStep(1);
 }
 
@@ -3948,6 +4064,9 @@ function buildIdeaPayload() {
     intangible_benefit: document.getElementById('idea-intangible').value,
     co_suggester_1_id:  document.getElementById('co1-id').value || null,
     co_suggester_2_id:  document.getElementById('co2-id').value || null,
+    is_anonymous:       document.getElementById('idea-anonymous')?.checked ? 1 : 0,
+    template_type:      document.getElementById('idea-template')?.value || null,
+    challenge_id:       document.getElementById('idea-challenge')?.value || null,
   };
 }
 
@@ -4006,6 +4125,203 @@ document.addEventListener('click', e => {
     document.querySelectorAll('.user-search-results').forEach(el => el.style.display='none');
   }
 });
+
+// ── DUPLICATE DETECTION ────────────────────────────────────────────
+const _dupTimer = {};
+async function checkDuplicateTitle(title) {
+  clearTimeout(_dupTimer.t);
+  const warnEl = document.getElementById('duplicate-warning');
+  if (!warnEl) return;
+  if (title.length < 8) { warnEl.style.display = 'none'; return; }
+  _dupTimer.t = setTimeout(async () => {
+    try {
+      const r = await fetch('api/ideas.php?action=check_duplicate&title=' + encodeURIComponent(title), {credentials:'same-origin'});
+      const d = await r.json();
+      if (d.duplicates?.length) {
+        warnEl.style.display = 'block';
+        warnEl.innerHTML = `⚠ Similar ideas already exist — please review before submitting:<ul style="margin:4px 0 0 16px">${d.duplicates.map(x=>`<li><strong>${x.idea_code}</strong>: ${escHtml(x.title)} <span style="color:var(--text-muted)">(${x.status})</span></li>`).join('')}</ul>`;
+      } else {
+        warnEl.style.display = 'none';
+      }
+    } catch(e) {}
+  }, 600);
+}
+
+// ── LOAD CHALLENGES PAGE ───────────────────────────────────────────
+async function loadChallenges() {
+  const el = document.getElementById('challenges-list');
+  el.innerHTML = `<div class="empty-state"><div class="spinner"></div> Loading…</div>`;
+  const isPriv = ['team_lead','project_lead','manager','senior_manager','executive','admin','super_admin'].includes(currentUser?.role);
+  const newChalBtn = document.getElementById('btn-new-challenge');
+  if (newChalBtn) newChalBtn.style.display = isPriv ? '' : 'none';
+  let d;
+  try {
+    const r = await fetch('api/challenges.php?action=list', {credentials:'same-origin'});
+    d = await r.json();
+  } catch(e) { el.innerHTML = `<div class="alert alert-danger">Failed to load challenges.</div>`; return; }
+  if (!d.success || !d.challenges?.length) {
+    el.innerHTML = `<div class="empty-state">No active challenges at the moment.</div>`; return;
+  }
+  el.innerHTML = d.challenges.map(c => `
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:15px;font-weight:600;color:var(--heading)">${escHtml(c.title)}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">By ${escHtml(c.creator_name||'Admin')} · ${c.deadline ? 'Deadline: ' + fmtDate(c.deadline) : 'No deadline'} · ${c.idea_count||0} ideas</div>
+        </div>
+        <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${c.status==='active'?'#dcfce7':'#f1f5f9'};color:${c.status==='active'?'#059669':'#64748b'};border:1px solid ${c.status==='active'?'#bbf7d0':'#e2e8f0'}">${c.status}</span>
+      </div>
+      ${c.description ? `<div style="margin-top:10px;font-size:13px;color:var(--text)">${escHtml(c.description)}</div>` : ''}
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="navigate('submit',document.getElementById('nav-submit'));document.getElementById('idea-challenge').value='${c.id}'">Submit Idea for This Challenge</button>
+        ${isPriv && c.status==='active' ? `<button class="btn btn-outline btn-sm" onclick="closeChallengePrompt(${c.id})">Close Challenge</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+async function loadChallengesIntoSelect() {
+  const sel = document.getElementById('idea-challenge');
+  if (!sel) return;
+  try {
+    const r = await fetch('api/challenges.php?action=list', {credentials:'same-origin'});
+    const d = await r.json();
+    if (d.success && d.challenges?.length) {
+      sel.innerHTML = '<option value="">— No Challenge —</option>' +
+        d.challenges.filter(c=>c.status==='active').map(c=>`<option value="${c.id}">${escHtml(c.title)}</option>`).join('');
+    }
+  } catch(e) {}
+}
+
+async function closeChallengePrompt(id) {
+  if (!confirm('Close this challenge? Submissions will stop.')) return;
+  const r = await fetch('api/challenges.php?action=update', {method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({id,status:'closed'})});
+  const d = await r.json();
+  if (d.success) { showToast('Challenge closed.','success'); loadChallenges(); }
+  else showToast(d.error||'Error','danger');
+}
+
+function openChallengeModal() {
+  // Simple prompt-based create for now
+  const title = prompt('Challenge title:');
+  if (!title?.trim()) return;
+  const desc    = prompt('Description (optional):') || '';
+  const deadline= prompt('Deadline (YYYY-MM-DD, optional):') || null;
+  fetch('api/challenges.php?action=create',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',
+    body:JSON.stringify({title:title.trim(),description:desc,deadline:deadline||null})})
+    .then(r=>r.json()).then(d=>{
+      if(d.success){showToast('Challenge created.','success');loadChallenges();}
+      else showToast(d.error||'Error','danger');
+    });
+}
+
+// ── COMMUNITY VOTING BOARD ─────────────────────────────────────────
+async function loadBoard() {
+  const el = document.getElementById('board-list');
+  el.innerHTML = `<div class="empty-state"><div class="spinner"></div> Loading…</div>`;
+  const sort = document.getElementById('board-sort')?.value || 'votes';
+  let d;
+  try {
+    const r = await fetch(`api/ideas.php?action=board&sort=${sort}`, {credentials:'same-origin'});
+    d = await r.json();
+  } catch(e) { el.innerHTML = `<div class="alert alert-danger">Failed to load board.</div>`; return; }
+  if (!d.success || !d.ideas?.length) {
+    el.innerHTML = `<div class="empty-state">No ideas on the board yet.</div>`; return;
+  }
+  el.innerHTML = d.ideas.map(i => {
+    const upvotes   = parseInt(i.upvotes)||0;
+    const downvotes = parseInt(i.downvotes)||0;
+    const userVote  = i.user_vote;
+    const isSelf    = parseInt(i.submitter_id) === parseInt(currentUser?.id);
+    return `
+    <div class="idea-card" id="board-card-${i.id}">
+      <div style="display:flex;gap:12px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:44px">
+          <button class="btn btn-sm" style="padding:4px 8px;border-radius:8px;font-size:13px;font-weight:700;background:${userVote==='up'?'#dcfce7':'var(--chip-bg)'};color:${userVote==='up'?'#059669':'var(--text-muted)'};border:1px solid ${userVote==='up'?'#bbf7d0':'var(--border)'}"
+            onclick="${isSelf?'':'castCommunityVote('+i.id+',\'up\')'}">▲</button>
+          <span style="font-size:14px;font-weight:700;color:var(--heading)">${upvotes - downvotes}</span>
+          <button class="btn btn-sm" style="padding:4px 8px;border-radius:8px;font-size:13px;font-weight:700;background:${userVote==='down'?'#fee2e2':'var(--chip-bg)'};color:${userVote==='down'?'#dc2626':'var(--text-muted)'};border:1px solid ${userVote==='down'?'#fecaca':'var(--border)'}"
+            onclick="${isSelf?'':'castCommunityVote('+i.id+',\'down\')'}">▼</button>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:600;color:var(--heading)">${escHtml(i.title)}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${escHtml(i.submitter_name)} · ${i.department||'–'} · ${fmtDate(i.created_at)}</div>
+          <div style="font-size:13px;color:var(--text);margin-top:6px;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">${escHtml(i.present_situation)}</div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+            <span class="badge ${statusBadge(i.status)}">${translateStatus(i.status)}</span>
+            <span class="badge ${impactBadge(i.impact_level)}">${i.impact_level} Impact</span>
+            ${i.ai_score>0?`<span class="${scoreBadgeClass(i.ai_score)}">AI: ${i.ai_score}/100</span>`:''}
+            <button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">View</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function castCommunityVote(ideaId, voteType) {
+  try {
+    const r = await fetch('api/ideas.php?action=community_vote', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      credentials:'same-origin', body:JSON.stringify({idea_id:ideaId,vote_type:voteType})
+    });
+    const d = await r.json();
+    if (d.success) loadBoard();
+    else showToast(d.error||'Error','danger');
+  } catch(e) { showToast('Network error','danger'); }
+}
+
+// ── BULK REVIEW ────────────────────────────────────────────────────
+function updateBulkBar() {
+  const checked = [...document.querySelectorAll('.bulk-chk:checked')];
+  const bar     = document.getElementById('bulk-action-bar');
+  const label   = document.getElementById('bulk-count-label');
+  if (!bar) return;
+  if (checked.length > 0) {
+    bar.style.display = 'flex';
+    if (label) label.textContent = `${checked.length} idea${checked.length>1?'s':''} selected`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function toggleBulkAll(checked) {
+  document.querySelectorAll('.bulk-chk').forEach(c => { c.checked = checked; });
+  updateBulkBar();
+}
+
+function clearBulkSelection() {
+  document.querySelectorAll('.bulk-chk').forEach(c => { c.checked = false; });
+  const bar = document.getElementById('bulk-action-bar');
+  if (bar) bar.style.display = 'none';
+  const selectAll = document.getElementById('bulk-select-all');
+  if (selectAll) selectAll.checked = false;
+}
+
+async function submitBulkReview(decision) {
+  const checked  = [...document.querySelectorAll('.bulk-chk:checked')];
+  if (!checked.length) return;
+  const ideaIds  = checked.map(c => parseInt(c.dataset.id));
+  const comment  = decision === 'Rejected' ? (prompt('Rejection reason (optional):') || '') : '';
+  if (!confirm(`${decision} ${ideaIds.length} idea(s)?`)) return;
+
+  let r, d;
+  try {
+    r = await fetch('api/ideas.php?action=bulk_review', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      credentials:'same-origin', body:JSON.stringify({idea_ids:ideaIds, decision, comment})
+    });
+    d = await r.json();
+  } catch(e) { showToast('Network error','danger'); return; }
+
+  if (d.success) {
+    showToast(`${d.processed} idea(s) ${decision.toLowerCase()}d.`, 'success');
+    clearBulkSelection();
+    loadReviewQueue();
+    loadDashboard();
+  } else {
+    showToast(d.error||'Error','danger');
+  }
+}
 
 async function loadAudit() {
   if (!['team_lead','project_lead','manager','senior_manager','executive','admin','super_admin'].includes(currentUser?.role)) {
@@ -4497,6 +4813,122 @@ async function submitCreateOrg() {
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Create Organisation';
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ORG SETTINGS (Feature 13)
+// ═══════════════════════════════════════════════════════════════
+async function loadOrgSettings() {
+  const el = document.getElementById('org-settings-form');
+  if (!el) return;
+  el.innerHTML = '<div class="spinner"></div>';
+  let d;
+  try {
+    const r = await fetch('api/settings.php?action=get', {credentials:'same-origin'});
+    d = await r.json();
+  } catch(e) { el.innerHTML = '<div class="alert alert-danger">Failed to load settings.</div>'; return; }
+  if (!d.success) { el.innerHTML = `<div class="alert alert-danger">${d.error||'Error'}</div>`; return; }
+  const s = d.settings;
+  el.innerHTML = `
+    <form onsubmit="saveOrgSettings(event)" style="max-width:600px">
+      <div style="font-size:13px;font-weight:600;color:var(--heading);margin-bottom:16px">Review &amp; SLA</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Review SLA Days</label>
+          <input class="form-control" name="review_sla_days" type="number" min="1" max="90" value="${escHtml(s.review_sla_days||'7')}"/>
+        </div>
+        <div class="form-group">
+          <label>Escalation Days</label>
+          <input class="form-control" name="escalation_days" type="number" min="1" max="180" value="${escHtml(s.escalation_days||'14')}"/>
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--heading);margin:16px 0 12px">Feature Flags</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" name="anonymous_allowed" value="1" ${s.anonymous_allowed==='1'?'checked':''} style="accent-color:var(--primary)"/>
+            Allow Anonymous Submissions
+          </label>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" name="public_board_enabled" value="1" ${s.public_board_enabled==='1'?'checked':''} style="accent-color:var(--primary)"/>
+            Enable Public Idea Board
+          </label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" name="challenges_enabled" value="1" ${s.challenges_enabled==='1'?'checked':''} style="accent-color:var(--primary)"/>
+            Enable Challenges
+          </label>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" name="email_enabled" value="1" ${s.email_enabled==='1'?'checked':''} style="accent-color:var(--primary)"/>
+            Enable Email Notifications
+          </label>
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--heading);margin:16px 0 12px">SMTP Email Settings</div>
+      <div class="form-row">
+        <div class="form-group"><label>SMTP Host</label><input class="form-control" name="smtp_host" value="${escHtml(s.smtp_host||'')}"/></div>
+        <div class="form-group"><label>SMTP Port</label><input class="form-control" name="smtp_port" type="number" value="${escHtml(s.smtp_port||'587')}"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>SMTP User</label><input class="form-control" name="smtp_user" value="${escHtml(s.smtp_user||'')}"/></div>
+        <div class="form-group"><label>SMTP Password</label><input class="form-control" name="smtp_pass" type="password" placeholder="(unchanged if blank)"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>From Email</label><input class="form-control" name="smtp_from" type="email" value="${escHtml(s.smtp_from||'')}"/></div>
+        <div class="form-group"><label>From Name</label><input class="form-control" name="smtp_from_name" value="${escHtml(s.smtp_from_name||'IFQM Ideation')}"/></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+        <button type="button" class="btn btn-outline" onclick="sendTestEmail()">Send Test Email</button>
+      </div>
+      <div id="settings-save-msg" style="margin-top:10px;font-size:13px"></div>
+    </form>`;
+}
+
+async function saveOrgSettings(e) {
+  e.preventDefault();
+  const form = e.target;
+  const fd   = new FormData(form);
+  const data = {};
+  // Collect text/number fields
+  ['review_sla_days','escalation_days','smtp_host','smtp_port','smtp_user','smtp_pass','smtp_from','smtp_from_name'].forEach(k => {
+    data[k] = fd.get(k) || '';
+  });
+  // Checkboxes
+  ['anonymous_allowed','public_board_enabled','challenges_enabled','email_enabled'].forEach(k => {
+    data[k] = fd.get(k) === '1' ? '1' : '0';
+  });
+  const msgEl = document.getElementById('settings-save-msg');
+  try {
+    const r = await fetch('api/settings.php?action=update', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      credentials:'same-origin', body:JSON.stringify(data)
+    });
+    const d = await r.json();
+    if (d.success) {
+      if (msgEl) { msgEl.style.color='#059669'; msgEl.textContent='Settings saved successfully.'; }
+      showToast('Org settings saved.','success');
+    } else {
+      if (msgEl) { msgEl.style.color='#dc2626'; msgEl.textContent=d.error||'Failed to save.'; }
+    }
+  } catch(e) { if (msgEl) { msgEl.style.color='#dc2626'; msgEl.textContent='Network error.'; } }
+}
+
+async function sendTestEmail() {
+  showToast('Sending test email…','info');
+  try {
+    const r = await fetch('api/settings.php?action=send_test_email', {credentials:'same-origin'});
+    const d = await r.json();
+    if (d.success) showToast('Test email sent!','success');
+    else showToast(d.error||'Failed','danger');
+  } catch(e) { showToast('Network error','danger'); }
 }
 
 // ═══════════════════════════════════════════════════════════════

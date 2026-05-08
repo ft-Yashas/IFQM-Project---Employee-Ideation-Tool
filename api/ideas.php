@@ -3,7 +3,8 @@
 // GET    ?action=list|get&id=X|my|review|dashboard
 // POST   ?action=submit|draft|review_action
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/score.php';   // provides computeIdeaScore() / saveIdeaScore()
+require_once __DIR__ . '/score.php';
+require_once __DIR__ . '/mailer.php';
 
 $user   = requireAuth();
 $action = $_GET['action'] ?? 'list';
@@ -54,7 +55,22 @@ if ($action === 'list') {
 
     $stmt = db()->prepare($sql);
     $stmt->execute($params);
-    respond(['success' => true, 'ideas' => $stmt->fetchAll()]);
+    $ideas = $stmt->fetchAll();
+
+    // Mask anonymous submitters for non-privileged users
+    $canSeeAnon = in_array($user['role'], ['manager','senior_manager','executive','admin','super_admin'], true);
+    if (!$canSeeAnon) {
+        foreach ($ideas as &$idea) {
+            if (!empty($idea['is_anonymous'])) {
+                $idea['submitter_name']  = 'Anonymous';
+                $idea['avatar_initials'] = '?';
+                $idea['department']      = '—';
+            }
+        }
+        unset($idea);
+    }
+
+    respond(['success' => true, 'ideas' => $ideas]);
 }
 
 // ── MY ideas ──────────────────────────────────────────────────────
@@ -96,16 +112,18 @@ if ($action === 'review') {
 
     $teamRoles = ['team_lead','project_lead','manager','senior_manager'];
     if (in_array($user['role'], $teamRoles, true)) {
+        // Show ideas where I am the current_reviewer OR submitter's manager (legacy)
         $stmt = $pdo->prepare($cols .
             " WHERE i.status IN ('Submitted','Under Review')
-              AND ((i.workflow_type='hierarchical' AND u.manager_id=?)
+              AND ((i.workflow_type='hierarchical'
+                    AND (i.current_reviewer_id=? OR (i.current_reviewer_id IS NULL AND u.manager_id=?)))
                    OR (i.workflow_type='multi_reviewer' AND ir.reviewer_id=? AND ir.decision='pending'))
-              ORDER BY i.ai_score DESC, i.submitted_at ASC");
-        $stmt->execute([$uid, $uid, $uid]);
+              ORDER BY i.review_due_date ASC, i.ai_score DESC, i.submitted_at ASC");
+        $stmt->execute([$uid, $uid, $uid, $uid]);
     } else {
         $stmt = $pdo->prepare($cols .
             " WHERE i.status IN ('Submitted','Under Review')
-              ORDER BY i.ai_score DESC, i.submitted_at ASC");
+              ORDER BY i.review_due_date ASC, i.ai_score DESC, i.submitted_at ASC");
         $stmt->execute([$uid]);
     }
     respond(['success' => true, 'ideas' => $stmt->fetchAll()]);
@@ -163,6 +181,17 @@ if ($action === 'get') {
         $idea['reviewers'] = [];
     }
 
+    // Mask anonymous submitter for non-privileged roles (own idea always visible to submitter)
+    $canSeeAnon = in_array($user['role'], ['manager','senior_manager','executive','admin','super_admin'], true);
+    if (!$canSeeAnon && !empty($idea['is_anonymous']) && (int)$idea['submitter_id'] !== (int)$user['id']) {
+        $idea['submitter_name']  = 'Anonymous';
+        $idea['submitter_email'] = null;
+        $idea['avatar_initials'] = '?';
+        $idea['department']      = '—';
+        $idea['business_unit']   = '—';
+        $idea['manager_name']    = null;
+    }
+
     respond(['success' => true, 'idea' => $idea]);
 }
 
@@ -177,9 +206,12 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
     $impLvl   = $b['impact_level'] ?? 'Medium';
     $tangible = trim($b['tangible_benefit'] ?? '');
     $intang   = trim($b['intangible_benefit'] ?? '');
-    $co1      = !empty($b['co_suggester_1_id']) ? (int)$b['co_suggester_1_id'] : null;
-    $co2      = !empty($b['co_suggester_2_id']) ? (int)$b['co_suggester_2_id'] : null;
-    $editId   = !empty($b['id']) ? (int)$b['id'] : null;
+    $co1          = !empty($b['co_suggester_1_id']) ? (int)$b['co_suggester_1_id'] : null;
+    $co2          = !empty($b['co_suggester_2_id']) ? (int)$b['co_suggester_2_id'] : null;
+    $editId       = !empty($b['id']) ? (int)$b['id'] : null;
+    $isAnon       = !empty($b['is_anonymous']) ? 1 : 0;
+    $challengeId  = !empty($b['challenge_id']) ? (int)$b['challenge_id'] : null;
+    $templateType = trim($b['template_type'] ?? '') ?: null;
 
     if (!$title || !$sit || !$sol) {
         respond(['success' => false, 'error' => 'Title, present situation and proposed solution are required.'], 400);
@@ -207,6 +239,21 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
     $submittedAt = $action === 'submit' ? date('Y-m-d H:i:s') : null;
     $pdo         = db();
 
+    // SLA due date + initial reviewer set only on first submission
+    $reviewDueDate     = null;
+    $currentReviewerId = null;
+    if ($action === 'submit') {
+        $slaDays = 7;
+        try {
+            $slaSt = $pdo->prepare("SELECT value FROM org_settings WHERE key_name='review_sla_days' LIMIT 1");
+            $slaSt->execute();
+            $slaVal = $slaSt->fetchColumn();
+            if ($slaVal !== false) $slaDays = max(1, (int)$slaVal);
+        } catch (Exception $e) {}
+        $reviewDueDate     = date('Y-m-d', strtotime("+{$slaDays} days"));
+        $currentReviewerId = $user['manager_id'] ?? null;
+    }
+
     // Check prior status before updating so we only award points on first submission
     $wasAlreadySubmitted = false;
     if ($editId && $action === 'submit') {
@@ -218,17 +265,21 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
 
     if ($editId) {
         $pdo->prepare(
-            "UPDATE ideas SET 
+            "UPDATE ideas SET
             title=?,present_situation=?,proposed_solution=?,
             impact_areas=?,impact_level=?,tangible_benefit=?,intangible_benefit=?,
             co_suggester_1_id=?,co_suggester_2_id=?,
+            is_anonymous=?,challenge_id=?,template_type=?,
             status=?,submitted_at=COALESCE(submitted_at,?),
-            ai_score=?, ai_reason=?,
+            review_due_date=COALESCE(review_due_date,?),
+            current_reviewer_id=COALESCE(current_reviewer_id,?),
+            ai_score=?,ai_reason=?,
             updated_at=NOW()
             WHERE id=? AND submitter_id=?"
         )->execute([
             $title,$sit,$sol,$impacts,$impLvl,$tangible,$intang,
-            $co1,$co2,$status,$submittedAt, 
+            $co1,$co2,$isAnon,$challengeId,$templateType,
+            $status,$submittedAt,$reviewDueDate,$currentReviewerId,
             $aiScore,$aiReason,
             $editId,$user['id']
         ]);
@@ -239,15 +290,17 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
             "INSERT INTO ideas (
                 idea_code,title,present_situation,proposed_solution,
                 impact_areas,impact_level,tangible_benefit,intangible_benefit,
-                co_suggester_1_id,co_suggester_2_id,status,submitter_id,submitted_at,
-                ai_score, ai_reason
+                co_suggester_1_id,co_suggester_2_id,is_anonymous,challenge_id,template_type,
+                status,submitter_id,submitted_at,review_due_date,current_reviewer_id,
+                ai_score,ai_reason
                 )
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         )->execute([
             $code,$title,$sit,$sol,$impacts,$impLvl,$tangible,$intang,
-            $co1,$co2,$status,$user['id'],$submittedAt,
+            $co1,$co2,$isAnon,$challengeId,$templateType,
+            $status,$user['id'],$submittedAt,$reviewDueDate,$currentReviewerId,
             $aiScore,$aiReason
-            ]);
+        ]);
         $ideaId = (int)$pdo->lastInsertId();
     }
 
@@ -261,8 +314,17 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
             addNotification(
                 $user['manager_id'],
                 'New Idea Submitted',
-                $user['name'] . ' submitted a new idea. Please review it in your queue.'
+                $user['name'] . ' submitted a new idea. Please review it in your queue.',
+                $ideaId
             );
+            $mgrQ = $pdo->prepare("SELECT email, name FROM users WHERE id=?");
+            $mgrQ->execute([$user['manager_id']]);
+            $mgr = $mgrQ->fetch();
+            if ($mgr && $mgr['email']) {
+                queueEmail($mgr['email'], $mgr['name'],
+                    'New Idea Requires Your Review',
+                    "Dear {$mgr['name']},\n\n{$user['name']} has submitted a new idea for your review.\n\nPlease log in to action it from your review queue.");
+            }
         }
     }
 
@@ -318,6 +380,51 @@ if ($action === 'review_action' && $method === 'POST') {
         respond(['success' => false, 'error' => 'Duplicate action detected. Please wait a moment before retrying.'], 429);
     }
 
+    // Escalation chain for hierarchical workflow
+    $escalationRoles    = ['team_lead','project_lead','manager','senior_manager'];
+    $finalApproverRoles = ['executive','admin','super_admin'];
+
+    if ($decision === 'Approved'
+        && ($idea['workflow_type'] ?? 'hierarchical') !== 'multi_reviewer'
+        && in_array($user['role'], $escalationRoles, true)
+    ) {
+        $mgrStmt = $pdo->prepare(
+            "SELECT u2.id, u2.name, u2.role, u2.email
+             FROM users u1 JOIN users u2 ON u2.id = u1.manager_id
+             WHERE u1.id = ? LIMIT 1"
+        );
+        $mgrStmt->execute([$user['id']]);
+        $nextReviewer = $mgrStmt->fetch();
+
+        $reviewerPool = array_merge($escalationRoles, $finalApproverRoles);
+        if ($nextReviewer && in_array($nextReviewer['role'], $reviewerPool, true)) {
+            $lvl = ((int)($idea['escalation_level'] ?? 0)) + 1;
+            $pdo->prepare(
+                "UPDATE ideas SET status='Under Review', current_reviewer_id=?,
+                 escalation_level=?, updated_at=NOW() WHERE id=?"
+            )->execute([$nextReviewer['id'], $lvl, $ideaId]);
+
+            addWorkflow($ideaId, $user['id'], 'Approved',
+                trim(($comment ? $comment . ' ' : '') . "[L{$lvl} Approved — escalated to {$nextReviewer['name']}]"));
+
+            addNotification($nextReviewer['id'], 'Idea Escalated for Review',
+                "Idea {$idea['idea_code']} — \"{$idea['title']}\" — approved at level {$lvl} and escalated to you for final decision.",
+                $ideaId);
+
+            if (!empty($nextReviewer['email'])) {
+                queueEmail($nextReviewer['email'], $nextReviewer['name'],
+                    "Action Required: Idea {$idea['idea_code']} Escalated to You",
+                    "Dear {$nextReviewer['name']},\n\n" .
+                    "Idea \"{$idea['title']}\" ({$idea['idea_code']}) has been approved at level {$lvl} and escalated to you for final decision.\n\n" .
+                    "Please log in to take action.");
+            }
+
+            respond(['success' => true, 'decision' => 'Escalated',
+                     'escalated_to' => $nextReviewer['name'], 'points_awarded' => 0]);
+        }
+        // No higher reviewer found — fall through to final Approved
+    }
+
     $pdo->prepare("UPDATE ideas SET status=?,updated_at=NOW() WHERE id=?")
         ->execute([$decision, $ideaId]);
 
@@ -342,7 +449,15 @@ if ($action === 'review_action' && $method === 'POST') {
         'Implemented' => "Your idea {$idea['idea_code']} is now Implemented. +{$pts} points awarded.",
         default       => "Your idea {$idea['idea_code']} is Under Review.",
     };
-    addNotification($idea['submitter_id'], "Idea {$decision}", $msg);
+    addNotification($idea['submitter_id'], "Idea {$decision}", $msg, $ideaId);
+
+    // Queue email to submitter
+    $subStmt = $pdo->prepare("SELECT email, name FROM users WHERE id=?");
+    $subStmt->execute([$idea['submitter_id']]);
+    $sub = $subStmt->fetch();
+    if ($sub && $sub['email']) {
+        queueEmail($sub['email'], $sub['name'], "Your Idea {$idea['idea_code']} — {$decision}", $msg);
+    }
 
     respond(['success' => true, 'decision' => $decision, 'points_awarded' => $pts]);
 }
@@ -353,7 +468,11 @@ if ($action === 'dashboard') {
     $uid  = $user['id'];
     $role = $user['role'];
 
-    if ($role === 'employee') {
+    $individualRoles = ['trainee','employee'];
+    $teamRoles       = ['team_lead','project_lead','manager','senior_manager'];
+    $adminRoles      = ['executive','admin','super_admin'];
+
+    if (in_array($role, $individualRoles, true)) {
         $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM ideas WHERE submitter_id=?");
         $totalStmt->execute([$uid]);
     } else {
@@ -363,12 +482,45 @@ if ($action === 'dashboard') {
 
     $counts = [];
     foreach (['Submitted','Under Review','Approved','Implemented','Rejected'] as $s) {
-        $q = $role === 'employee'
-            ? $pdo->prepare("SELECT COUNT(*) FROM ideas WHERE submitter_id=? AND status=?")
-            : $pdo->prepare("SELECT COUNT(*) FROM ideas WHERE status=?");
-        if ($role === 'employee') $q->execute([$uid, $s]);
-        else $q->execute([$s]);
+        if (in_array($role, $individualRoles, true)) {
+            $q = $pdo->prepare("SELECT COUNT(*) FROM ideas WHERE submitter_id=? AND status=?");
+            $q->execute([$uid, $s]);
+        } else {
+            $q = $pdo->prepare("SELECT COUNT(*) FROM ideas WHERE status=?");
+            $q->execute([$s]);
+        }
         $counts[$s] = (int)$q->fetchColumn();
+    }
+
+    // Pending + overdue reviews for reviewer roles
+    $pendingReviews = 0; $overdueReviews = 0;
+    if (in_array($role, array_merge($teamRoles, $adminRoles), true)) {
+        if (in_array($role, $teamRoles, true)) {
+            $prStmt = $pdo->prepare(
+                "SELECT COUNT(*) FROM ideas i JOIN users u ON u.id=i.submitter_id
+                 WHERE i.status IN ('Submitted','Under Review')
+                 AND (i.current_reviewer_id=? OR (i.current_reviewer_id IS NULL AND u.manager_id=?))"
+            );
+            $prStmt->execute([$uid, $uid]);
+            $pendingReviews = (int)$prStmt->fetchColumn();
+
+            $odStmt = $pdo->prepare(
+                "SELECT COUNT(*) FROM ideas i JOIN users u ON u.id=i.submitter_id
+                 WHERE i.status IN ('Submitted','Under Review')
+                 AND i.review_due_date IS NOT NULL AND i.review_due_date < CURDATE()
+                 AND (i.current_reviewer_id=? OR (i.current_reviewer_id IS NULL AND u.manager_id=?))"
+            );
+            $odStmt->execute([$uid, $uid]);
+            $overdueReviews = (int)$odStmt->fetchColumn();
+        } else {
+            $pendingReviews = (int)$pdo->query(
+                "SELECT COUNT(*) FROM ideas WHERE status IN ('Submitted','Under Review')"
+            )->fetchColumn();
+            $overdueReviews = (int)$pdo->query(
+                "SELECT COUNT(*) FROM ideas WHERE status IN ('Submitted','Under Review')
+                 AND review_due_date IS NOT NULL AND review_due_date < CURDATE()"
+            )->fetchColumn();
+        }
     }
 
     // Recent activity (last 10 workflow entries)
@@ -386,11 +538,13 @@ if ($action === 'dashboard') {
     $userPoints = (int)($ptsStmt->fetchColumn() ?: $user['points']);
 
     respond([
-        'success'      => true,
-        'total'        => $total,
-        'counts'       => $counts,
-        'recent'       => $recent,
-        'user_points'  => $userPoints,
+        'success'         => true,
+        'total'           => $total,
+        'counts'          => $counts,
+        'recent'          => $recent,
+        'user_points'     => $userPoints,
+        'pending_reviews' => $pendingReviews,
+        'overdue_reviews' => $overdueReviews,
     ]);
 }
 
@@ -506,6 +660,206 @@ if ($action === 'reviewer_decision' && $method === 'POST') {
     }
 
     respond(['success'=>true,'new_status'=>$newStatus,'approved'=>$approved,'rejected'=>$rejected,'pending'=>$pending,'total'=>$total]);
+}
+
+// ── DUPLICATE DETECTION ───────────────────────────────────────────
+if ($action === 'check_duplicate') {
+    $title = trim($_GET['title'] ?? '');
+    if (strlen($title) < 5) respond(['success' => true, 'duplicates' => []]);
+
+    $words = array_values(array_filter(
+        explode(' ', preg_replace('/\s+/', ' ', strtolower($title))),
+        fn($w) => strlen($w) > 3
+    ));
+    if (empty($words)) respond(['success' => true, 'duplicates' => []]);
+
+    $like = '%' . implode('%', array_slice($words, 0, 4)) . '%';
+    $stmt = db()->prepare(
+        "SELECT id, idea_code, title, status FROM ideas WHERE title LIKE ? AND status != 'Draft' LIMIT 5"
+    );
+    $stmt->execute([$like]);
+    respond(['success' => true, 'duplicates' => $stmt->fetchAll()]);
+}
+
+// ── BULK REVIEW ────────────────────────────────────────────────────
+if ($action === 'bulk_review' && $method === 'POST') {
+    requireRole('team_lead','project_lead','manager','senior_manager','admin','executive','super_admin');
+    $b        = json_decode(file_get_contents('php://input'), true) ?? [];
+    $ideaIds  = array_map('intval', $b['idea_ids'] ?? []);
+    $decision = $b['decision'] ?? '';
+    $comment  = trim($b['comment'] ?? '');
+
+    if (empty($ideaIds) || !in_array($decision, ['Approved','Rejected'], true)) {
+        respond(['success' => false, 'error' => 'idea_ids array and valid decision (Approved/Rejected) required.'], 400);
+    }
+
+    $pdo = db();
+    $processed = 0;
+    foreach ($ideaIds as $ideaId) {
+        $stmt = $pdo->prepare("SELECT * FROM ideas WHERE id=? AND status IN ('Submitted','Under Review')");
+        $stmt->execute([$ideaId]);
+        $idea = $stmt->fetch();
+        if (!$idea || (int)$idea['submitter_id'] === (int)$user['id']) continue;
+
+        $pdo->prepare("UPDATE ideas SET status=?, updated_at=NOW() WHERE id=?")->execute([$decision, $ideaId]);
+        addWorkflow($ideaId, $user['id'], $decision, $comment ?: null);
+
+        $pts = $decision === 'Approved' ? POINTS_APPROVED : 0;
+        if ($pts > 0) {
+            addPoints($idea['submitter_id'], $pts);
+            $pdo->prepare("UPDATE ideas SET points_awarded = points_awarded + ? WHERE id=?")->execute([$pts, $ideaId]);
+        }
+
+        $msg = $decision === 'Approved'
+            ? "Your idea {$idea['idea_code']} was Approved (bulk). +{$pts} points awarded."
+            : "Your idea {$idea['idea_code']} was Rejected (bulk). Feedback: {$comment}";
+        addNotification($idea['submitter_id'], "Idea {$decision}", $msg, $ideaId);
+        $processed++;
+    }
+
+    respond(['success' => true, 'processed' => $processed]);
+}
+
+// ── UPDATE ROI ─────────────────────────────────────────────────────
+if ($action === 'update_roi' && $method === 'POST') {
+    requireRole('manager','senior_manager','executive','admin','super_admin');
+    $b        = json_decode(file_get_contents('php://input'), true) ?? [];
+    $ideaId   = (int)($b['idea_id'] ?? 0);
+    $roiValue = (isset($b['roi_value']) && $b['roi_value'] !== '') ? (float)$b['roi_value'] : null;
+    $roiType  = $b['roi_type'] ?? null;
+    $roiDesc  = trim($b['roi_description'] ?? '') ?: null;
+
+    $validTypes = ['cost_saving','time_saving','quality_improvement','revenue_increase','other'];
+    if (!$ideaId) respond(['success' => false, 'error' => 'idea_id required.'], 400);
+    if ($roiType && !in_array($roiType, $validTypes, true)) {
+        respond(['success' => false, 'error' => 'Invalid roi_type.'], 400);
+    }
+
+    db()->prepare(
+        "UPDATE ideas SET roi_value=?, roi_type=?, roi_description=?, updated_at=NOW() WHERE id=?"
+    )->execute([$roiValue, $roiType ?: null, $roiDesc, $ideaId]);
+
+    addWorkflow($ideaId, $user['id'], 'ROI Updated',
+        ($roiType ? ucwords(str_replace('_', ' ', $roiType)) : '') .
+        ($roiValue !== null ? ': ' . number_format($roiValue, 2) : ''));
+
+    respond(['success' => true]);
+}
+
+// ── UPDATE IMPLEMENTATION TRACKING ────────────────────────────────
+if ($action === 'update_implementation' && $method === 'POST') {
+    requireRole('manager','senior_manager','executive','admin','super_admin');
+    $b          = json_decode(file_get_contents('php://input'), true) ?? [];
+    $ideaId     = (int)($b['idea_id'] ?? 0);
+    $ownerId    = !empty($b['implementation_owner_id']) ? (int)$b['implementation_owner_id'] : null;
+    $targetDate = !empty($b['implementation_target_date']) ? $b['implementation_target_date'] : null;
+    $implStatus = $b['implementation_status'] ?? null;
+
+    $validStatuses = ['not_started','in_progress','completed','on_hold'];
+    if (!$ideaId) respond(['success' => false, 'error' => 'idea_id required.'], 400);
+    if ($implStatus && !in_array($implStatus, $validStatuses, true)) {
+        respond(['success' => false, 'error' => 'Invalid implementation_status.'], 400);
+    }
+
+    db()->prepare(
+        "UPDATE ideas SET implementation_owner_id=?, implementation_target_date=?,
+         implementation_status=?, updated_at=NOW() WHERE id=?"
+    )->execute([$ownerId, $targetDate, $implStatus ?: null, $ideaId]);
+
+    addWorkflow($ideaId, $user['id'], 'Implementation Updated',
+        $implStatus ? 'Status: ' . ucwords(str_replace('_', ' ', $implStatus)) : null);
+
+    respond(['success' => true]);
+}
+
+// ── COMMUNITY VOTING BOARD ─────────────────────────────────────────
+if ($action === 'board') {
+    $uid  = (int)$user['id'];
+    $sort = $_GET['sort'] ?? 'votes';
+
+    $orderBy = match($sort) {
+        'recent' => 'i.created_at DESC',
+        'score'  => 'i.ai_score DESC',
+        default  => 'upvotes DESC',
+    };
+
+    $stmt = db()->prepare(
+        "SELECT i.id, i.idea_code, i.title, i.present_situation, i.proposed_solution,
+                i.impact_level, i.status, i.created_at, i.is_anonymous, i.ai_score,
+                u.name AS submitter_name, u.avatar_initials, u.department,
+                (SELECT COUNT(*) FROM idea_community_votes WHERE idea_id=i.id AND vote_type='up')   AS upvotes,
+                (SELECT COUNT(*) FROM idea_community_votes WHERE idea_id=i.id AND vote_type='down') AS downvotes,
+                (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id={$uid})  AS user_vote
+         FROM ideas i
+         JOIN users u ON u.id = i.submitter_id
+         WHERE i.status IN ('Submitted','Under Review','Approved','Implemented')
+         ORDER BY {$orderBy}, i.created_at DESC
+         LIMIT 100"
+    );
+    $stmt->execute();
+    $ideas = $stmt->fetchAll();
+
+    $canSeeAnon = in_array($user['role'], ['manager','senior_manager','executive','admin','super_admin'], true);
+    if (!$canSeeAnon) {
+        foreach ($ideas as &$idea) {
+            if (!empty($idea['is_anonymous'])) {
+                $idea['submitter_name']  = 'Anonymous';
+                $idea['avatar_initials'] = '?';
+                $idea['department']      = '—';
+            }
+        }
+        unset($idea);
+    }
+
+    respond(['success' => true, 'ideas' => $ideas]);
+}
+
+// ── COMMUNITY VOTE (up / down toggle) ─────────────────────────────
+if ($action === 'community_vote' && $method === 'POST') {
+    $b        = json_decode(file_get_contents('php://input'), true) ?? [];
+    $ideaId   = (int)($b['idea_id'] ?? 0);
+    $voteType = $b['vote_type'] ?? '';
+
+    if (!$ideaId || !in_array($voteType, ['up','down'], true)) {
+        respond(['success' => false, 'error' => 'idea_id and vote_type (up/down) required.'], 400);
+    }
+
+    $pdo = db();
+    $ideaChk = $pdo->prepare("SELECT id, submitter_id, status FROM ideas WHERE id=? LIMIT 1");
+    $ideaChk->execute([$ideaId]);
+    $idea = $ideaChk->fetch();
+    if (!$idea || !in_array($idea['status'], ['Submitted','Under Review','Approved','Implemented'], true)) {
+        respond(['success' => false, 'error' => 'Idea not available for voting.'], 404);
+    }
+    if ((int)$idea['submitter_id'] === (int)$user['id']) {
+        respond(['success' => false, 'error' => 'You cannot vote on your own idea.'], 403);
+    }
+
+    $existing = $pdo->prepare("SELECT vote_type FROM idea_community_votes WHERE idea_id=? AND user_id=? LIMIT 1");
+    $existing->execute([$ideaId, $user['id']]);
+    $current = $existing->fetchColumn();
+
+    if ($current === $voteType) {
+        $pdo->prepare("DELETE FROM idea_community_votes WHERE idea_id=? AND user_id=?")->execute([$ideaId, $user['id']]);
+        $newVote = null;
+    } elseif ($current) {
+        $pdo->prepare("UPDATE idea_community_votes SET vote_type=? WHERE idea_id=? AND user_id=?")
+            ->execute([$voteType, $ideaId, $user['id']]);
+        $newVote = $voteType;
+    } else {
+        $pdo->prepare("INSERT INTO idea_community_votes (idea_id, user_id, vote_type) VALUES (?, ?, ?)")
+            ->execute([$ideaId, $user['id'], $voteType]);
+        $newVote = $voteType;
+    }
+
+    $upStmt = $pdo->prepare("SELECT COUNT(*) FROM idea_community_votes WHERE idea_id=? AND vote_type='up'");
+    $upStmt->execute([$ideaId]);
+    $upvotes   = (int)$upStmt->fetchColumn();
+    $dnStmt    = $pdo->prepare("SELECT COUNT(*) FROM idea_community_votes WHERE idea_id=? AND vote_type='down'");
+    $dnStmt->execute([$ideaId]);
+    $downvotes = (int)$dnStmt->fetchColumn();
+
+    respond(['success' => true, 'upvotes' => $upvotes, 'downvotes' => $downvotes, 'user_vote' => $newVote]);
 }
 
 respond(['success' => false, 'error' => 'Unknown action'], 400);
