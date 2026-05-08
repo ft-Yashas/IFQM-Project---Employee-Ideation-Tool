@@ -1,41 +1,59 @@
-﻿# IFQM Employee Ideation Tool
+# IFQM Employee Ideation Tool
 
-A full-stack internal platform that lets employees submit improvement ideas, get them AI-scored, route them through approval workflows, and track everything on a live leaderboard. Built as a single PHP/MySQL app with no framework dependencies — just drop it into XAMPP and it runs.
+A full-stack internal platform that lets employees submit improvement ideas, get them AI-scored, route them through a multi-level approval chain, and track everything on a live leaderboard and community voting board. Built as a single PHP/MySQL app with no framework dependencies — just drop it into XAMPP and it runs.
 
 ---
 
 ## What it does
 
-Every organisation has people with great ideas and no clear way to surface them. This tool fixes that. Employees log in, describe a problem they see and what they'd do about it, and the system scores the idea automatically (via GPT-4o-mini or a built-in heuristic fallback), routes it to their manager or a custom committee, and awards points when ideas get approved or implemented.
+Every organisation has people with great ideas and no clear way to surface them. This tool fixes that. Employees log in, describe a problem and their proposed fix, and the system scores it automatically (via Google Gemini or a built-in heuristic fallback), routes it up the management chain, and awards points when ideas get approved or implemented.
 
 The whole thing lives in one `index.php` with a small `api/` folder behind it — no build step, no Node, no Composer.
 
 ---
 
-## Features at a glance
+## Features
 
 **For employees**
-- Submit ideas with a structured 4-step wizard (situation → solution → impact → review)
+- Submit ideas with a structured 5-step wizard (situation → solution → impact → co-suggesters + options → review)
 - Attach supporting files (images, PDFs, up to 10 MB each)
 - Tag up to 2 co-suggesters who share the credit
+- Submit anonymously — identity hidden from peers, still visible to managers
+- Pick an idea template (Cost Reduction, Process Improvement, Safety, etc.)
+- Link submission to an active Innovation Challenge
+- Live duplicate detection — warns if a similar idea already exists
 - See your idea scored in real-time with a breakdown across 6 dimensions
 - Community star rating (1–5 ★) on any idea that isn't yours
 - In-app notifications when your idea moves through the workflow
 - Personal profile with points total and idea history
 
-**For managers / admins**
-- Review queue with one-click Approve / Reject + comment
-- Route any idea to a named committee (multi-reviewer workflow) with a custom approval threshold (e.g. "needs 2 of 3 reviewers")
+**For managers / reviewers**
+- Review queue sorted by SLA due date (overdue ideas flagged red) then AI score
+- One-click Approve / Reject / Implement with optional comment
+- Escalation chain — approvals automatically route up the hierarchy; only executives or admins give final approval
+- Bulk review — select multiple ideas and approve or reject them in one action
+- Bulk assign ideas to a named committee (multi-reviewer workflow) with custom approval threshold
+- ROI tracking — record financial impact on implemented ideas (cost saving, revenue, etc.)
+- Implementation tracking — assign an owner, target date, and status (In Progress / Completed / On Hold)
+- Dashboard KPI cards showing pending reviews and overdue reviews
+- Export ideas list as CSV or print a full analytics report
+
+**For admins**
+- User management — create, edit, deactivate users with an 8-level role hierarchy
+- Org Settings panel — configure SLA days, escalation days, feature flags, and SMTP email
+- Send test email directly from the settings panel
+- Batch re-score all ideas with the current scoring model
 - Audit log — immutable record of every action ever taken on every idea
-- Analytics dashboard: submission trends, status breakdown, impact area heatmap, quality distribution
-- Batch re-score all ideas
 
 **For everyone**
-- Leaderboard — individual and department rankings by points, idea count, and average score
-- Top Ideas board ranked by AI score
+- Idea Board — community voting page with up/down votes and net score ranking
+- Innovation Challenges — campaigns employees can submit ideas into
+- Leaderboard — individual and department rankings by points
+- Top Ideas board ranked by AI quality score
+- Analytics dashboard: submission trends, status breakdown, impact area heatmap
 - Light / dark mode
 - English / Hindi bilingual UI (`data-i18n` driven, live toggle)
-- Collapsible sidebar with tooltips in collapsed mode
+- Collapsible sidebar
 
 ---
 
@@ -43,50 +61,65 @@ The whole thing lives in one `index.php` with a small `api/` folder behind it �
 
 | Layer | Choice |
 |---|---|
-| Backend | PHP 8.1+ (vanilla, no framework) |
+| Backend | PHP 8.2 (vanilla, no framework) |
 | Database | MySQL 8.0 / MariaDB 10.6+ |
 | Frontend | Vanilla JS SPA — no React, no Vue, no build tool |
 | Styling | Custom CSS with Inter font, CSS custom properties, dark mode |
-| AI scoring | OpenAI GPT-4o-mini (optional — heuristic fallback built in) |
+| AI scoring | Google Gemini 2.0 Flash (optional — heuristic fallback built in) |
 | Auth | PHP sessions with bcrypt password hashing |
+| Email | Raw SMTP via `fsockopen` with STARTTLS/SSL support |
 | Server | Apache via XAMPP (or any PHP-capable web server) |
 
 ---
 
 ## Scoring engine
 
-Ideas are scored 0–100 across six dimensions. If you have an OpenAI API key, GPT-4o-mini evaluates the idea and returns a score + explanation. If you don't (or the API is down), the built-in heuristic engine runs automatically — no configuration needed.
+Ideas are scored 0–100 across six dimensions. If you have a Gemini API key set in `api/config.php`, the AI evaluates the idea and returns a score + explanation. If not (or the API is down), the built-in heuristic engine runs automatically.
 
 | Dimension | Max | What it looks at |
 |---|---|---|
 | Problem Clarity | 20 | Sentence structure, lexical diversity, quantitative evidence, causal language |
 | Solution Quality | 20 | Actionable steps, mechanism specificity, vocabulary richness |
 | Feasibility | 15 | Resource awareness, realistic scope, depth-vs-claim match |
-| Business Impact | 20 | Impact level declared, number of areas touched, tangible benefit |
+| Business Impact | 20 | Impact level declared, areas touched, tangible benefit stated |
 | Measurability | 10 | Numbers in baseline, from→to targets, benchmark language |
 | Innovation | 15 | Technology angle, new process design, cross-functional reach |
 
-The heuristic model penalises generic phrases like "improve efficiency" or "make it better" — ideas need to be specific to score well.
+Generic phrases like "improve efficiency" or "make it better" are penalised — ideas need to be specific to score well.
 
 ---
 
 ## Approval workflows
 
-Two modes, choosable per idea:
-
-**Hierarchical** (default)
-Idea goes to the submitter's direct manager. Manager approves or rejects. Simple, fast.
+**Hierarchical (default)**
+Idea goes to the submitter's direct manager. If the manager is not a final approver (executive/admin), the idea automatically escalates to their manager, and so on up the chain. Only an executive or admin can give the final Approved status. The escalation level is tracked and shown as a badge on each idea card.
 
 **Multi-reviewer / Committee**
-An admin routes the idea to a named group of reviewers and sets an approval threshold (e.g. 60%). Each reviewer votes independently. When all votes are in, the system automatically finalises the status. A threshold of 100% means any single rejection blocks the idea (unanimous required).
+An admin routes the idea to a named group of reviewers and sets an approval threshold (e.g. 60%). Each reviewer votes independently. When all votes are in, the system automatically finalises the status. A threshold of 100% means any single rejection blocks the idea.
+
+---
+
+## Role hierarchy
+
+| Role | Can do |
+|---|---|
+| `trainee` | Submit ideas, vote, view leaderboard |
+| `employee` | Same as trainee |
+| `team_lead` | All above + review direct reports' ideas (escalates to manager) |
+| `project_lead` | All above + broader review scope |
+| `manager` | All above + committee assignment, analytics, bulk review |
+| `senior_manager` | All above + full org analytics |
+| `executive` | Final approval authority + read-only analytics |
+| `admin` | All above + user management, org settings, audit log |
+| `super_admin` | Full access including user hierarchy and system stats |
 
 ---
 
 ## Multi-tenancy
 
-The app can run as a single-org install (the default) or serve multiple organisations from one codebase. When multi-tenant mode is active, an `ifqm_master` database maps HTTP hostnames to per-tenant databases and isolated upload directories.
+The app can run as a single-org install (the default) or serve multiple organisations from one codebase. When multi-tenant mode is active, an `ifqm_master` database maps HTTP hostnames or URL slugs to per-tenant databases and isolated upload directories.
 
-If `ifqm_master` does not exist, the app falls back gracefully to the default `ifqm_ideation` database — existing installs just keep working.
+If `ifqm_master` does not exist, the app falls back gracefully to the default `ifqm_ideation` database — existing installs keep working without any changes.
 
 To provision a new tenant:
 
@@ -99,30 +132,85 @@ php provision_tenant.php \
   --admin-pass="changeme"
 ```
 
-This creates the database, runs the schema, creates a super_admin account, registers the tenant, and creates the upload folder.
-
 ---
 
 ## Installation (single tenant, XAMPP)
 
 1. Clone or copy this folder into `C:\xampp\htdocs\ifqm\`
 
-2. Import the database:
+2. Import the base schema:
 ```sql
 -- In phpMyAdmin or MySQL CLI:
-SOURCE /path/to/ifqm/database.sql;
+SOURCE /path/to/ifqm/schema.sql;
 ```
 
-3. Set your OpenAI key (optional — app works without it):
+3. If updating an existing install, run the feature migrations:
+```sql
+SOURCE /path/to/ifqm/schema_updates.sql;
 ```
-# Windows: add as a system environment variable
-OPENAI_API_KEY=sk-...
+
+4. (Optional) Set your Gemini API key in `api/config.php`:
+```php
+define('GEMINI_API_KEY', 'your-key-here');
 ```
-Or edit `api/config.php` and hardcode it temporarily for local dev.
+The app works fully without it using the built-in heuristic scorer.
 
-4. Visit `http://localhost/ifqm/`
+5. Visit `http://localhost/ifqm/`
 
-No `composer install`, no `npm install`, no `.env` file to create.
+No `composer install`, no `npm install`, no `.env` to create.
+
+---
+
+## Project structure
+
+```
+ifqm/
+├── index.php                  # Entire frontend SPA + login page (~5500 lines)
+├── schema.sql                 # Clean schema for fresh installs
+├── schema_updates.sql         # Incremental migrations (features 1–15)
+├── database.sql               # Schema + seed data
+├── master.sql                 # ifqm_master schema for multi-tenant mode
+├── cleanup.sql                # Role ENUM migration for existing databases
+├── provision_tenant.php       # CLI script to onboard a new organisation
+├── api/
+│   ├── config.php             # DB connections, tenant resolution, shared helpers
+│   ├── auth.php               # Login / logout / session check
+│   ├── ideas.php              # Idea CRUD, workflow, escalation, voting board, bulk review
+│   ├── users.php              # Users, notifications, leaderboard, analytics, audit
+│   ├── comments.php           # Threaded discussion comments on ideas
+│   ├── challenges.php         # Innovation challenges CRUD
+│   ├── mailer.php             # Email queue + raw SMTP sender
+│   ├── export.php             # CSV export (ideas, leaderboard) + print analytics report
+│   ├── settings.php           # Org-level settings (SLA, SMTP, feature flags)
+│   ├── platform.php           # Platform-admin API (tenant management)
+│   ├── score.php              # AI scoring engine (Gemini + heuristic fallback)
+│   ├── upload.php             # File attachment handler
+│   └── uploads/               # Per-tenant uploaded files (gitignored)
+└── assets/
+    └── ifqm-logo.png
+```
+
+---
+
+## Configuration (`api/config.php`)
+
+```php
+// Gemini AI scoring — leave empty to use heuristic scorer only
+define('GEMINI_API_KEY', '');
+
+// Points awarded at each milestone
+define('POINTS_SUBMIT',      10);
+define('POINTS_APPROVED',    25);
+define('POINTS_IMPLEMENTED', 65);
+
+// Max upload size per file
+define('MAX_FILE_MB', 10);
+
+// Session idle timeout in seconds (default 8 hours)
+define('SESSION_LIFETIME', 28800);
+```
+
+Org-level settings (SLA days, SMTP credentials, feature flags) are stored in the `org_settings` database table and are editable at runtime from the Admin Panel → Org Settings tab.
 
 ---
 
@@ -142,110 +230,24 @@ All passwords are `password`.
 
 ---
 
-## Roles
+## Security
 
-| Role | What they can do |
-|---|---|
-| `employee` | Submit ideas, vote on others' ideas, view leaderboard |
-| `manager` | All of the above + review ideas from direct reports, route ideas to committees |
-| `admin` | All of the above + manage all users, view all ideas, access analytics |
-| `executive` | Read-only analytics + can review any idea |
-| `super_admin` | Full access including user hierarchy management and system stats |
-
----
-
-## Project structure
-
-```
-ifqm/
-├── index.php              # The entire frontend SPA + login page
-├── database.sql           # Schema + seed data for fresh installs
-├── schema.sql             # Clean schema template (no seed, for multi-tenant provisioning)
-├── master.sql             # ifqm_master schema for multi-tenant mode
-├── provision_tenant.php   # CLI script to onboard a new organisation
-├── api/
-│   ├── config.php         # DB connection, tenant resolution, shared helpers
-│   ├── auth.php           # Login / logout / session check
-│   ├── ideas.php          # All idea CRUD + workflow actions
-│   ├── users.php          # User list, notifications, leaderboard, analytics, audit
-│   ├── votes.php          # Community star ratings
-│   ├── score.php          # AI scoring engine (OpenAI + heuristic fallback)
-│   ├── upload.php         # File attachment handler
-│   └── uploads/           # Per-tenant uploaded files (gitignored)
-└── assets/
-    └── ifqm-logo.png
-```
-
----
-
-## Configuration
-
-Everything lives in `api/config.php`:
-
-```php
-// OpenAI — leave empty to use the heuristic scorer only
-define('OPENAI_API_KEY', getenv('OPENAI_API_KEY'));
-
-// Points awarded at each milestone
-define('POINTS_SUBMIT',      10);
-define('POINTS_APPROVED',    25);
-define('POINTS_IMPLEMENTED', 65);
-
-// Max upload size per file
-define('MAX_FILE_MB', 10);
-
-// Session lifetime in seconds (default 8 hours)
-define('SESSION_LIFETIME', 28800);
-```
-
----
-
-## Running migrations on an existing install
-
-If you're updating rather than doing a fresh import, run these manually:
-
-```sql
-ALTER TABLE ideas ADD COLUMN IF NOT EXISTS workflow_type
-  ENUM('hierarchical','multi_reviewer') NOT NULL DEFAULT 'hierarchical';
-
-ALTER TABLE ideas ADD COLUMN IF NOT EXISTS approval_threshold
-  TINYINT NOT NULL DEFAULT 100;
-
-CREATE TABLE IF NOT EXISTS idea_reviewers (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  idea_id      INT NOT NULL,
-  reviewer_id  INT NOT NULL,
-  decision     ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
-  comment      TEXT,
-  decided_at   DATETIME NULL,
-  assigned_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_reviewer (idea_id, reviewer_id),
-  FOREIGN KEY (idea_id)    REFERENCES ideas(id) ON DELETE CASCADE,
-  FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE CASCADE
-);
-```
-
-These are also included at the bottom of `database.sql` as `ALTER TABLE ... IF NOT EXISTS` statements, so re-running the whole file is safe.
-
----
-
-## Security notes
-
-- Passwords are hashed with bcrypt (`password_hash` / `password_verify`)
-- All DB queries use PDO prepared statements — no string interpolation anywhere
-- Role checks happen server-side on every API request — the frontend role gates are just UX
-- Uploaded files are validated by MIME type before saving
-- The audit log table is append-only by design; no row is ever updated or deleted
+- Passwords hashed with bcrypt (`password_hash` / `password_verify`)
+- All DB queries use PDO prepared statements — no string interpolation
+- Role checks enforced server-side on every API request — frontend gates are UX only
+- Uploaded files validated by MIME type before saving
+- Audit log is append-only; no row is ever updated or deleted
+- Session idle timeout enforced at PHP level, JS visibility-change listener, and 10-minute polling interval
 
 ---
 
 ## Known limitations
 
-- No email notifications yet — everything is in-app only
 - No OAuth / SSO — email + password only
-- Bilingual support is English and Hindi; adding more languages means extending the `TRANSLATIONS` object in `index.php`
-- No rate limiting on the scoring endpoint
-- File uploads go to disk — swap `upload.php` for S3/R2 if you need horizontal scaling
+- Bilingual support is English and Hindi; more languages can be added by extending the `TRANSLATIONS` object in `index.php`
+- No rate limiting on the AI scoring or email endpoints
+- File uploads go to local disk — swap `upload.php` for S3/R2 for horizontal scaling
+- MySQL must be started manually on XAMPP (not registered as a Windows service by default)
 
 ---
 
