@@ -40,35 +40,52 @@ function masterDb(): PDO {
 }
 
 // ── Tenant resolution ─────────────────────────────────────────────
+// Priority: 1) session org_slug  2) ?org= URL param  3) domain  4) default  5) fallback
 function resolveTenant(): array {
     static $tenant = null;
     if ($tenant !== null) return $tenant;
+
+    if (session_status() === PHP_SESSION_NONE) @session_start();
+
+    // 1. Session-stored slug (persisted after login)
+    $slug = $_SESSION['org_slug'] ?? null;
+
+    // 2. URL ?org= parameter (initial page load or login request)
+    if (!$slug && isset($_GET['org'])) {
+        $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', trim($_GET['org'])));
+        if (!$slug) $slug = null;
+    }
 
     $host = strtolower(preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST'] ?? 'localhost'));
 
     try {
         $master = masterDb();
-        $stmt   = $master->prepare("SELECT * FROM tenants WHERE domain=? AND status='active' LIMIT 1");
+
+        if ($slug) {
+            $stmt = $master->prepare("SELECT * FROM tenants WHERE slug=? AND status='active' LIMIT 1");
+            $stmt->execute([$slug]);
+            $row = $stmt->fetch();
+            if ($row) { $tenant = $row; return $tenant; }
+        }
+
+        // 3. Domain-based
+        $stmt = $master->prepare("SELECT * FROM tenants WHERE domain=? AND status='active' LIMIT 1");
         $stmt->execute([$host]);
         $row = $stmt->fetch();
 
         if (!$row) {
-            // Try default tenant
+            // 4. Default tenant
             $stmt = $master->prepare("SELECT * FROM tenants WHERE is_default=1 AND status='active' LIMIT 1");
             $stmt->execute();
             $row = $stmt->fetch();
         }
 
-        if ($row) {
-            $tenant = $row;
-            return $tenant;
-        }
+        if ($row) { $tenant = $row; return $tenant; }
     } catch (Exception $e) {
-        // Master DB not available — use built-in defaults (fresh install)
         error_log('ifqm_master unavailable, using fallback tenant: ' . $e->getMessage());
     }
 
-    // Built-in fallback — keeps existing single-tenant installs working
+    // 5. Built-in fallback — keeps existing single-tenant installs working
     $tenant = [
         'id'            => 0,
         'name'          => 'IFQM',
@@ -137,6 +154,12 @@ function respond(array $data, int $code = 200): never {
 function requireAuth(): array {
     if (session_status() === PHP_SESSION_NONE) session_start();
     if (empty($_SESSION['user_id'])) respond(['success' => false, 'error' => 'Not authenticated'], 401);
+    // Idle-session timeout
+    if (!empty($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > SESSION_LIFETIME) {
+        session_destroy();
+        respond(['success' => false, 'error' => 'Session expired', 'expired' => true], 401);
+    }
+    $_SESSION['last_activity'] = time();
     return $_SESSION['user'];
 }
 

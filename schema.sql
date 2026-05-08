@@ -13,10 +13,11 @@ CREATE TABLE IF NOT EXISTS users (
   department      VARCHAR(100),
   business_unit   VARCHAR(100),
   location        VARCHAR(100),
-  role            ENUM('employee','manager','admin','executive','super_admin') NOT NULL DEFAULT 'employee',
+  role            ENUM('trainee','employee','team_lead','project_lead','manager','senior_manager','executive','admin','super_admin') NOT NULL DEFAULT 'employee',
   manager_id      INT NULL,
   points          INT NOT NULL DEFAULT 0,
   avatar_initials VARCHAR(4),
+  status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
   created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL
 );
@@ -35,6 +36,8 @@ CREATE TABLE IF NOT EXISTS ideas (
   ai_reason           TEXT,
   workflow_type       ENUM('hierarchical','multi_reviewer') NOT NULL DEFAULT 'hierarchical',
   approval_threshold  TINYINT NOT NULL DEFAULT 100,
+  upvotes             INT NOT NULL DEFAULT 0,
+  downvotes           INT NOT NULL DEFAULT 0,
   status              ENUM('Draft','Submitted','Under Review','Approved','Rejected','Implemented') DEFAULT 'Draft',
   submitter_id        INT NOT NULL,
   co_suggester_1_id   INT NULL,
@@ -103,6 +106,17 @@ CREATE TABLE IF NOT EXISTS notifications (
   idea_id    INT NULL DEFAULT NULL,
   is_read    TINYINT(1) DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS idea_community_votes (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  idea_id    INT NOT NULL,
+  user_id    INT NOT NULL,
+  vote_type  ENUM('up','down') NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_cv (idea_id, user_id),
+  FOREIGN KEY (idea_id) REFERENCES ideas(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

@@ -14,9 +14,10 @@ if ($action === 'me') {
 }
 
 if ($action === 'login') {
-    $body  = json_decode(file_get_contents('php://input'), true) ?? [];
-    $email = trim($body['email'] ?? '');
-    $pass  = trim($body['password'] ?? '');
+    $body    = json_decode(file_get_contents('php://input'), true) ?? [];
+    $email   = trim($body['email'] ?? '');
+    $pass    = trim($body['password'] ?? '');
+    $orgSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', trim($body['org_slug'] ?? '')));
 
     if (!$email || !$pass) {
         respond(['success' => false, 'error' => 'Email and password are required.'], 400);
@@ -41,6 +42,7 @@ if ($action === 'login') {
             $_SESSION['platform_admin'] = true;
             $_SESSION['user_id']        = $session['id'];
             $_SESSION['user']           = $session;
+            unset($_SESSION['org_slug']);
             respond(['success' => true, 'user' => $session]);
         }
     } catch (Exception $e) {
@@ -48,18 +50,23 @@ if ($action === 'login') {
     }
 
     // ── Tenant user auth ───────────────────────────────────────────────────
+    // Inject org slug so resolveTenant() picks up the right DB
+    if ($orgSlug) $_GET['org'] = $orgSlug;
+
     $stmt = db()->prepare(
         "SELECT u.*, m.name AS manager_name
          FROM users u
          LEFT JOIN users m ON m.id = u.manager_id
-         WHERE u.email = ? LIMIT 1"
+         WHERE u.email = ? AND u.status = 'active' LIMIT 1"
     );
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($pass, $user['password_hash'])) {
-        respond(['success' => false, 'error' => 'Invalid email or password.'], 401);
+        respond(['success' => false, 'error' => 'Invalid email, password, or organization code.'], 401);
     }
+
+    $tenant = resolveTenant();
 
     $session = [
         'id'             => $user['id'],
@@ -75,10 +82,14 @@ if ($action === 'login') {
         'manager_name'   => $user['manager_name'],
         'points'         => $user['points'],
         'avatar_initials' => $user['avatar_initials'] ?? strtoupper(substr($user['name'], 0, 1)),
+        'org_name'       => $tenant['name'],
+        'org_slug'       => $tenant['slug'],
     ];
 
-    $_SESSION['user_id'] = $user['id'];
-    $_SESSION['user']    = $session;
+    $_SESSION['user_id']       = $user['id'];
+    $_SESSION['user']          = $session;
+    $_SESSION['org_slug']      = $tenant['slug'];
+    $_SESSION['last_activity'] = time();
 
     respond(['success' => true, 'user' => $session]);
 }

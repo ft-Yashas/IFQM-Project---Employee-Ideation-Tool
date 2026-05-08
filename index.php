@@ -1,5 +1,19 @@
 ﻿<?php
+require_once __DIR__ . '/api/config.php';
+ini_set('session.gc_maxlifetime', SESSION_LIFETIME);
+session_set_cookie_params(SESSION_LIFETIME);
 session_start();
+
+// Enforce idle-session timeout on page load too
+if (!empty($_SESSION['user_id'])) {
+    if (!empty($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > SESSION_LIFETIME) {
+        session_destroy();
+        session_start();
+    } else {
+        $_SESSION['last_activity'] = time();
+    }
+}
+
 $loggedIn = !empty($_SESSION['user_id']);
 $user     = $_SESSION['user'] ?? [];
 ?>
@@ -563,7 +577,7 @@ $user     = $_SESSION['user'] ?? [];
       <div class="login-feature-icon">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </div>
-      <div><div class="login-feature-title" data-i18n="login.feat2_title">Earn Points &amp; Rewards</div><div class="login-feature-sub">+10 submit &nbsp;&middot;&nbsp; +25 approved &nbsp;&middot;&nbsp; +65 implemented</div></div>
+      <div><div class="login-feature-title" data-i18n="login.feat2_title">Earn Points &amp; Rewards</div><div class="login-feature-sub" data-i18n="login.feat2_sub">+10 submit &nbsp;&middot;&nbsp; +25 approved &nbsp;&middot;&nbsp; +65 implemented</div></div>
     </div>
     <div class="login-feature">
       <div class="login-feature-icon">
@@ -581,22 +595,22 @@ $user     = $_SESSION['user'] ?? [];
         <p data-i18n="login.subtitle">Sign in to your IFQM account to continue</p>
       </div>
       <div id="login-error" class="alert alert-danger" style="display:none"></div>
+      <div class="form-group" id="login-org-group">
+        <label data-i18n="login.org_code">Organization Code</label>
+        <input class="form-control" id="login-org" type="text" placeholder="your-org-code" autocomplete="organization" style="text-transform:lowercase"/>
+        <div style="font-size:11px;color:var(--subtle);margin-top:4px" data-i18n="login.org_hint">Leave blank to use IFQM platform admin login</div>
+      </div>
       <div class="form-group">
         <label data-i18n="login.email">Email Address</label>
-        <input class="form-control" id="login-email" type="email" data-i18n-ph="login.email_ph" placeholder="your.name@jain.com" value="yashas.r@jain.com"/>
+        <input class="form-control" id="login-email" type="email" data-i18n-ph="login.email_ph" placeholder="admin@yourorg.com" autocomplete="email"/>
       </div>
       <div class="form-group">
         <label data-i18n="login.password">Password</label>
-        <input class="form-control" id="login-pass" type="password" data-i18n-ph="login.password_ph" placeholder="••••••••" value="password"/>
+        <input class="form-control" id="login-pass" type="password" data-i18n-ph="login.password_ph" placeholder="••••••••" autocomplete="current-password"/>
       </div>
       <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;padding:11px;font-size:14px" onclick="doLogin()" data-i18n="login.btn">Sign In</button>
       <div class="separator"></div>
-      <p style="font-size:11px;color:#aaa;text-align:center">Session-based Auth &middot; Role-Based Access Control &middot; MySQL Backend</p>
-      <div class="separator"></div>
-      <div style="background:var(--panel-bg);border-radius:8px;padding:12px 14px">
-        <p style="font-size:11px;color:#818cf8;margin-bottom:6px"><strong>Demo accounts</strong> &mdash; password: <code style="background:var(--tag-bg);padding:1px 5px;border-radius:4px">password</code></p>
-        <p style="font-size:11px;color:var(--label);line-height:1.8">yashas.r@jain.com &middot; priya.sharma@jain.com<br>bhuvan.kh@jain.com &middot; adrish.c@jain.com</p>
-      </div>
+      <p style="font-size:11px;color:#aaa;text-align:center">Powered by IFQM &middot; Multi-Tenant &middot; Role-Based Access Control</p>
     </div>
   </div>
 
@@ -612,7 +626,7 @@ $user     = $_SESSION['user'] ?? [];
     </div>
 
     <div class="nav-section" data-i18n="section.main">Main</div>
-    <div class="nav-item active" data-label="Dashboard" onclick="navigate('dashboard',this)"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="label" data-i18n="nav.dashboard">Dashboard</span></div>
+    <div class="nav-item active" id="nav-dashboard" data-label="Dashboard" onclick="navigate('dashboard',this)"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="label" data-i18n="nav.dashboard">Dashboard</span></div>
     <div class="nav-item" id="nav-my-ideas" data-label="My Ideas" onclick="navigate('my-ideas',this)"><span class="icon"><svg viewBox="0 0 24 24"><path d="M9 21h6M12 3a6 6 0 016 6c0 2.2-1.1 3.8-2.5 5L15 16H9l-.5-2C7 12.8 6 11.2 6 9a6 6 0 016-6z"/></svg></span><span class="label" data-i18n="nav.my_ideas">My Ideas</span></div>
     <div class="nav-item" data-label="Submit Idea" id="nav-submit" onclick="navigate('submit',this)"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span><span class="label" data-i18n="nav.submit">Submit Idea</span></div>
 
@@ -676,7 +690,7 @@ $user     = $_SESSION['user'] ?? [];
       </div>
       <div class="notification-panel" id="notif-panel">
         <div style="padding:10px 14px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">
-          <strong style="font-size:13px">Notifications</strong>
+          <strong style="font-size:13px" data-i18n="notif.header">Notifications</strong>
           <button class="btn btn-outline btn-sm" onclick="markAllRead()" data-i18n="topbar.mark_read">Mark all read</button>
         </div>
         <div id="notif-list"><div class="empty-state">Loading…</div></div>
@@ -694,11 +708,11 @@ $user     = $_SESSION['user'] ?? [];
         </div>
         <div class="grid-2">
           <div class="card">
-            <div class="card-title">Status Distribution</div>
+            <div class="card-title" data-i18n="dash.status_dist">Status Distribution</div>
             <div id="dash-status-chart"><div class="spinner"></div></div>
           </div>
           <div class="card">
-            <div class="card-title">Recent Activity</div>
+            <div class="card-title" data-i18n="dash.recent">Recent Activity</div>
             <div class="timeline" id="dash-activity"><div class="spinner"></div></div>
           </div>
         </div>
@@ -885,7 +899,7 @@ $user     = $_SESSION['user'] ?? [];
       </div>
 
       <div class="page" id="page-leaderboard">
-        <div class="section-header"><div class="page-title">Leaderboard &amp; Gamification</div></div>
+        <div class="section-header"><div class="page-title" data-i18n="page.leaderboard_title">Leaderboard &amp; Gamification</div></div>
         <div class="filter-bar">
           <div class="chip-filter">
             <div class="chip active" onclick="activateChip(this,'lb-period');" data-val="all" data-i18n="lb.all_time">All Time</div>
@@ -912,7 +926,7 @@ $user     = $_SESSION['user'] ?? [];
 
       <div class="page" id="page-analytics">
         <div class="section-header">
-          <div class="page-title">Analytics Dashboard</div>
+          <div class="page-title" data-i18n="page.analytics_title">Analytics Dashboard</div>
         </div>
         <div class="kpi-grid" id="analytics-kpis">
           <div class="kpi-card"><div class="spinner"></div></div>
@@ -922,21 +936,21 @@ $user     = $_SESSION['user'] ?? [];
         </div>
         <div class="grid-2">
           <div class="card">
-            <div class="card-title">Impact Area Distribution</div>
+            <div class="card-title" data-i18n="analytics.impact_dist">Impact Area Distribution</div>
             <div class="bar-chart" id="analytics-impact"></div>
           </div>
           <div class="card">
-            <div class="card-title">Status Summary</div>
+            <div class="card-title" data-i18n="analytics.status_summary">Status Summary</div>
             <div id="analytics-status"></div>
           </div>
         </div>
         <div class="grid-2">
           <div class="card">
-            <div class="card-title">Monthly Submission Trend</div>
+            <div class="card-title" data-i18n="analytics.monthly_trend">Monthly Submission Trend</div>
             <div id="analytics-trend" class="bar-chart"></div>
           </div>
           <div class="card">
-            <div class="card-title">AI Quality Score Distribution</div>
+            <div class="card-title" data-i18n="analytics.score_dist">AI Quality Score Distribution</div>
             <div id="analytics-score-dist"></div>
           </div>
         </div>
@@ -945,19 +959,37 @@ $user     = $_SESSION['user'] ?? [];
       <div class="page" id="page-admin">
         <div class="section-header"><div class="page-title" data-i18n="nav.admin">Admin Panel</div></div>
         <div class="tabs">
-          <div class="tab active" onclick="switchTab(this,'atab1')" data-i18n="admin.tab_users">Users</div>
+          <div class="tab active" onclick="switchTab(this,'atab1')" data-i18n="admin.tab_users">User Management</div>
           <div class="tab" onclick="switchTab(this,'atab2')" data-i18n="admin.points_config">Points Config</div>
-          <div class="tab" onclick="switchTab(this,'atab3')" data-i18n="admin.db_status">HR Sync</div>
+          <div class="tab" onclick="switchTab(this,'atab3')" data-i18n="admin.db_status">DB Status</div>
           <div class="tab" onclick="switchTab(this,'atab4')" data-i18n="btn.rescore_all">Rescore Ideas</div>
         </div>
+
+        <!-- User Management Tab -->
         <div class="tab-content active" id="atab1">
-          <table>
-            <thead><tr><th data-i18n="table.employee">Employee</th><th data-i18n="table.dept">Dept</th><th data-i18n="table.email_col">Email</th><th data-i18n="table.role">Role</th><th data-i18n="table.points_col">Points</th></tr></thead>
-            <tbody id="admin-users-tbody"><tr><td colspan="5" class="text-center"><div class="spinner"></div></td></tr></tbody>
-          </table>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <input class="form-control" id="admin-user-search" type="text" placeholder="Search by name, email or ID…" style="max-width:280px" oninput="filterAdminUsers()"/>
+            <button class="btn btn-primary btn-sm" onclick="openCreateUserModal()" data-i18n="admin.add_user">+ Add User</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr>
+                <th data-i18n="table.employee">Employee</th>
+                <th data-i18n="table.role">Role</th>
+                <th data-i18n="table.dept">Dept</th>
+                <th>Reports To</th>
+                <th data-i18n="table.points_col">Points</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr></thead>
+              <tbody id="admin-users-tbody"><tr><td colspan="7" class="text-center"><div class="spinner"></div></td></tr></tbody>
+            </table>
+          </div>
         </div>
+
+        <!-- Points Config Tab -->
         <div class="tab-content" id="atab2">
-          <div class="alert alert-info">Points config (stored in config.php). Restart needed to apply changes.</div>
+          <div class="alert alert-info" data-i18n="admin.points_info">Points config (stored in config.php). Restart needed to apply changes.</div>
           <table>
             <thead><tr><th data-i18n="table.event">Event</th><th data-i18n="table.pts_awarded">Current Points</th></tr></thead>
             <tbody>
@@ -967,19 +999,22 @@ $user     = $_SESSION['user'] ?? [];
             </tbody>
           </table>
         </div>
+
+        <!-- DB Status Tab -->
         <div class="tab-content" id="atab3">
-          <div class="alert alert-info">Employee data is loaded from the <code>users</code> table. Run the SQL seed script to populate.</div>
           <div class="card" style="max-width:480px">
-            <div class="card-title" data-i18n="admin.db_status">HR Database Sync Status</div>
+            <div class="card-title" data-i18n="admin.db_status">Database Status</div>
             <div style="font-size:13px;line-height:2">
               <div><strong>Status:</strong> Connected to MySQL</div>
               <div><strong>Engine:</strong> MySQL 8.x</div>
-              <div><strong>Database:</strong> ifqm_ideation</div>
+              <div id="admin-db-name"><strong>Database:</strong> <span class="spinner" style="width:12px;height:12px;display:inline-block"></span></div>
             </div>
           </div>
         </div>
+
+        <!-- Rescore Tab -->
         <div class="tab-content" id="atab4">
-          <div class="alert alert-info">Recompute AI quality scores for all existing ideas using the current scoring model. Use this after importing legacy data.</div>
+          <div class="alert alert-info" data-i18n="admin.rescore_info">Recompute AI quality scores for all existing ideas using the current scoring model.</div>
           <button class="btn btn-warning" onclick="batchRescore()" data-i18n="btn.rescore_all">Rescore All Ideas</button>
           <div id="rescore-result" style="margin-top:12px;font-size:13px"></div>
         </div>
@@ -991,12 +1026,12 @@ $user     = $_SESSION['user'] ?? [];
         <div style="background:linear-gradient(135deg,#312e81 0%,#3730a3 55%,#4338ca 100%);border-radius:var(--r-xl);padding:26px 30px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow-lg)">
           <div>
             <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.55);font-weight:700;margin-bottom:6px">IFQM &middot; Super Admin Console</div>
-            <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1.15">Command Center</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:5px">Complete organizational control &amp; oversight across all levels</div>
+            <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1.15" data-i18n="sa.console">Command Center</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:5px" data-i18n="sa.subtitle">Complete organizational control &amp; oversight across all levels</div>
           </div>
           <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
             <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:var(--r);padding:8px 18px">
-              <div style="font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">Signed in as</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px" data-i18n="sa.signed_in">Signed in as</div>
               <div style="font-size:13px;font-weight:700;color:#fff" id="sa-session-user">—</div>
             </div>
             <div style="font-size:11px;color:rgba(255,255,255,.45)" id="sa-last-updated"></div>
@@ -1103,11 +1138,11 @@ $user     = $_SESSION['user'] ?? [];
         <div style="background:linear-gradient(145deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);border-radius:var(--r-xl);padding:26px 30px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow-lg)">
           <div>
             <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);font-weight:700;margin-bottom:6px">IFQM &middot; Platform Admin Console</div>
-            <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1.15">Platform Overview</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:5px">Aggregate metrics only &mdash; tenant content is private</div>
+            <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1.15" data-i18n="pa.overview">Platform Overview</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:5px" data-i18n="pa.private">Aggregate metrics only &mdash; tenant content is private</div>
           </div>
           <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:var(--r);padding:8px 18px;text-align:right">
-            <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">Signed in as</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px" data-i18n="pa.signed_in">Signed in as</div>
             <div style="font-size:13px;font-weight:700;color:#fff" id="pa-name">—</div>
           </div>
         </div>
@@ -1117,7 +1152,10 @@ $user     = $_SESSION['user'] ?? [];
           <div class="kpi-card" style="border-left-color:#d97706"><div class="spinner"></div></div>
         </div>
         <div class="card">
-          <div class="card-title" data-i18n="pa.all_tenants">All Tenants — Aggregate Stats</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div class="card-title" style="margin:0" data-i18n="pa.all_tenants">All Organisations</div>
+            <button class="btn btn-primary btn-sm" onclick="openCreateOrgModal()">+ New Organisation</button>
+          </div>
           <div id="pa-tenant-list"><div class="spinner"></div></div>
         </div>
       </div>
@@ -1243,6 +1281,7 @@ const totalSteps  = 5;
 let draftIdeaId   = null;
 let pendingIdeaId = null;
 let allMyIdeas    = [];
+let _activePage   = 'dashboard';
 
 /* ── RIPPLE EFFECT ── */
 document.addEventListener('click', function(e) {
@@ -1314,18 +1353,29 @@ function staggerAnimate(els, baseDelay=40) {
   });
 }
 
+// Pre-fill org code from URL ?org= parameter
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const orgParam = params.get('org');
+  if (orgParam) {
+    const el = document.getElementById('login-org');
+    if (el) el.value = orgParam.toLowerCase();
+  }
+})();
+
 async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pass  = document.getElementById('login-pass').value.trim();
-  const btn   = document.getElementById('login-btn');
-  const err   = document.getElementById('login-error');
+  const email   = document.getElementById('login-email').value.trim();
+  const pass    = document.getElementById('login-pass').value.trim();
+  const orgSlug = (document.getElementById('login-org')?.value || '').trim().toLowerCase();
+  const btn     = document.getElementById('login-btn');
+  const err     = document.getElementById('login-error');
   err.style.display = 'none';
   btn.disabled = true; btn.textContent = 'Logging in…';
   try {
     const r = await fetch('api/auth.php?action=login', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({email, password: pass})
+      body: JSON.stringify({email, password: pass, org_slug: orgSlug})
     });
     const d = await r.json();
     if (d.success) {
@@ -1370,8 +1420,10 @@ const TRANSLATIONS = {
     'section.admin':'Admin','section.super_admin':'IFQM Super Admin',
     'login.app_title':'Employee Ideation Tool','login.tagline':'Turn great ideas into real improvements.',
     'login.welcome':'Welcome back','login.subtitle':'Sign in to your IFQM account to continue',
+    'login.org_code':'Organization Code','login.org_hint':'Leave blank for IFQM platform admin login',
     'login.email':'Email Address','login.password':'Password','login.btn':'Sign In',
-    'login.email_ph':'your.name@jain.com','login.password_ph':'Enter your password',
+    'login.email_ph':'admin@yourorg.com','login.password_ph':'Enter your password',
+    'admin.add_user':'+ Add User',
     'login.feat1_title':'Submit & Track Ideas','login.feat1_sub':'5-step wizard with AI quality scoring',
     'login.feat2_title':'Earn Points & Rewards',
     'login.feat3_title':'Analytics & Leaderboard','login.feat3_sub':'Real-time insights across departments',
@@ -1389,7 +1441,7 @@ const TRANSLATIONS = {
     'lb.individual':'Individual Rankings','lb.dept':'Department Rankings',
     'lb.top_ideas':'Top Scored Ideas','lb.points':'pts','lb.ideas':'ideas',
     'lb.avg_score':'Avg Score','lb.engagement':'Engagement',
-    'lb.all_time':'All Time','lb.monthly':'Monthly','lb.quarterly':'Quarterly','lb.yearly':'Yearly',
+    'lb.all_time':'All Time','lb.monthly':'Monthly','lb.quarterly':'Quarterly','lb.yearly':'Yearly','lb.you':'(You)',
     'form.save_draft':'Save Draft','form.next':'Next','form.back':'Back','form.submit_idea':'Submit New Idea',
     'detail.submitted_by':'Submitted by','detail.situation':'Present Situation',
     'detail.solution':'Proposed Solution','detail.impact_areas':'Impact Areas',
@@ -1489,6 +1541,52 @@ const TRANSLATIONS = {
     'msg.rescoring':'Rescoring…',
     'analytics.approval_rate':'Approval Rate','analytics.impl_rate':'Implementation Rate',
     'analytics.avg_score':'Avg AI Quality Score',
+    'page.leaderboard_title':'Leaderboard & Gamification','page.analytics_title':'Analytics Dashboard',
+    'analytics.impact_dist':'Impact Area Distribution','analytics.status_summary':'Status Summary',
+    'analytics.monthly_trend':'Monthly Submission Trend','analytics.score_dist':'AI Quality Score Distribution',
+    'analytics.high':'High (75+)','analytics.med':'Med (50-74)','analytics.low_score':'Low (<50)',
+    'analytics.avg_note':'Overall average AI score:',
+    'detail.not_scored':'Not scored','detail.no_ai':'No AI evaluation available.',
+    'community.title':'Community Vote & Score','community.upvotes':'Upvotes',
+    'community.downvotes':'Downvotes','community.net':'Net Score','community.score':'Community Score',
+    'community.your_votes':'Community votes on your idea:','community.vote_on':'Vote on this idea:',
+    'community.vote_hint':'Click ▲ or ▼ · Click again to remove your vote',
+    'review.own_idea':'Your own idea','review.vote_needed':'Your vote needed',
+    'review.committee_badge':'Committee','review.route_committee':'Route to Committee',
+    'review.submit_mine':'Submit My Review','review.decide':'Review / Decide',
+    'review.cannot_own':'You cannot review your own idea',
+    'preview.title_label':'Title','preview.situation':'Situation','preview.solution':'Solution',
+    'preview.impact_areas':'Impact Areas','preview.impact_level':'Impact Level',
+    'preview.co_suggesters':'Co-Suggesters','preview.none_selected':'None selected',
+    'platform.users':'Users','platform.ideas':'Ideas','platform.implemented':'Implemented',
+    'platform.last_activity':'Last activity','platform.active':'Active',
+    'platform.db_error':'DB unreachable','platform.view_org':'View Org',
+    'platform.admins':'Admins','platform.executives':'Executives',
+    'platform.managers':'Managers','platform.employees':'Employees',
+    'platform.reports_to':'Reports to:',
+    'sa.subtitle':'Complete organizational control & oversight across all levels',
+    'sa.last_refreshed':'Last refreshed:','sa.executives':'Executives',
+    'admin.points_info':'Points config (stored in config.php). Restart needed to apply changes.',
+    'admin.hr_info':'Employee data is loaded from the users table. Run the SQL seed script to populate.',
+    'admin.rescore_info':'Recompute AI quality scores for all existing ideas using the current scoring model. Use this after importing legacy data.',
+    'notif.header':'Notifications','login.feat2_sub':'+10 submit · +25 approved · +65 implemented',
+    'idea.impact_suffix':'Impact',
+    'time.just_now':'Just now','time.min_ago':' min ago','time.hr_ago':'h ago','time.day_ago':'d ago',
+    'ar.title':'Route to Committee','ar.search_add':'Search & Add Reviewers',
+    'ar.no_reviewers':'No reviewers added yet.','ar.threshold':'Approval Threshold',
+    'ar.unanimous':'All reviewers must approve (unanimous)',
+    'ar.supermajority':'Supermajority — at least 2/3 must approve',
+    'ar.simple_majority':'Simple majority — more than half must approve',
+    'ar.info':'Idea moves to Under Review. All assigned reviewers will be notified immediately.',
+    'rd.title':'My Review','rd.decision':'Your Decision',
+    'rd.approve_btn':'✓ Approve','rd.reject_btn':'✗ Reject',
+    'rd.feedback':'Feedback / Comment','rd.feedback_ph':'Share your reasoning with the submitter…',
+    'init.hr_banner':'Auto-fetched from HR Database:','init.reporting_to':'Reporting to:',
+    'attach.prefix':'Attached: ',
+    'committee.approved_count':'approved','committee.rejected_count':'rejected',
+    'committee.pending_count':'pending','committee.approval_req':'% approval required',
+    'review.my_review':'My Review','review.view_details':'View Details','review.review_btn':'Review',
+    'rescore.ok':'Rescored {n} ideas successfully.',
   },
   hi: {
     'app.name':'आइडियाटूल',
@@ -1500,7 +1598,9 @@ const TRANSLATIONS = {
     'section.admin':'एडमिन','section.super_admin':'IFQM सुपर एडमिन',
     'login.app_title':'कर्मचारी विचार मंच','login.tagline':'महान विचारों को वास्तविक सुधारों में बदलें।',
     'login.welcome':'वापस स्वागत है','login.subtitle':'जारी रखने के लिए अपने IFQM खाते में साइन इन करें',
+    'login.org_code':'संगठन कोड','login.org_hint':'IFQM प्लेटफ़ॉर्म एडमिन के लिए खाली छोड़ें',
     'login.email':'ईमेल पता','login.password':'पासवर्ड','login.btn':'साइन इन',
+    'admin.add_user':'+ उपयोगकर्ता जोड़ें',
     'login.email_ph':'आपका.नाम@jain.com','login.password_ph':'अपना पासवर्ड दर्ज करें',
     'login.feat1_title':'विचार सबमिट और ट्रैक करें','login.feat1_sub':'एआई स्कोरिंग सहित 5-चरण विज़ार्ड',
     'login.feat2_title':'अंक और पुरस्कार अर्जित करें',
@@ -1519,7 +1619,7 @@ const TRANSLATIONS = {
     'lb.individual':'व्यक्तिगत रैंकिंग','lb.dept':'विभाग रैंकिंग',
     'lb.top_ideas':'शीर्ष स्कोर विचार','lb.points':'अंक','lb.ideas':'विचार',
     'lb.avg_score':'औसत स्कोर','lb.engagement':'सहभागिता',
-    'lb.all_time':'सर्वकालिक','lb.monthly':'मासिक','lb.quarterly':'त्रैमासिक','lb.yearly':'वार्षिक',
+    'lb.all_time':'सर्वकालिक','lb.monthly':'मासिक','lb.quarterly':'त्रैमासिक','lb.yearly':'वार्षिक','lb.you':'(आप)',
     'form.save_draft':'मसौदा सहेजें','form.next':'अगला','form.back':'वापस','form.submit_idea':'नया विचार सबमिट करें',
     'detail.submitted_by':'द्वारा सबमिट','detail.situation':'वर्तमान स्थिति',
     'detail.solution':'प्रस्तावित समाधान','detail.impact_areas':'प्रभाव क्षेत्र',
@@ -1616,6 +1716,50 @@ const TRANSLATIONS = {
     'msg.analytics_restricted':'विश्लेषण केवल प्रबंधकों, एडमिन और कार्यकारियों के लिए उपलब्ध है।',
     'msg.decision_ok':'निर्णय सबमिट किया','msg.idea_ok':'विचार सफलतापूर्वक सबमिट किया गया',
     'pa.active_tenants':'सक्रिय टेनेंट','pa.total_users':'कुल उपयोगकर्ता','pa.ideas_submitted':'विचार सबमिट','msg.rescoring':'री-स्कोरिंग…',
+    'analytics.approval_rate':'स्वीकृति दर','analytics.impl_rate':'कार्यान्वयन दर','analytics.avg_score':'औसत AI गुणवत्ता स्कोर',
+    'page.leaderboard_title':'लीडरबोर्ड और गेमिफिकेशन','page.analytics_title':'विश्लेषण डैशबोर्ड',
+    'analytics.impact_dist':'प्रभाव क्षेत्र वितरण','analytics.status_summary':'स्थिति सारांश',
+    'analytics.monthly_trend':'मासिक सबमिशन ट्रेंड','analytics.score_dist':'AI गुणवत्ता स्कोर वितरण',
+    'analytics.high':'उच्च (75+)','analytics.med':'मध्यम (50-74)','analytics.low_score':'कम (<50)',
+    'analytics.avg_note':'समग्र औसत AI स्कोर:',
+    'detail.not_scored':'स्कोर नहीं','detail.no_ai':'कोई AI मूल्यांकन उपलब्ध नहीं।',
+    'community.title':'सामुदायिक वोट और स्कोर','community.upvotes':'अपवोट',
+    'community.downvotes':'डाउनवोट','community.net':'नेट स्कोर','community.score':'सामुदायिक स्कोर',
+    'community.your_votes':'आपके विचार पर सामुदायिक वोट:','community.vote_on':'इस विचार पर वोट करें:',
+    'community.vote_hint':'▲ या ▼ क्लिक करें · वोट हटाने के लिए फिर क्लिक करें',
+    'review.own_idea':'आपका अपना विचार','review.vote_needed':'आपके वोट की जरूरत',
+    'review.committee_badge':'समिति','review.route_committee':'समिति को भेजें',
+    'review.submit_mine':'मेरी समीक्षा सबमिट करें','review.decide':'समीक्षा / निर्णय',
+    'review.cannot_own':'आप अपने विचार की समीक्षा नहीं कर सकते',
+    'preview.title_label':'शीर्षक','preview.situation':'परिस्थिति','preview.solution':'समाधान',
+    'preview.impact_areas':'प्रभाव क्षेत्र','preview.impact_level':'प्रभाव स्तर',
+    'preview.co_suggesters':'सह-सुझावकर्ता','preview.none_selected':'कोई नहीं चुना',
+    'platform.users':'उपयोगकर्ता','platform.ideas':'विचार','platform.implemented':'लागू किए',
+    'platform.last_activity':'अंतिम गतिविधि','platform.active':'सक्रिय',
+    'platform.db_error':'DB अनुपलब्ध','platform.view_org':'संगठन देखें',
+    'platform.admins':'एडमिन','platform.executives':'कार्यकारी',
+    'platform.managers':'प्रबंधक','platform.employees':'कर्मचारी','platform.reports_to':'रिपोर्ट करता है:',
+    'sa.subtitle':'सभी स्तरों पर पूर्ण संगठनात्मक नियंत्रण','sa.last_refreshed':'अंतिम ताज़ा किया:','sa.executives':'कार्यकारी',
+    'admin.points_info':'अंक कॉन्फ़िग (config.php में संग्रहीत)। बदलाव लागू करने के लिए पुनरारंभ करें।',
+    'admin.hr_info':'कर्मचारी डेटा users तालिका से लोड किया गया है।',
+    'admin.rescore_info':'मौजूदा सभी विचारों के AI स्कोर पुनः गणना करें।',
+    'notif.header':'सूचनाएं','login.feat2_sub':'+10 सबमिट · +25 स्वीकृत · +65 लागू','idea.impact_suffix':'प्रभाव',
+    'time.just_now':'अभी','time.min_ago':' मिनट पहले','time.hr_ago':'घंटे पहले','time.day_ago':'दिन पहले',
+    'ar.title':'समिति को भेजें','ar.search_add':'समीक्षकों को खोजें और जोड़ें',
+    'ar.no_reviewers':'अभी तक कोई समीक्षक नहीं जोड़ा।','ar.threshold':'स्वीकृति सीमा',
+    'ar.unanimous':'सभी समीक्षकों को मंजूरी देनी होगी (सर्वसम्मति)',
+    'ar.supermajority':'सुपरमेजोरिटी — कम से कम 2/3 को मंजूरी देनी होगी',
+    'ar.simple_majority':'साधारण बहुमत — आधे से अधिक को मंजूरी देनी होगी',
+    'ar.info':'विचार समीक्षाधीन में जाएगा। सभी असाइन किए गए समीक्षकों को तुरंत सूचित किया जाएगा।',
+    'rd.title':'मेरी समीक्षा','rd.decision':'आपका निर्णय',
+    'rd.approve_btn':'✓ स्वीकृत करें','rd.reject_btn':'✗ अस्वीकार करें',
+    'rd.feedback':'प्रतिक्रिया / टिप्पणी','rd.feedback_ph':'सबमिटर के साथ अपना तर्क साझा करें…',
+    'init.hr_banner':'एचआर डेटाबेस से स्वतः प्राप्त:','init.reporting_to':'रिपोर्टिंग प्रबंधक:',
+    'attach.prefix':'संलग्न: ',
+    'committee.approved_count':'स्वीकृत','committee.rejected_count':'अस्वीकृत',
+    'committee.pending_count':'लंबित','committee.approval_req':'% अनुमोदन आवश्यक',
+    'review.my_review':'मेरी समीक्षा','review.view_details':'विवरण देखें','review.review_btn':'समीक्षा',
+    'rescore.ok':'{n} विचार सफलतापूर्वक पुनर्स्कोर किए।',
   },
   mr: {
     'app.name':'आयडिया टूल',
@@ -1627,7 +1771,9 @@ const TRANSLATIONS = {
     'section.admin':'प्रशासक','section.super_admin':'IFQM सुपर प्रशासक',
     'login.app_title':'कर्मचारी कल्पना साधन','login.tagline':'उत्तम कल्पनांना खऱ्या सुधारणांमध्ये बदला.',
     'login.welcome':'पुन्हा स्वागत आहे','login.subtitle':'सुरू ठेवण्यासाठी तुमच्या IFQM खात्यात साइन इन करा',
+    'login.org_code':'संस्था कोड','login.org_hint':'IFQM प्लॅटफॉर्म अॅडमिनसाठी रिकामे ठेवा',
     'login.email':'ईमेल पत्ता','login.password':'पासवर्ड','login.btn':'साइन इन',
+    'admin.add_user':'+ वापरकर्ता जोडा',
     'login.email_ph':'तुमचे.नाव@jain.com','login.password_ph':'तुमचा पासवर्ड प्रविष्ट करा',
     'login.feat1_title':'कल्पना सादर करा आणि ट्रॅक करा','login.feat1_sub':'AI स्कोरिंगसह 5-टप्पा विझार्ड',
     'login.feat2_title':'गुण आणि पुरस्कार मिळवा',
@@ -1644,7 +1790,7 @@ const TRANSLATIONS = {
     'vote.no_self':'तुम्ही स्वतःच्या कल्पनेला रेट करू शकत नाही','vote.rated':'रेट केले','vote.stars':'तारे',
     'lb.individual':'वैयक्तिक क्रमवारी','lb.dept':'विभाग क्रमवारी','lb.top_ideas':'शीर्ष गुण कल्पना',
     'lb.points':'गुण','lb.ideas':'कल्पना','lb.avg_score':'सरासरी गुण','lb.engagement':'सहभाग',
-    'lb.all_time':'सर्वकाळ','lb.monthly':'मासिक','lb.quarterly':'तिमाही','lb.yearly':'वार्षिक',
+    'lb.all_time':'सर्वकाळ','lb.monthly':'मासिक','lb.quarterly':'तिमाही','lb.yearly':'वार्षिक','lb.you':'(तुम्ही)',
     'form.save_draft':'मसुदा जतन करा','form.next':'पुढे','form.back':'मागे','form.submit_idea':'नवीन कल्पना सादर करा',
     'detail.submitted_by':'सादर केले','detail.situation':'सध्याची परिस्थिती','detail.solution':'प्रस्तावित उपाय',
     'detail.impact_areas':'प्रभाव क्षेत्रे','detail.impact_level':'प्रभाव पातळी',
@@ -1738,6 +1884,50 @@ const TRANSLATIONS = {
     'msg.analytics_restricted':'विश्लेषण केवळ व्यवस्थापक, प्रशासक आणि कार्यकारी यांच्यासाठी उपलब्ध आहे.',
     'msg.decision_ok':'निर्णय सादर केला','msg.idea_ok':'कल्पना यशस्वीरित्या सादर केली गेली',
     'pa.active_tenants':'सक्रिय भाडेकरू','pa.total_users':'एकूण वापरकर्ते','pa.ideas_submitted':'सादर केलेल्या कल्पना','msg.rescoring':'पुन्हा स्कोरिंग…',
+    'analytics.approval_rate':'मंजुरी दर','analytics.impl_rate':'अंमलबजावणी दर','analytics.avg_score':'सरासरी AI गुणवत्ता गुण',
+    'page.leaderboard_title':'लीडरबोर्ड आणि गेमिफिकेशन','page.analytics_title':'विश्लेषण डॅशबोर्ड',
+    'analytics.impact_dist':'प्रभाव क्षेत्र वितरण','analytics.status_summary':'स्थिती सारांश',
+    'analytics.monthly_trend':'मासिक सबमिशन ट्रेंड','analytics.score_dist':'AI गुणवत्ता गुण वितरण',
+    'analytics.high':'उच्च (75+)','analytics.med':'मध्यम (50-74)','analytics.low_score':'कमी (<50)',
+    'analytics.avg_note':'एकूण सरासरी AI गुण:',
+    'detail.not_scored':'गुण दिले नाहीत','detail.no_ai':'कोणतेही AI मूल्यांकन उपलब्ध नाही.',
+    'community.title':'समुदाय मत आणि गुण','community.upvotes':'अपवोट',
+    'community.downvotes':'डाउनवोट','community.net':'निव्वळ गुण','community.score':'समुदाय गुण',
+    'community.your_votes':'तुमच्या कल्पनेवर समुदाय मते:','community.vote_on':'या कल्पनेवर मत द्या:',
+    'community.vote_hint':'▲ किंवा ▼ क्लिक करा · मत काढण्यासाठी पुन्हा क्लिक करा',
+    'review.own_idea':'तुमची स्वतःची कल्पना','review.vote_needed':'तुमच्या मताची गरज',
+    'review.committee_badge':'समिती','review.route_committee':'समितीकडे पाठवा',
+    'review.submit_mine':'माझे पुनरावलोकन सादर करा','review.decide':'पुनरावलोकन / निर्णय',
+    'review.cannot_own':'तुम्ही स्वतःच्या कल्पनेचे पुनरावलोकन करू शकत नाही',
+    'preview.title_label':'शीर्षक','preview.situation':'परिस्थिती','preview.solution':'उपाय',
+    'preview.impact_areas':'प्रभाव क्षेत्रे','preview.impact_level':'प्रभाव पातळी',
+    'preview.co_suggesters':'सह-सूचक','preview.none_selected':'कोणतेही निवडले नाही',
+    'platform.users':'वापरकर्ते','platform.ideas':'कल्पना','platform.implemented':'अंमलात आणले',
+    'platform.last_activity':'शेवटची क्रिया','platform.active':'सक्रिय',
+    'platform.db_error':'DB अनुपलब्ध','platform.view_org':'संस्था पहा',
+    'platform.admins':'प्रशासक','platform.executives':'कार्यकारी',
+    'platform.managers':'व्यवस्थापक','platform.employees':'कर्मचारी','platform.reports_to':'अहवाल देतो:',
+    'sa.subtitle':'सर्व स्तरांवर संपूर्ण संस्थात्मक नियंत्रण','sa.last_refreshed':'शेवटचे ताजे केले:','sa.executives':'कार्यकारी',
+    'admin.points_info':'गुण कॉन्फिगरेशन (config.php मध्ये संग्रहित). बदल लागू करण्यासाठी पुनरारंभ करा.',
+    'admin.hr_info':'कर्मचारी डेटा users तक्त्यातून लोड केला जातो.',
+    'admin.rescore_info':'सर्व विद्यमान कल्पनांचे AI गुण पुन्हा गणना करा.',
+    'notif.header':'सूचना','login.feat2_sub':'+10 सादर · +25 मंजूर · +65 अंमलात','idea.impact_suffix':'प्रभाव',
+    'time.just_now':'आत्ताच','time.min_ago':' मिनिटांपूर्वी','time.hr_ago':'तासापूर्वी','time.day_ago':'दिवसापूर्वी',
+    'ar.title':'समितीकडे पाठवा','ar.search_add':'समीक्षक शोधा आणि जोडा',
+    'ar.no_reviewers':'अद्याप कोणतेही समीक्षक जोडले नाहीत.','ar.threshold':'मंजुरी मर्यादा',
+    'ar.unanimous':'सर्व समीक्षकांनी मंजुरी द्यावी (सर्वसंमत)',
+    'ar.supermajority':'सुपरमेजोरिटी — किमान 2/3 ने मंजुरी द्यावी',
+    'ar.simple_majority':'साधे बहुमत — निम्म्यापेक्षा जास्त ने मंजुरी द्यावी',
+    'ar.info':'कल्पना पुनरावलोकनात जाईल. सर्व नियुक्त समीक्षकांना तत्काळ सूचित केले जाईल.',
+    'rd.title':'माझे पुनरावलोकन','rd.decision':'तुमचा निर्णय',
+    'rd.approve_btn':'✓ मंजूर करा','rd.reject_btn':'✗ नाकारा',
+    'rd.feedback':'अभिप्राय / टिप्पणी','rd.feedback_ph':'सादरकर्त्याशी तुमचे तर्क सामायिक करा…',
+    'init.hr_banner':'एचआर डेटाबेसमधून स्वतः आणले:','init.reporting_to':'अहवाल देतो:',
+    'attach.prefix':'जोडलेले: ',
+    'committee.approved_count':'मंजूर','committee.rejected_count':'नाकारले',
+    'committee.pending_count':'प्रलंबित','committee.approval_req':'% मंजुरी आवश्यक',
+    'review.my_review':'माझी समीक्षा','review.view_details':'तपशील पहा','review.review_btn':'समीक्षा',
+    'rescore.ok':'{n} कल्पना यशस्वीपणे पुन्हा स्कोर केल्या।',
   },
   kn: {
     'app.name':'ಐಡಿಯಾ ಟೂಲ್',
@@ -1749,7 +1939,9 @@ const TRANSLATIONS = {
     'section.admin':'ನಿರ್ವಾಹಕ','section.super_admin':'IFQM ಸೂಪರ್ ನಿರ್ವಾಹಕ',
     'login.app_title':'ಉದ್ಯೋಗಿ ಆಲೋಚನೆ ಸಾಧನ','login.tagline':'ಉತ್ತಮ ಆಲೋಚನೆಗಳನ್ನು ನಿಜವಾದ ಸುಧಾರಣೆಗಳನ್ನಾಗಿ ಮಾಡಿ.',
     'login.welcome':'ಮರಳಿ ಸ್ವಾಗತ','login.subtitle':'ಮುಂದುವರಿಯಲು ನಿಮ್ಮ IFQM ಖಾತೆಗೆ ಸೈನ್ ಇನ್ ಮಾಡಿ',
+    'login.org_code':'ಸಂಸ್ಥೆ ಕೋಡ್','login.org_hint':'IFQM ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಅಡ್ಮಿನ್‌ಗಾಗಿ ಖಾಲಿ ಬಿಡಿ',
     'login.email':'ಇಮೇಲ್ ವಿಳಾಸ','login.password':'ಪಾಸ್‌ವರ್ಡ್','login.btn':'ಸೈನ್ ಇನ್',
+    'admin.add_user':'+ ಬಳಕೆದಾರ ಸೇರಿಸಿ',
     'topbar.dark':'ಡಾರ್ಕ್','topbar.light':'ಲೈಟ್','topbar.notifications':'ಅಧಿಸೂಚನೆಗಳು',
     'topbar.logout':'ಲಾಗ್ ಔಟ್','topbar.mark_read':'ಎಲ್ಲಾ ಓದಿದಂತೆ ಗುರುತಿಸಿ',
     'dash.total':'ಒಟ್ಟು ಆಲೋಚನೆಗಳು','dash.approved':'ಅನುಮೋದಿಸಲಾಗಿದೆ','dash.implemented':'ಅನುಷ್ಠಾನಗೊಳಿಸಲಾಗಿದೆ',
@@ -1764,7 +1956,7 @@ const TRANSLATIONS = {
     'detail.ai_eval':'AI ಮೌಲ್ಯಮಾಪನ','detail.score':'ಸ್ಕೋರ್','detail.close':'ಮುಚ್ಚಿ',
     'lb.individual':'ವೈಯಕ್ತಿಕ ಶ್ರೇಣಿ','lb.dept':'ವಿಭಾಗ ಶ್ರೇಣಿ','lb.top_ideas':'ಅಗ್ರ ಸ್ಕೋರ್ ಆಲೋಚನೆಗಳು',
     'lb.points':'ಅಂಕಗಳು','lb.ideas':'ಆಲೋಚನೆಗಳು','lb.avg_score':'ಸರಾಸರಿ ಸ್ಕೋರ್','lb.engagement':'ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ',
-    'lb.all_time':'ಸರ್ವಕಾಲಿಕ','lb.monthly':'ಮಾಸಿಕ','lb.quarterly':'ತ್ರೈಮಾಸಿಕ','lb.yearly':'ವಾರ್ಷಿಕ',
+    'lb.all_time':'ಸರ್ವಕಾಲಿಕ','lb.monthly':'ಮಾಸಿಕ','lb.quarterly':'ತ್ರೈಮಾಸಿಕ','lb.yearly':'ವಾರ್ಷಿಕ','lb.you':'(ನೀವು)',
     'profile.title':'ಉದ್ಯೋಗಿ ಪ್ರೊಫೈಲ್','profile.stats':'ನನ್ನ ಅಂಕಿ-ಅಂಶಗಳು',
     'profile.dept':'ವಿಭಾಗ','profile.email_lbl':'ಇಮೇಲ್','profile.phone':'ಫೋನ್',
     'profile.reports_to':'ವರದಿ ಮಾಡುತ್ತಾರೆ','profile.bu':'ವ್ಯವಹಾರ ಘಟಕ','profile.loc':'ಸ್ಥಳ',
@@ -1853,6 +2045,50 @@ const TRANSLATIONS = {
     'msg.analytics_restricted':'ವಿಶ್ಲೇಷಣೆ ಕೇವಲ ಮ್ಯಾನೇಜರ್‌ಗಳು, ಅಡ್ಮಿನ್ ಮತ್ತು ಕಾರ್ಯನಿರ್ವಾಹಕರಿಗೆ ಲಭ್ಯ.',
     'msg.decision_ok':'ನಿರ್ಧಾರ ಸಲ್ಲಿಸಲಾಗಿದೆ','msg.idea_ok':'ಆಲೋಚನೆ ಯಶಸ್ವಿಯಾಗಿ ಸಲ್ಲಿಸಲಾಗಿದೆ',
     'pa.active_tenants':'ಸಕ್ರಿಯ ಟೆನೆಂಟ್‌ಗಳು','pa.total_users':'ಒಟ್ಟು ಬಳಕೆದಾರರು','pa.ideas_submitted':'ಸಲ್ಲಿಸಿದ ಆಲೋಚನೆಗಳು','msg.rescoring':'ಮರು-ಸ್ಕೋರಿಂಗ್…',
+    'analytics.approval_rate':'ಅನುಮೋದನೆ ದರ','analytics.impl_rate':'ಅನುಷ್ಠಾನ ದರ','analytics.avg_score':'ಸರಾಸರಿ AI ಗುಣಮಟ್ಟ ಸ್ಕೋರ್',
+    'page.leaderboard_title':'ಲೀಡರ್‌ಬೋರ್ಡ್ ಮತ್ತು ಗೇಮಿಫಿಕೇಶನ್','page.analytics_title':'ವಿಶ್ಲೇಷಣೆ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
+    'analytics.impact_dist':'ಪ್ರಭಾವ ಕ್ಷೇತ್ರ ವಿತರಣೆ','analytics.status_summary':'ಸ್ಥಿತಿ ಸಾರಾಂಶ',
+    'analytics.monthly_trend':'ಮಾಸಿಕ ಸಲ್ಲಿಕೆ ಪ್ರವೃತ್ತಿ','analytics.score_dist':'AI ಗುಣಮಟ್ಟ ಸ್ಕೋರ್ ವಿತರಣೆ',
+    'analytics.high':'ಹೆಚ್ಚು (75+)','analytics.med':'ಮಧ್ಯಮ (50-74)','analytics.low_score':'ಕಡಿಮೆ (<50)',
+    'analytics.avg_note':'ಒಟ್ಟಾರೆ ಸರಾಸರಿ AI ಸ್ಕೋರ್:',
+    'detail.not_scored':'ಸ್ಕೋರ್ ಮಾಡಿಲ್ಲ','detail.no_ai':'AI ಮೌಲ್ಯಮಾಪನ ಲಭ್ಯವಿಲ್ಲ.',
+    'community.title':'ಸಮುದಾಯ ವೋಟ್ & ಸ್ಕೋರ್','community.upvotes':'ಅಪ್‌ವೋಟ್',
+    'community.downvotes':'ಡೌನ್‌ವೋಟ್','community.net':'ನೆಟ್ ಸ್ಕೋರ್','community.score':'ಸಮುದಾಯ ಸ್ಕೋರ್',
+    'community.your_votes':'ನಿಮ್ಮ ಆಲೋಚನೆಯ ಸಮುದಾಯ ವೋಟ್‌ಗಳು:','community.vote_on':'ಈ ಆಲೋಚನೆಗೆ ವೋಟ್ ಮಾಡಿ:',
+    'community.vote_hint':'▲ ಅಥವಾ ▼ ಕ್ಲಿಕ್ ಮಾಡಿ · ವೋಟ್ ತೆಗೆಯಲು ಮತ್ತೆ ಕ್ಲಿಕ್ ಮಾಡಿ',
+    'review.own_idea':'ನಿಮ್ಮ ಸ್ವಂತ ಆಲೋಚನೆ','review.vote_needed':'ನಿಮ್ಮ ವೋಟ್ ಬೇಕು',
+    'review.committee_badge':'ಸಮಿತಿ','review.route_committee':'ಸಮಿತಿಗೆ ಕಳುಹಿಸಿ',
+    'review.submit_mine':'ನನ್ನ ವಿಮರ್ಶೆ ಸಲ್ಲಿಸಿ','review.decide':'ವಿಮರ್ಶೆ / ನಿರ್ಧಾರ',
+    'review.cannot_own':'ನೀವು ನಿಮ್ಮ ಸ್ವಂತ ಆಲೋಚನೆಯನ್ನು ವಿಮರ್ಶಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ',
+    'preview.title_label':'ಶೀರ್ಷಿಕೆ','preview.situation':'ಪರಿಸ್ಥಿತಿ','preview.solution':'ಪರಿಹಾರ',
+    'preview.impact_areas':'ಪ್ರಭಾವ ಕ್ಷೇತ್ರಗಳು','preview.impact_level':'ಪ್ರಭಾವ ಮಟ್ಟ',
+    'preview.co_suggesters':'ಸಹ-ಸೂಚಕರು','preview.none_selected':'ಯಾವುದೂ ಆಯ್ಕೆ ಮಾಡಿಲ್ಲ',
+    'platform.users':'ಬಳಕೆದಾರರು','platform.ideas':'ಆಲೋಚನೆಗಳು','platform.implemented':'ಅನುಷ್ಠಾನಗೊಂಡಿವೆ',
+    'platform.last_activity':'ಕೊನೆಯ ಚಟುವಟಿಕೆ','platform.active':'ಸಕ್ರಿಯ',
+    'platform.db_error':'DB ಅಲಭ್ಯ','platform.view_org':'ಸಂಸ್ಥೆ ನೋಡಿ',
+    'platform.admins':'ಅಡ್ಮಿನ್‌ಗಳು','platform.executives':'ಕಾರ್ಯನಿರ್ವಾಹಕರು',
+    'platform.managers':'ಮ್ಯಾನೇಜರ್‌ಗಳು','platform.employees':'ಉದ್ಯೋಗಿಗಳು','platform.reports_to':'ವರದಿ ಮಾಡುತ್ತಾರೆ:',
+    'sa.subtitle':'ಎಲ್ಲಾ ಮಟ್ಟಗಳಲ್ಲಿ ಸಂಪೂರ್ಣ ಸಂಸ್ಥಾ ನಿಯಂತ್ರಣ','sa.last_refreshed':'ಕೊನೆಯ ರಿಫ್ರೆಶ್:','sa.executives':'ಕಾರ್ಯನಿರ್ವಾಹಕರು',
+    'admin.points_info':'ಅಂಕ ಕಾನ್ಫಿಗ್ (config.php ನಲ್ಲಿ ಸಂಗ್ರಹಿಸಲಾಗಿದೆ). ಬದಲಾವಣೆಗಳನ್ನು ಅನ್ವಯಿಸಲು ಮರುಪ್ರಾರಂಭಿಸಿ.',
+    'admin.hr_info':'ಉದ್ಯೋಗಿ ಡೇಟಾ users ಟೇಬಲ್‌ನಿಂದ ಲೋಡ್ ಆಗುತ್ತದೆ.',
+    'admin.rescore_info':'ಎಲ್ಲಾ ಆಲೋಚನೆಗಳ AI ಸ್ಕೋರ್ ಮರು-ಲೆಕ್ಕಾಚಾರ ಮಾಡಿ.',
+    'notif.header':'ಅಧಿಸೂಚನೆಗಳು','login.feat2_sub':'+10 ಸಲ್ಲಿಸಿ · +25 ಅನುಮೋದಿಸಿ · +65 ಅನುಷ್ಠಾನ','idea.impact_suffix':'ಪ್ರಭಾವ',
+    'time.just_now':'ಈಗಷ್ಟೇ','time.min_ago':' ನಿಮಿಷ ಹಿಂದೆ','time.hr_ago':'ಗಂ ಹಿಂದೆ','time.day_ago':'ದಿ ಹಿಂದೆ',
+    'ar.title':'ಸಮಿತಿಗೆ ಕಳುಹಿಸಿ','ar.search_add':'ಸಮೀಕ್ಷಕರನ್ನು ಹುಡುಕಿ ಮತ್ತು ಸೇರಿಸಿ',
+    'ar.no_reviewers':'ಇನ್ನೂ ಯಾವುದೇ ಸಮೀಕ್ಷಕರು ಸೇರಿಸಿಲ್ಲ.','ar.threshold':'ಅನುಮೋದನೆ ಮಿತಿ',
+    'ar.unanimous':'ಎಲ್ಲಾ ಸಮೀಕ್ಷಕರು ಅನುಮೋದಿಸಬೇಕು (ಸರ್ವಾನುಮತ)',
+    'ar.supermajority':'ಸೂಪರ್‌ಮೇಜಾರಿಟಿ — ಕನಿಷ್ಠ 2/3 ಅನುಮೋದಿಸಬೇಕು',
+    'ar.simple_majority':'ಸಾಧಾರಣ ಬಹುಮತ — ಅರ್ಧಕ್ಕಿಂತ ಹೆಚ್ಚು ಅನುಮೋದಿಸಬೇಕು',
+    'ar.info':'ಆಲೋಚನೆ ಪರಿಶೀಲನೆಗೆ ಹೋಗುತ್ತದೆ. ನಿಯೋಜಿತ ಸಮೀಕ್ಷಕರಿಗೆ ತಕ್ಷಣ ಸೂಚಿಸಲಾಗುತ್ತದೆ.',
+    'rd.title':'ನನ್ನ ವಿಮರ್ಶೆ','rd.decision':'ನಿಮ್ಮ ನಿರ್ಧಾರ',
+    'rd.approve_btn':'✓ ಅನುಮೋದಿಸಿ','rd.reject_btn':'✗ ತಿರಸ್ಕರಿಸಿ',
+    'rd.feedback':'ಪ್ರತಿಕ್ರಿಯೆ / ಟಿಪ್ಪಣಿ','rd.feedback_ph':'ಸಲ್ಲಿಸಿದವರೊಂದಿಗೆ ನಿಮ್ಮ ತರ್ಕ ಹಂಚಿಕೊಳ್ಳಿ…',
+    'init.hr_banner':'HR ಡೇಟಾಬೇಸ್‌ನಿಂದ ಸ್ವಯಂ ಪಡೆದಿದೆ:','init.reporting_to':'ವರದಿ ಮಾಡುತ್ತಾರೆ:',
+    'attach.prefix':'ಲಗತ್ತಿಸಲಾಗಿದೆ: ',
+    'committee.approved_count':'ಅನುಮೋದಿಸಲಾಗಿದೆ','committee.rejected_count':'ತಿರಸ್ಕರಿಸಲಾಗಿದೆ',
+    'committee.pending_count':'ಬಾಕಿ','committee.approval_req':'% ಅನುಮೋದನೆ ಅಗತ್ಯ',
+    'review.my_review':'ನನ್ನ ವಿಮರ್ಶೆ','review.view_details':'ವಿವರಗಳನ್ನು ನೋಡಿ','review.review_btn':'ವಿಮರ್ಶೆ',
+    'rescore.ok':'{n} ಆಲೋಚನೆಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಮರುಸ್ಕೋರ್ ಮಾಡಲಾಗಿದೆ।',
   },
   te: {
     'app.name':'ఐడియా టూల్',
@@ -1864,7 +2100,9 @@ const TRANSLATIONS = {
     'section.admin':'నిర్వాహకుడు','section.super_admin':'IFQM సూపర్ అడ్మిన్',
     'login.app_title':'ఉద్యోగి ఆలోచన సాధనం','login.tagline':'గొప్ప ఆలోచనలను నిజమైన మెరుగుదలలుగా మార్చండి.',
     'login.welcome':'మళ్ళీ స్వాగతం','login.subtitle':'కొనసాగించడానికి మీ IFQM ఖాతాకు సైన్ ఇన్ చేయండి',
+    'login.org_code':'సంస్థ కోడ్','login.org_hint':'IFQM ప్లాట్‌ఫారమ్ అడ్మిన్ కోసం ఖాళీగా వదలండి',
     'login.email':'ఇమెయిల్ చిరునామా','login.password':'పాస్‌వర్డ్','login.btn':'సైన్ ఇన్',
+    'admin.add_user':'+ వినియోగదారుని జోడించు',
     'topbar.dark':'డార్క్','topbar.light':'లైట్','topbar.notifications':'నోటిఫికేషన్లు',
     'topbar.logout':'లాగ్ అవుట్','topbar.mark_read':'అన్నీ చదివినట్లు గుర్తించు',
     'dash.total':'మొత్తం ఆలోచనలు','dash.approved':'అనుమతించబడింది','dash.implemented':'అమలు చేయబడింది',
@@ -1879,7 +2117,7 @@ const TRANSLATIONS = {
     'detail.ai_eval':'AI మూల్యాంకనం','detail.score':'స్కోరు','detail.close':'మూసివేయి',
     'lb.individual':'వ్యక్తిగత ర్యాంకింగ్','lb.dept':'విభాగ ర్యాంకింగ్','lb.top_ideas':'అగ్ర స్కోరు ఆలోచనలు',
     'lb.points':'పాయింట్లు','lb.ideas':'ఆలోచనలు','lb.avg_score':'సగటు స్కోరు','lb.engagement':'నిమగ్నత',
-    'lb.all_time':'సర్వకాలిక','lb.monthly':'నెలవారీ','lb.quarterly':'త్రైమాసిక','lb.yearly':'వార్షిక',
+    'lb.all_time':'సర్వకాలిక','lb.monthly':'నెలవారీ','lb.quarterly':'త్రైమాసిక','lb.yearly':'వార్షిక','lb.you':'(మీరు)',
     'profile.title':'ఉద్యోగి ప్రొఫైల్','profile.stats':'నా గణాంకాలు',
     'profile.dept':'విభాగం','profile.email_lbl':'ఇమెయిల్','profile.phone':'ఫోన్',
     'profile.reports_to':'రిపోర్టింగ్ మేనేజర్','profile.bu':'వ్యాపార విభాగం','profile.loc':'స్థానం',
@@ -1968,6 +2206,50 @@ const TRANSLATIONS = {
     'msg.analytics_restricted':'విశ్లేషణ కేవలం మేనేజర్లు, అడ్మిన్లు మరియు ఎగ్జిక్యూటివ్‌లకు మాత్రమే అందుబాటులో ఉంటుంది.',
     'msg.decision_ok':'నిర్ణయం సమర్పించబడింది','msg.idea_ok':'ఆలోచన విజయవంతంగా సమర్పించబడింది',
     'pa.active_tenants':'యాక్టివ్ టెనెంట్‌లు','pa.total_users':'మొత్తం వినియోగదారులు','pa.ideas_submitted':'సమర్పించిన ఆలోచనలు','msg.rescoring':'మళ్ళీ స్కోరింగ్…',
+    'analytics.approval_rate':'అనుమతి రేటు','analytics.impl_rate':'అమలు రేటు','analytics.avg_score':'సగటు AI నాణ్యత స్కోరు',
+    'page.leaderboard_title':'లీడర్‌బోర్డ్ & గేమిఫికేషన్','page.analytics_title':'విశ్లేషణ డాష్‌బోర్డ్',
+    'analytics.impact_dist':'ప్రభావ ప్రాంత పంపిణీ','analytics.status_summary':'స్థితి సారాంశం',
+    'analytics.monthly_trend':'నెలవారీ సమర్పణ ధోరణి','analytics.score_dist':'AI నాణ్యత స్కోరు పంపిణీ',
+    'analytics.high':'అధికం (75+)','analytics.med':'మధ్యమం (50-74)','analytics.low_score':'తక్కువ (<50)',
+    'analytics.avg_note':'మొత్తం సగటు AI స్కోరు:',
+    'detail.not_scored':'స్కోరు చేయబడలేదు','detail.no_ai':'AI మూల్యాంకనం అందుబాటులో లేదు.',
+    'community.title':'కమ్యూనిటీ ఓటు & స్కోరు','community.upvotes':'అప్‌వోట్లు',
+    'community.downvotes':'డౌన్‌వోట్లు','community.net':'నికర స్కోరు','community.score':'కమ్యూనిటీ స్కోరు',
+    'community.your_votes':'మీ ఆలోచనపై కమ్యూనిటీ ఓట్లు:','community.vote_on':'ఈ ఆలోచనకు ఓటు వేయండి:',
+    'community.vote_hint':'▲ లేదా ▼ క్లిక్ చేయండి · ఓటు తీసివేయడానికి మళ్ళీ క్లిక్ చేయండి',
+    'review.own_idea':'మీ సొంత ఆలోచన','review.vote_needed':'మీ ఓటు అవసరం',
+    'review.committee_badge':'కమిటీ','review.route_committee':'కమిటీకి రూట్ చేయండి',
+    'review.submit_mine':'నా సమీక్షను సమర్పించండి','review.decide':'సమీక్ష / నిర్ణయం',
+    'review.cannot_own':'మీరు మీ స్వంత ఆలోచనను సమీక్షించలేరు',
+    'preview.title_label':'శీర్షిక','preview.situation':'పరిస్థితి','preview.solution':'పరిష్కారం',
+    'preview.impact_areas':'ప్రభావ ప్రాంతాలు','preview.impact_level':'ప్రభావ స్థాయి',
+    'preview.co_suggesters':'సహ-సూచికులు','preview.none_selected':'ఏదీ ఎంచుకోలేదు',
+    'platform.users':'వినియోగదారులు','platform.ideas':'ఆలోచనలు','platform.implemented':'అమలు చేయబడినవి',
+    'platform.last_activity':'చివరి కార్యకలాపం','platform.active':'యాక్టివ్',
+    'platform.db_error':'DB అందుబాటులో లేదు','platform.view_org':'సంస్థ చూడండి',
+    'platform.admins':'అడ్మిన్లు','platform.executives':'ఎగ్జిక్యూటివ్‌లు',
+    'platform.managers':'మేనేజర్లు','platform.employees':'ఉద్యోగులు','platform.reports_to':'రిపోర్ట్ చేస్తారు:',
+    'sa.subtitle':'అన్ని స్థాయిలలో సంపూర్ణ సంస్థాగత నియంత్రణ','sa.last_refreshed':'చివరి రిఫ్రెష్:','sa.executives':'ఎగ్జిక్యూటివ్‌లు',
+    'admin.points_info':'పాయింట్ కాన్ఫిగ్ (config.php లో నిల్వ చేయబడింది). మార్పులు వర్తింపజేయడానికి పునఃప్రారంభించండి.',
+    'admin.hr_info':'ఉద్యోగి డేటా users పట్టిక నుండి లోడ్ చేయబడింది.',
+    'admin.rescore_info':'అన్ని ఆలోచనల AI స్కోర్‌లను మళ్ళీ లెక్కించండి.',
+    'notif.header':'నోటిఫికేషన్లు','login.feat2_sub':'+10 సమర్పణ · +25 అనుమతి · +65 అమలు','idea.impact_suffix':'ప్రభావం',
+    'time.just_now':'ఇప్పుడే','time.min_ago':' నిమిషాల క్రితం','time.hr_ago':'గం క్రితం','time.day_ago':'రో క్రితం',
+    'ar.title':'కమిటీకి రూట్ చేయండి','ar.search_add':'సమీక్షకులను వెతకండి & జోడించండి',
+    'ar.no_reviewers':'ఇంకా సమీక్షకులు జోడించలేదు.','ar.threshold':'అనుమతి సీమ',
+    'ar.unanimous':'అందరు సమీక్షకులు అనుమతించాలి (ఏకగ్రీవంగా)',
+    'ar.supermajority':'సూపర్‌మేజారిటీ — కనీసం 2/3 అనుమతించాలి',
+    'ar.simple_majority':'సాధారణ మెజారిటీ — సగానికంటే ఎక్కువ అనుమతించాలి',
+    'ar.info':'ఆలోచన సమీక్షలోకి వెళ్ళుతుంది. నియుక్త సమీక్షకులందరికీ వెంటనే తెలియజేయబడుతుంది.',
+    'rd.title':'నా సమీక్ష','rd.decision':'మీ నిర్ణయం',
+    'rd.approve_btn':'✓ అనుమతించండి','rd.reject_btn':'✗ తిరస్కరించండి',
+    'rd.feedback':'అభిప్రాయం / వ్యాఖ్య','rd.feedback_ph':'సమర్పించినవారితో మీ తర్కాన్ని పంచుకోండి…',
+    'init.hr_banner':'HR డేటాబేస్ నుండి స్వయంచాలకంగా తీసుకోబడింది:','init.reporting_to':'రిపోర్టింగ్ మేనేజర్:',
+    'attach.prefix':'జతపర్చబడింది: ',
+    'committee.approved_count':'అనుమతించబడింది','committee.rejected_count':'తిరస్కరించబడింది',
+    'committee.pending_count':'పెండింగ్','committee.approval_req':'% అనుమతి అవసరం',
+    'review.my_review':'నా సమీక్ష','review.view_details':'వివరాలు చూడండి','review.review_btn':'సమీక్ష',
+    'rescore.ok':'{n} ఆలోచనలు విజయవంతంగా రీస్కోర్ చేయబడ్డాయి।',
   },
   ta: {
     'app.name':'ஐடியா டூல்',
@@ -1979,7 +2261,9 @@ const TRANSLATIONS = {
     'section.admin':'நிர்வாகி','section.super_admin':'IFQM சூப்பர் அட்மின்',
     'login.app_title':'ஊழியர் யோசனை கருவி','login.tagline':'சிறந்த யோசனைகளை உண்மையான முன்னேற்றங்களாக மாற்றுங்கள்.',
     'login.welcome':'மீண்டும் வரவேற்கிறோம்','login.subtitle':'தொடர உங்கள் IFQM கணக்கில் உள்நுழைக',
+    'login.org_code':'நிறுவன குறியீடு','login.org_hint':'IFQM தளம் நிர்வாகிக்கு காலியாக விடுங்கள்',
     'login.email':'மின்னஞ்சல் முகவரி','login.password':'கடவுச்சொல்','login.btn':'உள்நுழை',
+    'admin.add_user':'+ பயனரை சேர்க்கவும்',
     'topbar.dark':'இருள்','topbar.light':'ஒளி','topbar.notifications':'அறிவிப்புகள்',
     'topbar.logout':'வெளியேறு','topbar.mark_read':'அனைத்தையும் படித்ததாக குறி',
     'dash.total':'மொத்த யோசனைகள்','dash.approved':'அங்கீகரிக்கப்பட்டவை','dash.implemented':'செயல்படுத்தப்பட்டவை',
@@ -1994,7 +2278,7 @@ const TRANSLATIONS = {
     'detail.ai_eval':'AI மதிப்பீடு','detail.score':'மதிப்பெண்','detail.close':'மூடு',
     'lb.individual':'தனிப்பட்ட தரவரிசை','lb.dept':'துறை தரவரிசை','lb.top_ideas':'சிறந்த மதிப்பெண் யோசனைகள்',
     'lb.points':'புள்ளிகள்','lb.ideas':'யோசனைகள்','lb.avg_score':'சராசரி மதிப்பெண்','lb.engagement':'ஈடுபாடு',
-    'lb.all_time':'எல்லா காலமும்','lb.monthly':'மாதாந்திர','lb.quarterly':'காலாண்டு','lb.yearly':'வருடாந்திர',
+    'lb.all_time':'எல்லா காலமும்','lb.monthly':'மாதாந்திர','lb.quarterly':'காலாண்டு','lb.yearly':'வருடாந்திர','lb.you':'(நீங்கள்)',
     'profile.title':'ஊழியர் சுயவிவரம்','profile.stats':'என் புள்ளிவிவரங்கள்',
     'profile.dept':'துறை','profile.email_lbl':'மின்னஞ்சல்','profile.phone':'தொலைபேசி',
     'profile.reports_to':'அறிக்கை மேலாளர்','profile.bu':'வணிக பிரிவு','profile.loc':'இடம்',
@@ -2084,6 +2368,50 @@ const TRANSLATIONS = {
     'msg.analytics_restricted':'பகுப்பாய்வு மேலாளர்கள், நிர்வாகிகள் மற்றும் நிர்வாகிகளுக்கு மட்டுமே கிடைக்கும்.',
     'msg.decision_ok':'முடிவு சமர்ப்பிக்கப்பட்டது','msg.idea_ok':'யோசனை வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது',
     'pa.active_tenants':'செயலில் உள்ள வாடகையாளர்கள்','pa.total_users':'மொத்த பயனர்கள்','pa.ideas_submitted':'சமர்ப்பிக்கப்பட்ட யோசனைகள்','msg.rescoring':'மீண்டும் மதிப்பெண் இடுகிறது…',
+    'analytics.approval_rate':'அங்கீகார விகிதம்','analytics.impl_rate':'செயலாக்க விகிதம்','analytics.avg_score':'சராசரி AI தர மதிப்பெண்',
+    'page.leaderboard_title':'தலைமை பலகை & விளையாட்டு','page.analytics_title':'பகுப்பாய்வு டாஷ்போர்டு',
+    'analytics.impact_dist':'தாக்கப் பகுதி விநியோகம்','analytics.status_summary':'நிலை சுருக்கம்',
+    'analytics.monthly_trend':'மாதாந்திர சமர்ப்பணம் போக்கு','analytics.score_dist':'AI தர மதிப்பெண் விநியோகம்',
+    'analytics.high':'அதிகம் (75+)','analytics.med':'நடுத்தரம் (50-74)','analytics.low_score':'குறைவு (<50)',
+    'analytics.avg_note':'மொத்த சராசரி AI மதிப்பெண்:',
+    'detail.not_scored':'மதிப்பெண் இல்லை','detail.no_ai':'AI மதிப்பீடு கிடைக்கவில்லை.',
+    'community.title':'சமூக வாக்கு & மதிப்பெண்','community.upvotes':'அப்வோட்கள்',
+    'community.downvotes':'டவுன்வோட்கள்','community.net':'நிகர மதிப்பெண்','community.score':'சமூக மதிப்பெண்',
+    'community.your_votes':'உங்கள் யோசனையில் சமூக வாக்குகள்:','community.vote_on':'இந்த யோசனைக்கு வாக்களிக்கவும்:',
+    'community.vote_hint':'▲ அல்லது ▼ கிளிக் செய்யுங்கள் · வாக்கை நீக்க மீண்டும் கிளிக் செய்யுங்கள்',
+    'review.own_idea':'உங்கள் சொந்த யோசனை','review.vote_needed':'உங்கள் வாக்கு தேவை',
+    'review.committee_badge':'குழு','review.route_committee':'குழுவிற்கு அனுப்பு',
+    'review.submit_mine':'என் மதிப்பாய்வை சமர்ப்பி','review.decide':'மதிப்பாய்வு / முடிவு',
+    'review.cannot_own':'நீங்கள் சொந்த யோசனையை மதிப்பாய்வு செய்ய முடியாது',
+    'preview.title_label':'தலைப்பு','preview.situation':'நிலைமை','preview.solution':'தீர்வு',
+    'preview.impact_areas':'தாக்கப் பகுதிகள்','preview.impact_level':'தாக்க நிலை',
+    'preview.co_suggesters':'சக-பரிந்துரைப்பாளர்கள்','preview.none_selected':'எதுவும் தேர்ந்தெடுக்கவில்லை',
+    'platform.users':'பயனர்கள்','platform.ideas':'யோசனைகள்','platform.implemented':'செயல்படுத்தப்பட்டவை',
+    'platform.last_activity':'கடைசி செயல்பாடு','platform.active':'செயலில்',
+    'platform.db_error':'DB அணுகல் இல்லை','platform.view_org':'நிறுவனம் பார்',
+    'platform.admins':'நிர்வாகிகள்','platform.executives':'நிர்வாக அதிகாரிகள்',
+    'platform.managers':'மேலாளர்கள்','platform.employees':'ஊழியர்கள்','platform.reports_to':'அறிக்கை செய்கிறார்:',
+    'sa.subtitle':'அனைத்து நிலைகளிலும் முழு நிறுவன கட்டுப்பாடு','sa.last_refreshed':'கடைசி புதுப்பிப்பு:','sa.executives':'நிர்வாக அதிகாரிகள்',
+    'admin.points_info':'புள்ளி கான்ஃபிக் (config.php இல் சேமிக்கப்பட்டுள்ளது). மாற்றங்களை பயன்படுத்த மறுதொடக்கம் தேவை.',
+    'admin.hr_info':'ஊழியர் தரவு users அட்டவணையிலிருந்து ஏற்றப்படுகிறது.',
+    'admin.rescore_info':'அனைத்து யோசனைகளின் AI மதிப்பெண்களை மீண்டும் கணக்கிடவும்.',
+    'notif.header':'அறிவிப்புகள்','login.feat2_sub':'+10 சமர்ப்பிக்க · +25 அங்கீகரிக்க · +65 செயல்படுத்த','idea.impact_suffix':'தாக்கம்',
+    'time.just_now':'இப்போதே','time.min_ago':' நிமிடங்களுக்கு முன்','time.hr_ago':'மணி முன்','time.day_ago':'நாள் முன்',
+    'ar.title':'குழுவிற்கு அனுப்பு','ar.search_add':'மதிப்பாளர்களை தேடு & சேர்',
+    'ar.no_reviewers':'இன்னும் மதிப்பாளர்கள் சேர்க்கவில்லை.','ar.threshold':'அங்கீகார வரம்பு',
+    'ar.unanimous':'அனைத்து மதிப்பாளர்களும் அங்கீகரிக்க வேண்டும் (ஒருமித்த)',
+    'ar.supermajority':'சூப்பர்மேஜாரிட்டி — குறைந்தது 2/3 அங்கீகரிக்க வேண்டும்',
+    'ar.simple_majority':'எளிய பெரும்பான்மை — பாதியிலும் அதிகம் அங்கீகரிக்க வேண்டும்',
+    'ar.info':'யோசனை மதிப்பாய்வுக்கு செல்லும். நியமிக்கப்பட்ட மதிப்பாளர்களுக்கு உடனடியாக தெரிவிக்கப்படும்.',
+    'rd.title':'என் மதிப்பாய்வு','rd.decision':'உங்கள் முடிவு',
+    'rd.approve_btn':'✓ அங்கீகரிக்கவும்','rd.reject_btn':'✗ நிராகரிக்கவும்',
+    'rd.feedback':'கருத்து / பின்னூட்டம்','rd.feedback_ph':'சமர்ப்பிப்பாளருடன் உங்கள் காரணத்தை பகிர்ந்துகொள்ளுங்கள்…',
+    'init.hr_banner':'HR தரவுத்தளத்திலிருந்து தானாக பெறப்பட்டது:','init.reporting_to':'அறிக்கை மேலாளர்:',
+    'attach.prefix':'இணைக்கப்பட்டது: ',
+    'committee.approved_count':'அங்கீகரிக்கப்பட்டது','committee.rejected_count':'நிராகரிக்கப்பட்டது',
+    'committee.pending_count':'நிலுவை','committee.approval_req':'% அங்கீகாரம் தேவை',
+    'review.my_review':'என் மதிப்பீடு','review.view_details':'விவரங்கள் காண்க','review.review_btn':'மதிப்பீடு',
+    'rescore.ok':'{n} யோசனைகள் வெற்றிகரமாக மறுமதிப்பீடு செய்யப்பட்டன।',
   },
   ml: {
     'app.name':'ഐഡിയ ടൂൾ',
@@ -2095,7 +2423,9 @@ const TRANSLATIONS = {
     'section.admin':'അഡ്മിൻ','section.super_admin':'IFQM സൂപ്പർ അഡ്മിൻ',
     'login.app_title':'ജീവനക്കാരുടെ ആശയ ഉപകരണം','login.tagline':'മികച്ച ആശയങ്ങളെ യഥാർത്ഥ മെച്ചപ്പെടുത്തലുകളാക്കി മാറ്റുക.',
     'login.welcome':'തിരിച്ചു സ്വാഗതം','login.subtitle':'തുടരാൻ നിങ്ങളുടെ IFQM അക്കൗണ്ടിൽ സൈൻ ഇൻ ചെയ്യുക',
+    'login.org_code':'സ്ഥാപന കോഡ്','login.org_hint':'IFQM പ്ലാറ്റ്‌ഫോം അഡ്‌മിനു വേണ്ടി ശൂന്യമായി വിടുക',
     'login.email':'ഇ-മെയിൽ വിലാസം','login.password':'പാസ്‌വേഡ്','login.btn':'സൈൻ ഇൻ',
+    'admin.add_user':'+ ഉപയോക്താവിനെ ചേർക്കുക',
     'topbar.dark':'ഡാർക്ക്','topbar.light':'ലൈറ്റ്','topbar.notifications':'അറിയിപ്പുകൾ',
     'topbar.logout':'ലോഗ് ഔട്ട്','topbar.mark_read':'എല്ലാം വായിച്ചതായി അടയാളപ്പെടുത്തുക',
     'dash.total':'മൊത്തം ആശയങ്ങൾ','dash.approved':'അംഗീകരിച്ചവ','dash.implemented':'നടപ്പാക്കിയവ',
@@ -2110,7 +2440,7 @@ const TRANSLATIONS = {
     'detail.ai_eval':'AI മൂല്യനിർണ്ണയം','detail.score':'സ്കോർ','detail.close':'അടയ്ക്കുക',
     'lb.individual':'വ്യക്തിഗത റാങ്കിംഗ്','lb.dept':'വകുപ്പ് റാങ്കിംഗ്','lb.top_ideas':'ടോപ്പ് സ്കോർ ആശയങ്ങൾ',
     'lb.points':'പോയിന്റുകൾ','lb.ideas':'ആശയങ്ങൾ','lb.avg_score':'ശരാശരി സ്കോർ','lb.engagement':'ഇടപഴകൽ',
-    'lb.all_time':'എല്ലാ കാലവും','lb.monthly':'മാസികം','lb.quarterly':'ത്രൈമാസികം','lb.yearly':'വാർഷികം',
+    'lb.all_time':'എല്ലാ കാലവും','lb.monthly':'മാസികം','lb.quarterly':'ത്രൈമാസികം','lb.yearly':'വാർഷികം','lb.you':'(നിങ്ങൾ)',
     'profile.title':'ജീവനക്കാരുടെ പ്രൊഫൈൽ','profile.stats':'എന്റെ സ്ഥിതിവിവരക്കണക്കുകൾ',
     'profile.dept':'വകുപ്പ്','profile.email_lbl':'ഇ-മെയിൽ','profile.phone':'ഫോൺ',
     'profile.reports_to':'റിപ്പോർട്ടിംഗ് മേലധികാരി','profile.bu':'ബിസിനസ് യൂണിറ്റ്','profile.loc':'സ്ഥലം',
@@ -2200,6 +2530,50 @@ const TRANSLATIONS = {
     'msg.analytics_restricted':'വിശകലനം മാനേജർമാർ, അഡ്മിൻ, എക്സിക്യൂട്ടിവ്‌മാർക്ക് മാത്രം ലഭ്യമാണ്.',
     'msg.decision_ok':'തീരുമാനം സമർപ്പിച്ചു','msg.idea_ok':'ആശയം വിജയകരമായി സമർപ്പിച്ചു',
     'pa.active_tenants':'സജീവ ടെനൻ്റുകൾ','pa.total_users':'മൊത്തം ഉപയോക്താക്കൾ','pa.ideas_submitted':'സമർപ്പിച്ച ആശയങ്ങൾ','msg.rescoring':'വീണ്ടും സ്കോർ ചെയ്യുന്നു…',
+    'analytics.approval_rate':'അനുമതി നിരക്ക്','analytics.impl_rate':'നടപ്പാക്കൽ നിരക്ക്','analytics.avg_score':'ശരാശരി AI ഗുണ സ്കോർ',
+    'page.leaderboard_title':'ലീഡർബോർഡ് & ഗേമിഫിക്കേഷൻ','page.analytics_title':'വിശകലന ഡാഷ്‌ബോർഡ്',
+    'analytics.impact_dist':'ആഘാത മേഖല വിതരണം','analytics.status_summary':'സ്ഥിതി സംഗ്രഹം',
+    'analytics.monthly_trend':'മാസിക സമർപ്പണ ട്രെൻഡ്','analytics.score_dist':'AI ഗുണ സ്കോർ വിതരണം',
+    'analytics.high':'ഉയർന്ന (75+)','analytics.med':'ഇടത്തരം (50-74)','analytics.low_score':'കുറഞ്ഞ (<50)',
+    'analytics.avg_note':'മൊത്തത്തിലുള്ള ശരാശരി AI സ്കോർ:',
+    'detail.not_scored':'സ്കോർ ചെയ്തിട്ടില്ല','detail.no_ai':'AI മൂല്യനിർണ്ണയം ലഭ്യമല്ല.',
+    'community.title':'കമ്മ്യൂണിറ്റി വോട്ടും സ്കോറും','community.upvotes':'അപ്‌വോട്ടുകൾ',
+    'community.downvotes':'ഡൗൺവോട്ടുകൾ','community.net':'നെറ്റ് സ്കോർ','community.score':'കമ്മ്യൂണിറ്റി സ്കോർ',
+    'community.your_votes':'നിങ്ങളുടെ ആശയത്തിലെ കമ്മ്യൂണിറ്റി വോട്ടുകൾ:','community.vote_on':'ഈ ആശയത്തിന് വോട്ട് ചെയ്യുക:',
+    'community.vote_hint':'▲ അല്ലെങ്കിൽ ▼ ക്ലിക്ക് ചെയ്യുക · വോട്ട് നീക്കാൻ വീണ്ടും ക്ലിക്ക് ചെയ്യുക',
+    'review.own_idea':'നിങ്ങളുടെ സ്വന്തം ആശയം','review.vote_needed':'നിങ്ങളുടെ വോട്ട് ആവശ്യം',
+    'review.committee_badge':'കമ്മിറ്റി','review.route_committee':'കമ്മിറ്റിക്ക് അയക്കുക',
+    'review.submit_mine':'എന്റെ അവലോകനം സമർപ്പിക്കുക','review.decide':'അവലോകനം / തീരുമാനം',
+    'review.cannot_own':'നിങ്ങൾക്ക് സ്വന്തം ആശയം അവലോകനം ചെയ്യാൻ കഴിയില്ല',
+    'preview.title_label':'തലക്കെട്ട്','preview.situation':'സ്ഥിതി','preview.solution':'പരിഹാരം',
+    'preview.impact_areas':'ആഘാത മേഖലകൾ','preview.impact_level':'ആഘാത നില',
+    'preview.co_suggesters':'സഹ-നിർദ്ദേശകർ','preview.none_selected':'ഒന്നും തിരഞ്ഞെടുത്തിട്ടില്ല',
+    'platform.users':'ഉപയോക്താക്കൾ','platform.ideas':'ആശയങ്ങൾ','platform.implemented':'നടപ്പാക്കിയവ',
+    'platform.last_activity':'അവസാന പ്രവർത്തനം','platform.active':'സജീവം',
+    'platform.db_error':'DB ലഭ്യമല്ല','platform.view_org':'സ്ഥാപനം കാണുക',
+    'platform.admins':'അഡ്മിൻമാർ','platform.executives':'എക്സിക്യൂട്ടിവ്‌മാർ',
+    'platform.managers':'മാനേജർമാർ','platform.employees':'ജീവനക്കാർ','platform.reports_to':'റിപ്പോർട്ട് ചെയ്യുന്നു:',
+    'sa.subtitle':'എല്ലാ തലത്തിലും സമ്പൂർണ്ണ സ്ഥാപന നിയന്ത്രണം','sa.last_refreshed':'അവസാനം പുതുക്കി:','sa.executives':'എക്സിക്യൂട്ടിവ്‌മാർ',
+    'admin.points_info':'പോയിന്റ് കോൺഫിഗ് (config.php ൽ സൂക്ഷിച്ചിരിക്കുന്നു). മാറ്റങ്ങൾ ബാധകമാക്കാൻ പുനരാരംഭിക്കുക.',
+    'admin.hr_info':'ജീവനക്കാർ ഡേറ്റ users ടേബിളിൽ നിന്ന് ലോഡ് ചെയ്യുന്നു.',
+    'admin.rescore_info':'എല്ലാ ആശയങ്ങളുടെ AI സ്കോർ വീണ്ടും കണക്കാക്കുക.',
+    'notif.header':'അറിയിപ്പുകൾ','login.feat2_sub':'+10 സമർപ്പിക്കൽ · +25 അംഗീകരിക്കൽ · +65 നടപ്പാക്കൽ','idea.impact_suffix':'ആഘാതം',
+    'time.just_now':'ഇപ്പോൾ','time.min_ago':' മിനിറ്റ് മുൻപ്','time.hr_ago':'മണി മുൻപ്','time.day_ago':'ദി മുൻപ്',
+    'ar.title':'കമ്മിറ്റിക്ക് അയക്കുക','ar.search_add':'അവലോകനക്കാരെ തിരയൂ & ചേർക്കൂ',
+    'ar.no_reviewers':'ഇതുവരെ അവലോകനക്കാരെ ചേർത്തിട്ടില്ല.','ar.threshold':'അനുമതി പരിധി',
+    'ar.unanimous':'എല്ലാ അവലോകനക്കാരും അനുമതി നൽകണം (ഏകോപനം)',
+    'ar.supermajority':'സൂപ്പർ‌മേജോരിറ്റി — കുറഞ്ഞത് 2/3 അനുമതി നൽകണം',
+    'ar.simple_majority':'ലളിത ഭൂരിപക്ഷം — പകുതിയിലേറെ അനുമതി നൽകണം',
+    'ar.info':'ആശയം അവലോകനത്തിലേക്ക് പോകും. നിയോഗിക്കപ്പെട്ട അവലോകനക്കാർക്ക് ഉടൻ അറിയിക്കും.',
+    'rd.title':'എന്റെ അവലോകനം','rd.decision':'നിങ്ങളുടെ തീരുമാനം',
+    'rd.approve_btn':'✓ അംഗീകരിക്കുക','rd.reject_btn':'✗ നിരസിക്കുക',
+    'rd.feedback':'ഫീഡ്‌ബാക്ക് / അഭിപ്രായം','rd.feedback_ph':'സമർപ്പിച്ചവരുമായി നിങ്ങളുടെ ചിന്ത പങ്കുവെക്കുക…',
+    'init.hr_banner':'HR ഡേറ്റാബേസിൽ നിന്ന് സ്വയം ലഭിച്ചത്:','init.reporting_to':'റിപ്പോർട്ടിംഗ് മേലധികാരി:',
+    'attach.prefix':'അനുബന്ധം: ',
+    'committee.approved_count':'അംഗീകരിച്ചു','committee.rejected_count':'നിരസിച്ചു',
+    'committee.pending_count':'തീർപ്പുകൂടാത്ത','committee.approval_req':'% അനുമതി ആവശ്യം',
+    'review.my_review':'എന്റെ അവലോകനം','review.view_details':'വിശദാംശങ്ങൾ കാണുക','review.review_btn':'അവലോകനം',
+    'rescore.ok':'{n} ആശയങ്ങൾ വിജയകരമായി റീസ്കോർ ചെയ്തു।',
   }
 };
 
@@ -2255,6 +2629,22 @@ function selectLang(l) {
   localStorage.setItem('ifqm-lang', lang);
   document.getElementById('lang-wrap').classList.remove('open');
   applyTranslations();
+  if (!currentUser) return;
+  const reloaders = {
+    dashboard:   () => loadDashboard(),
+    'my-ideas':  () => loadMyIdeas(),
+    review:      () => loadReviewQueue(),
+    'ideas-all': () => loadAllIdeas(),
+    analytics:   () => loadAnalytics(),
+    leaderboard: () => loadLeaderboard(),
+    audit:       () => loadAudit(),
+    'super-admin': () => loadHierarchy(),
+    'platform-dash': () => loadPlatformDashboard(),
+    admin:       () => loadAdminUsers(),
+    profile:     () => renderProfile(),
+  };
+  const fn = reloaders[_activePage];
+  if (fn) fn();
 }
 function getPageTitle(page) {
   const m = {
@@ -2673,24 +3063,24 @@ async function loadPlatformDashboard() {
     document.getElementById('pa-tenant-list').innerHTML = `<div class="empty-state">${t('msg.no_ideas')}</div>`;
     return;
   }
-  document.getElementById('pa-tenant-list').innerHTML = platformTenants.map(t => {
-    const implPct = t.idea_count > 0 ? Math.round(t.implemented_count / t.idea_count * 100) : 0;
-    const lastAct = t.last_activity ? new Date(t.last_activity).toLocaleDateString() : 'No activity';
-    const statusDot = t.db_error
-      ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc2626;margin-right:6px"></span>DB unreachable`
-      : `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#059669;margin-right:6px"></span>Active`;
+  document.getElementById('pa-tenant-list').innerHTML = platformTenants.map(ten => {
+    const implPct = ten.idea_count > 0 ? Math.round(ten.implemented_count / ten.idea_count * 100) : 0;
+    const lastAct = ten.last_activity ? new Date(ten.last_activity).toLocaleDateString() : 'No activity';
+    const statusDot = ten.db_error
+      ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc2626;margin-right:6px"></span>${t('platform.db_error')}`
+      : `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#059669;margin-right:6px"></span>${t('platform.active')}`;
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)">
       <div style="flex:1">
-        <div style="font-size:14px;font-weight:700;color:var(--heading)">${escHtml(t.name)}</div>
-        <div style="font-size:12px;color:var(--subtle);margin-top:2px">${escHtml(t.domain)} &middot; /${escHtml(t.slug)}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--heading)">${escHtml(ten.name)}</div>
+        <div style="font-size:12px;color:var(--subtle);margin-top:2px">${escHtml(ten.domain)} &middot; /${escHtml(ten.slug)}</div>
         <div style="font-size:11px;color:var(--label);margin-top:4px;display:flex;align-items:center">${statusDot}</div>
       </div>
       <div style="display:flex;gap:24px;text-align:center">
-        <div><div style="font-size:18px;font-weight:800;color:var(--heading)">${t.user_count||0}</div><div style="font-size:11px;color:var(--subtle)">Users</div></div>
-        <div><div style="font-size:18px;font-weight:800;color:var(--heading)">${t.idea_count||0}</div><div style="font-size:11px;color:var(--subtle)">Ideas</div></div>
-        <div><div style="font-size:18px;font-weight:800;color:#7c3aed">${implPct}%</div><div style="font-size:11px;color:var(--subtle)">Implemented</div></div>
-        <div><div style="font-size:12px;color:var(--subtext);font-weight:500">${lastAct}</div><div style="font-size:11px;color:var(--subtle)">Last activity</div></div>
-        <div><button class="btn btn-outline btn-sm" onclick="loadTenantHierarchy(${t.id},'${escHtml(t.name)}')">View Org</button></div>
+        <div><div style="font-size:18px;font-weight:800;color:var(--heading)">${ten.user_count||0}</div><div style="font-size:11px;color:var(--subtle)">${t('platform.users')}</div></div>
+        <div><div style="font-size:18px;font-weight:800;color:var(--heading)">${ten.idea_count||0}</div><div style="font-size:11px;color:var(--subtle)">${t('platform.ideas')}</div></div>
+        <div><div style="font-size:18px;font-weight:800;color:#7c3aed">${implPct}%</div><div style="font-size:11px;color:var(--subtle)">${t('platform.implemented')}</div></div>
+        <div><div style="font-size:12px;color:var(--subtext);font-weight:500">${lastAct}</div><div style="font-size:11px;color:var(--subtle)">${t('platform.last_activity')}</div></div>
+        <div><button class="btn btn-outline btn-sm" onclick="loadTenantHierarchy(${ten.id},'${escHtml(ten.name)}')">${t('platform.view_org')}</button></div>
       </div>
     </div>`;
   }).join('');
@@ -2713,10 +3103,10 @@ async function loadTenantHierarchy(tenantId, tenantName) {
   users.forEach(u => { if (byRole[u.role]) byRole[u.role].push(u); });
 
   document.getElementById('pt-stats-strip').innerHTML = [
-    ['Admins',    byRole.admin.length,     '#4f46e5','#eef2ff'],
-    ['Executives',byRole.executive.length, '#7c3aed','#f3e8ff'],
-    ['Managers',  byRole.manager.length,   '#d97706','#fef3c7'],
-    ['Employees', byRole.employee.length,  '#059669','#dcfce7'],
+    [t('platform.admins'),     byRole.admin.length,     '#4f46e5','#eef2ff'],
+    [t('platform.executives'), byRole.executive.length, '#7c3aed','#f3e8ff'],
+    [t('platform.managers'),   byRole.manager.length,   '#d97706','#fef3c7'],
+    [t('platform.employees'),  byRole.employee.length,  '#059669','#dcfce7'],
   ].map(([label,count,color,bg]) => `
     <div class="kpi-card" style="border-left-color:${color}">
       <div class="kpi-body"><div class="kpi-val" style="color:${color}">${count}</div><div class="kpi-label">${label}</div></div>
@@ -2732,15 +3122,16 @@ async function loadTenantHierarchy(tenantId, tenantName) {
   let html = '';
   roleOrder.forEach(role => {
     if (!byRole[role].length) return;
+    const roleLabel = {admin:t('platform.admins'),executive:t('platform.executives'),manager:t('platform.managers'),employee:t('platform.employees')}[role] || role;
     html += `<div style="margin-bottom:20px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${roleColors[role]};margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ${roleColors[role]}22">${role}s (${byRole[role].length})</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${roleColors[role]};margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ${roleColors[role]}22">${roleLabel} (${byRole[role].length})</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
         ${byRole[role].map(u => `
           <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border)">
             <div style="width:36px;height:36px;border-radius:50%;background:${roleColors[u.role]}22;color:${roleColors[u.role]};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">${escHtml(u.avatar_initials||u.name[0])}</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:600;color:var(--heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(u.name)}</div>
-              <div style="font-size:11px;color:var(--subtle);margin-top:2px">${escHtml(u.department||'—')} ${u.manager_name ? '· Reports to: '+escHtml(u.manager_name) : ''}</div>
+              <div style="font-size:11px;color:var(--subtle);margin-top:2px">${escHtml(u.department||'—')} ${u.manager_name ? '· '+t('platform.reports_to')+' '+escHtml(u.manager_name) : ''}</div>
               <div style="font-size:11px;color:#d97706;margin-top:2px;font-weight:600">${u.idea_count} idea${u.idea_count!=1?'s':''}</div>
             </div>
           </div>`).join('')}
@@ -2781,10 +3172,10 @@ function initApp() {
   document.getElementById('top-role').textContent   = formatRole(u.role);
 
   document.getElementById('submit-user-banner').innerHTML =
-    `Auto-fetched from HR Database: <strong>${u.name}</strong> &middot; ${u.employee_id} &middot; ${u.department || '–'} &middot; Reporting to: ${u.manager_name || '–'} &middot; ${u.business_unit || '–'}`;
+    `${t('init.hr_banner')} <strong>${u.name}</strong> &middot; ${u.employee_id} &middot; ${u.department || '–'} &middot; ${t('init.reporting_to')} ${u.manager_name || '–'} &middot; ${u.business_unit || '–'}`;
 
   const isPlatformAdmin = u.role === 'platform_admin';
-  const isPriv          = ['manager','admin','executive','super_admin'].includes(u.role);
+  const isPriv          = ['team_lead','project_lead','manager','senior_manager','executive','admin','super_admin'].includes(u.role);
   const isAdmin         = u.role === 'admin';
   const isSuperAdmin    = u.role === 'super_admin';
 
@@ -2818,6 +3209,10 @@ function initApp() {
 
   loadNotifications();
   applyTranslations();
+  // Reset page state before navigating (prevents stale page from previous session)
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
   if (isPlatformAdmin) {
     loadPlatformDashboard();
     navigate('platform-dash', document.getElementById('nav-platform-dash'));
@@ -2826,6 +3221,7 @@ function initApp() {
   } else {
     loadDashboard();
     loadMyIdeas();
+    navigate('dashboard', document.getElementById('nav-dashboard'));
   }
 }
 
@@ -2838,6 +3234,7 @@ const pageTitles = {
 };
 
 function navigate(page, navEl) {
+  _activePage = page;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const el = document.getElementById('page-' + page);
@@ -2880,6 +3277,30 @@ document.addEventListener('DOMContentLoaded', function() {
     if (l) l.textContent = 'Light';
   }
 });
+
+// ── Session expiry guard ──────────────────────────────────────────
+async function checkSession() {
+  if (!currentUser) return;
+  try {
+    const r = await fetch('api/auth.php?action=me');
+    const d = await r.json();
+    if (!d.authenticated) {
+      currentUser = null;
+      document.getElementById('main-app').style.display = 'none';
+      const lp = document.getElementById('login-page');
+      lp.style.display = '';
+      lp.style.opacity = '1';
+      document.getElementById('login-error').textContent = 'Your session has expired. Please sign in again.';
+      document.getElementById('login-error').style.display = 'block';
+    }
+  } catch(e) { /* network error — don't force logout */ }
+}
+// Check when tab becomes visible after being hidden
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') checkSession();
+});
+// Check every 10 minutes while page is open
+setInterval(checkSession, 600000);
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
 
@@ -2933,7 +3354,7 @@ async function loadDashboard() {
   document.getElementById('dash-status-chart').innerHTML =
     Object.entries(counts).map(([s,c]) => `
       <div class="bar-row">
-        <span class="bar-label">${s}</span>
+        <span class="bar-label">${translateStatus(s)}</span>
         <div class="bar-track"><div class="bar-fill" style="width:0%;background:${statusColors[s]||'#ccc'}" data-w="${Math.round(c/maxCount*100)}"></div></div>
         <span class="bar-val">${c}</span>
       </div>`).join('');
@@ -2995,7 +3416,7 @@ function renderMyIdeas(ideas) {
           <div class="idea-card-title">${escHtml(i.title)}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-          <span class="badge ${statusBadge(i.status)}">${i.status}</span>
+          <span class="badge ${statusBadge(i.status)}">${translateStatus(i.status)}</span>
           ${i.ai_score > 0 ? `<span class="${scoreBadgeClass(i.ai_score)}">${i.ai_score}/100</span>` : ''}
           ${i.status !== 'Draft' ? engBadge(i.ai_score, i.avg_rating, i.vote_count) : ''}
         </div>
@@ -3003,10 +3424,10 @@ function renderMyIdeas(ideas) {
       <div class="idea-card-meta">${i.impact_areas || '—'} · ${i.submitted_at ? fmtDate(i.submitted_at) : 'Draft'}</div>
       ${i.status !== 'Draft' ? `<div style="margin-top:4px">${engMiniStats(i.avg_rating, i.vote_count)}</div>` : ''}
       <div class="idea-card-footer">
-        <span class="badge ${impactBadge(i.impact_level)}">${i.impact_level||'–'} Impact</span>
+        <span class="badge ${impactBadge(i.impact_level)}">${translateImpact(i.impact_level)||'–'} ${t('idea.impact_suffix')}</span>
         <div style="display:flex;gap:8px;align-items:center">
           ${i.points_awarded ? `<span class="points-badge">+${i.points_awarded} pts</span>` : ''}
-          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openIdeaDetail(${i.id})">View</button>
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openIdeaDetail(${i.id})">${t('idea.view')}</button>
         </div>
       </div>
     </div>`).join('');
@@ -3044,12 +3465,12 @@ async function loadAllIdeas() {
       <td title="${escHtml(i.title)}">${i.title.length > 60 ? escHtml(i.title).substring(0,60) + '…' : escHtml(i.title)}</td>
       <td>${escHtml(i.submitter_name)}</td>
       <td>${i.department||'–'}</td>
-      <td><span class="badge ${impactBadge(i.impact_level)}">${i.impact_level||'–'}</span></td>
+      <td><span class="badge ${impactBadge(i.impact_level)}">${translateImpact(i.impact_level)||'–'}</span></td>
       <td>${scoreCell}</td>
       <td>${i.status !== 'Draft' ? voteWidget(i.id, isSelf, i.upvotes||0, i.downvotes||0, i.user_community_vote||null) : '<span style="font-size:11px;color:var(--subtle)">—</span>'}</td>
-      <td><span class="badge ${statusBadge(i.status)}">${i.status}</span></td>
+      <td><span class="badge ${statusBadge(i.status)}">${translateStatus(i.status)}</span></td>
       <td>${i.submitted_at ? fmtDate(i.submitted_at) : '–'}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">View</button></td>
+      <td><button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">${t('idea.view')}</button></td>
     </tr>`;
   }).join('') || `<tr><td colspan="10" class="text-center">${t('msg.no_ideas')}</td></tr>`;
   staggerAnimate([...tbody.querySelectorAll('tr')], 40);
@@ -3093,49 +3514,49 @@ async function openIdeaDetail(id) {
 
   const aiReason  = (idea.ai_reason  && idea.ai_reason.trim())
                     ? escHtml(idea.ai_reason)
-                    : 'No AI evaluation available.';
+                    : t('detail.no_ai');
   const aiScoreBadge = idea.ai_score > 0
                     ? `<span class="${scoreBadgeClass(idea.ai_score)}">${idea.ai_score}/100</span>`
                     : '';
 
   document.getElementById('modal-detail-body').innerHTML = `
     <div class="form-row" style="margin-bottom:12px">
-      <div><strong>Submitted by:</strong> ${escHtml(idea.submitter_name)} (${idea.department||'–'})</div>
+      <div><strong>${t('detail.submitted_by')}:</strong> ${escHtml(idea.submitter_name)} (${idea.department||'–'})</div>
       <div style="display:flex;align-items:center;gap:8px">
-        <strong>Status:</strong> <span class="badge ${statusBadge(idea.status)}">${idea.status}</span>
+        <strong>${t('table.status')}:</strong> <span class="badge ${statusBadge(idea.status)}">${translateStatus(idea.status)}</span>
       </div>
     </div>
 
-    <div class="form-group"><label>Present Situation</label>
+    <div class="form-group"><label>${t('detail.situation')}</label>
       <div style="background:#f8f9fe;padding:10px;border-radius:6px;font-size:13px">${escHtml(idea.present_situation)}</div>
     </div>
-    <div class="form-group"><label>Proposed Solution</label>
+    <div class="form-group"><label>${t('detail.solution')}</label>
       <div style="background:#f8f9fe;padding:10px;border-radius:6px;font-size:13px">${escHtml(idea.proposed_solution)}</div>
     </div>
     <div class="form-row" style="margin-bottom:10px">
-      <div><strong>Impact Areas:</strong> ${idea.impact_areas||'–'}</div>
-      <div><strong>Impact Level:</strong> <span class="badge ${impactBadge(idea.impact_level)}">${idea.impact_level||'–'}</span></div>
+      <div><strong>${t('detail.impact_areas')}:</strong> ${idea.impact_areas||'–'}</div>
+      <div><strong>${t('detail.impact_level')}:</strong> <span class="badge ${impactBadge(idea.impact_level)}">${translateImpact(idea.impact_level)||'–'}</span></div>
     </div>
-    ${idea.tangible_benefit   ? `<div class="mt-8"><strong>Tangible Benefit:</strong> ${escHtml(idea.tangible_benefit)}</div>`   : ''}
-    ${idea.intangible_benefit ? `<div class="mt-8"><strong>Intangible Benefit:</strong> ${escHtml(idea.intangible_benefit)}</div>` : ''}
-    ${idea.co1_name           ? `<div class="mt-8"><strong>Co-Suggesters:</strong> ${escHtml(idea.co1_name)}${idea.co2_name ? ', ' + escHtml(idea.co2_name) : ''}</div>` : ''}
+    ${idea.tangible_benefit   ? `<div class="mt-8"><strong>${t('detail.tangible')}:</strong> ${escHtml(idea.tangible_benefit)}</div>`   : ''}
+    ${idea.intangible_benefit ? `<div class="mt-8"><strong>${t('detail.intangible')}:</strong> ${escHtml(idea.intangible_benefit)}</div>` : ''}
+    ${idea.co1_name           ? `<div class="mt-8"><strong>${t('detail.co_suggesters')}:</strong> ${escHtml(idea.co1_name)}${idea.co2_name ? ', ' + escHtml(idea.co2_name) : ''}</div>` : ''}
 
     <div class="ai-panel" style="margin-top:14px">
-      <div class="ai-panel-title">AI Evaluation</div>
+      <div class="ai-panel-title">${t('detail.ai_eval')}</div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-        <strong style="font-size:13px">Score:</strong>
-        ${aiScoreBadge || '<span class="score-badge score-none">Not scored</span>'}
+        <strong style="font-size:13px">${t('detail.score')}:</strong>
+        ${aiScoreBadge || `<span class="score-badge score-none">${t('detail.not_scored')}</span>`}
       </div>
       <div style="font-size:13px;color:var(--text);line-height:1.5">${aiReason}</div>
     </div>
     <div id="community-engagement-panel" style="margin-top:14px"></div>
     ${(idea.workflow_type === 'multi_reviewer' && (idea.reviewers||[]).length > 0) ? `
     <div class="ai-panel" style="margin-top:14px;border-left-color:#0284c7;background:linear-gradient(135deg,#eff6ff,var(--panel-bg))">
-      <div class="ai-panel-title" style="color:#0284c7">&#9632; Committee Review &mdash; ${idea.approval_threshold}% approval required</div>
+      <div class="ai-panel-title" style="color:#0284c7">&#9632; ${t('review.committee_badge')} &mdash; ${idea.approval_threshold}${t('committee.approval_req')}</div>
       <div style="font-size:12px;color:var(--subtle);margin-bottom:12px">
-        ${(idea.reviewers||[]).filter(r=>r.decision==='approved').length} approved &middot;
-        ${(idea.reviewers||[]).filter(r=>r.decision==='rejected').length} rejected &middot;
-        ${(idea.reviewers||[]).filter(r=>r.decision==='pending').length} pending
+        ${(idea.reviewers||[]).filter(r=>r.decision==='approved').length} ${t('committee.approved_count')} &middot;
+        ${(idea.reviewers||[]).filter(r=>r.decision==='rejected').length} ${t('committee.rejected_count')} &middot;
+        ${(idea.reviewers||[]).filter(r=>r.decision==='pending').length} ${t('committee.pending_count')}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${(idea.reviewers||[]).map(rv => `
@@ -3175,23 +3596,23 @@ async function openIdeaDetail(id) {
     if (panel) {
       panel.innerHTML = `
         <div class="ai-panel" style="border-left-color:#7c3aed">
-          <div class="ai-panel-title" style="color:#7c3aed">&#9650;&#9660; Community Vote &amp; Score</div>
+          <div class="ai-panel-title" style="color:#7c3aed">&#9650;&#9660; ${t('community.title')}</div>
 
           <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:14px">
             <div style="text-align:center">
               <div style="font-size:22px;font-weight:800;color:#15803d">&#9650; ${upvotes}</div>
-              <div style="font-size:11px;color:var(--subtle)">Upvotes</div>
+              <div style="font-size:11px;color:var(--subtle)">${t('community.upvotes')}</div>
             </div>
             <div style="text-align:center">
               <div style="font-size:22px;font-weight:800;color:${net >= 0 ? '#15803d' : '#b91c1c'}">${net >= 0 ? '+' : ''}${net}</div>
-              <div style="font-size:11px;color:var(--subtle)">Net Score</div>
+              <div style="font-size:11px;color:var(--subtle)">${t('community.net')}</div>
             </div>
             <div style="text-align:center">
               <div style="font-size:22px;font-weight:800;color:#b91c1c">&#9660; ${downvotes}</div>
-              <div style="font-size:11px;color:var(--subtle)">Downvotes</div>
+              <div style="font-size:11px;color:var(--subtle)">${t('community.downvotes')}</div>
             </div>
             <div style="margin-left:auto;text-align:right">
-              <div style="font-size:11px;color:var(--subtle);margin-bottom:4px">Community Score</div>
+              <div style="font-size:11px;color:var(--subtle);margin-bottom:4px">${t('community.score')}</div>
               <span id="modal-community-score" class="${scoreBadgeClass(cScoreVal)}" style="font-size:15px;padding:4px 12px">${cScoreVal}/100</span>
               ${idea.ai_score > 0 ? `<div style="font-size:10px;color:var(--subtle);margin-top:3px">AI: ${idea.ai_score} · Votes: ${adjStr}</div>` : ''}
             </div>
@@ -3200,11 +3621,11 @@ async function openIdeaDetail(id) {
           ${idea.status !== 'Draft' ? `
           <div style="border-top:1px solid var(--border);padding-top:12px">
             <div style="font-size:12px;color:var(--subtle);margin-bottom:8px;font-weight:600">
-              ${isSelf ? 'Community votes on your idea:' : 'Vote on this idea:'}
+              ${isSelf ? t('community.your_votes') : t('community.vote_on')}
             </div>
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
               ${voteWidget(id, isSelf, upvotes, downvotes, userVote)}
-              ${!isSelf ? `<span style="font-size:11px;color:var(--subtle)">Click ▲ or ▼ · Click again to remove your vote</span>` : ''}
+              ${!isSelf ? `<span style="font-size:11px;color:var(--subtle)">${t('community.vote_hint')}</span>` : ''}
             </div>
           </div>` : ''}
 
@@ -3260,7 +3681,7 @@ async function openIdeaDetail(id) {
       }).join('')
     : '<div class="empty-state">No attachments.</div>';
 
-  const isPriv    = ['manager','admin','executive','super_admin'].includes(currentUser?.role);
+  const isPriv    = ['team_lead','project_lead','manager','senior_manager','executive','admin','super_admin'].includes(currentUser?.role);
   const isSelf    = parseInt(idea.submitter_id) === parseInt(currentUser?.id);
   const isMultiRv = idea.workflow_type === 'multi_reviewer';
   const isAssignedReviewer = isPriv && !isSelf && (idea.reviewers||[]).some(
@@ -3269,13 +3690,13 @@ async function openIdeaDetail(id) {
   const canDirectReview  = isPriv && !isSelf && !isMultiRv && ['Submitted','Under Review'].includes(idea.status);
   const canRouteReviewers= isPriv && !isSelf && !isMultiRv && ['Submitted','Under Review'].includes(idea.status);
   const selfNote  = isPriv && isSelf && ['Submitted','Under Review'].includes(idea.status)
-    ? `<span style="font-size:12px;color:#d97706;margin-right:10px">You cannot review your own idea</span>` : '';
+    ? `<span style="font-size:12px;color:#d97706;margin-right:10px">${t('review.cannot_own')}</span>` : '';
   document.getElementById('idea-detail-footer').innerHTML = `
-    <button class="btn btn-outline" onclick="closeModal('modal-idea-detail')">Close</button>
+    <button class="btn btn-outline" onclick="closeModal('modal-idea-detail')">${t('detail.close')}</button>
     ${selfNote}
-    ${canRouteReviewers ? `<button class="btn btn-outline" style="border-color:#0284c7;color:#0284c7" onclick="closeModal('modal-idea-detail');openAssignReviewersModal(${idea.id},'${idea.idea_code}')">Route to Committee</button>` : ''}
-    ${isAssignedReviewer ? `<button class="btn btn-primary" onclick="closeModal('modal-idea-detail');openReviewerDecisionModal(${idea.id},'${idea.idea_code}')">Submit My Review</button>` : ''}
-    ${canDirectReview ? `<button class="btn btn-success" onclick="closeModal('modal-idea-detail');openReviewModal(${idea.id},'${idea.idea_code}')">Review / Decide</button>` : ''}
+    ${canRouteReviewers ? `<button class="btn btn-outline" style="border-color:#0284c7;color:#0284c7" onclick="closeModal('modal-idea-detail');openAssignReviewersModal(${idea.id},'${idea.idea_code}')">${t('review.route_committee')}</button>` : ''}
+    ${isAssignedReviewer ? `<button class="btn btn-primary" onclick="closeModal('modal-idea-detail');openReviewerDecisionModal(${idea.id},'${idea.idea_code}')">${t('review.submit_mine')}</button>` : ''}
+    ${canDirectReview ? `<button class="btn btn-success" onclick="closeModal('modal-idea-detail');openReviewModal(${idea.id},'${idea.idea_code}')">${t('review.decide')}</button>` : ''}
   `;
 }
 
@@ -3302,20 +3723,20 @@ async function loadReviewQueue() {
     const pending       = Math.max(0, (parseInt(i.reviewer_count)||0) - (parseInt(i.approved_count)||0) - (parseInt(i.rejected_count)||0));
     const committeeInfo = isMultiRv ? `
       <div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span style="font-size:11px;background:#eff6ff;color:#1d4ed8;padding:2px 9px;border-radius:var(--r-full);font-weight:600;border:1px solid #bfdbfe">Committee</span>
-        <span style="font-size:11px;color:var(--subtle)">${i.approved_count||0} approved &middot; ${i.rejected_count||0} rejected &middot; ${pending} pending</span>
-        ${isMyPending ? `<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 9px;border-radius:var(--r-full);font-weight:600;border:1px solid #fde68a">Your vote needed</span>` : ''}
+        <span style="font-size:11px;background:#eff6ff;color:#1d4ed8;padding:2px 9px;border-radius:var(--r-full);font-weight:600;border:1px solid #bfdbfe">${t('review.committee_badge')}</span>
+        <span style="font-size:11px;color:var(--subtle)">${i.approved_count||0} ${t('committee.approved_count')} &middot; ${i.rejected_count||0} ${t('committee.rejected_count')} &middot; ${pending} ${t('committee.pending_count')}</span>
+        ${isMyPending ? `<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 9px;border-radius:var(--r-full);font-weight:600;border:1px solid #fde68a">${t('review.vote_needed')}</span>` : ''}
       </div>` : '';
     const actionBtns = isSelf
-      ? `<span style="font-size:11px;color:#d97706">Your own idea</span>
-         <button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">View</button>`
+      ? `<span style="font-size:11px;color:#d97706">${t('review.own_idea')}</span>
+         <button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">${t('idea.view')}</button>`
       : isMultiRv && isMyPending
-      ? `<button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">View</button>
-         <button class="btn btn-primary btn-sm" onclick="openReviewerDecisionModal(${i.id},'${i.idea_code}')">My Review</button>`
+      ? `<button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">${t('idea.view')}</button>
+         <button class="btn btn-primary btn-sm" onclick="openReviewerDecisionModal(${i.id},'${i.idea_code}')">${t('review.my_review')}</button>`
       : isMultiRv
-      ? `<button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">View Details</button>`
-      : `<button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">View Details</button>
-         <button class="btn btn-success btn-sm" onclick="openReviewModal(${i.id},'${i.idea_code}')">Review</button>`;
+      ? `<button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">${t('review.view_details')}</button>`
+      : `<button class="btn btn-outline btn-sm" onclick="openIdeaDetail(${i.id})">${t('review.view_details')}</button>
+         <button class="btn btn-success btn-sm" onclick="openReviewModal(${i.id},'${i.idea_code}')">${t('review.review_btn')}</button>`;
     return `
     <div class="idea-card" data-status="${i.status}">
       <div class="idea-card-header">
@@ -3324,7 +3745,7 @@ async function loadReviewQueue() {
           <div class="idea-card-title">${escHtml(i.title)}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-          <span class="badge ${statusBadge(i.status)}">${i.status}</span>
+          <span class="badge ${statusBadge(i.status)}">${translateStatus(i.status)}</span>
           ${i.ai_score > 0 ? `<span class="${scoreBadgeClass(i.ai_score)}">AI: ${i.ai_score}/100</span>` : ''}
         </div>
       </div>
@@ -3333,7 +3754,7 @@ async function loadReviewQueue() {
       <div style="margin-top:4px">${engMiniStats(i.avg_rating, i.vote_count)}</div>
       <div class="idea-card-footer">
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="badge ${impactBadge(i.impact_level)}">${i.impact_level||'–'} Impact</span>
+          <span class="badge ${impactBadge(i.impact_level)}">${translateImpact(i.impact_level)||'–'} ${t('idea.impact_suffix')}</span>
           ${engBadge(i.ai_score, i.avg_rating, i.vote_count)}
         </div>
         <div style="display:flex;gap:8px;align-items:center">${actionBtns}</div>
@@ -3457,14 +3878,14 @@ function toggleImpact(el) { el.classList.toggle('selected'); }
 function buildReviewPreview() {
   const impacts = [...document.querySelectorAll('.impact-chip.selected')].map(c => c.dataset.val).join(', ');
   document.getElementById('review-preview').innerHTML = `
-    <div class="form-group"><label>Title</label><div class="form-control" style="background:#f8f9fe">${escHtml(document.getElementById('idea-title').value)}</div></div>
-    <div class="form-group"><label>Situation</label><div class="form-control" style="background:#f8f9fe;height:auto;min-height:60px">${escHtml(document.getElementById('idea-situation').value)}</div></div>
-    <div class="form-group"><label>Solution</label><div class="form-control" style="background:#f8f9fe;height:auto;min-height:60px">${escHtml(document.getElementById('idea-solution').value)}</div></div>
+    <div class="form-group"><label>${t('preview.title_label')}</label><div class="form-control" style="background:#f8f9fe">${escHtml(document.getElementById('idea-title').value)}</div></div>
+    <div class="form-group"><label>${t('preview.situation')}</label><div class="form-control" style="background:#f8f9fe;height:auto;min-height:60px">${escHtml(document.getElementById('idea-situation').value)}</div></div>
+    <div class="form-group"><label>${t('preview.solution')}</label><div class="form-control" style="background:#f8f9fe;height:auto;min-height:60px">${escHtml(document.getElementById('idea-solution').value)}</div></div>
     <div class="form-row">
-      <div><label>Impact Areas</label><div class="form-control" style="background:#f8f9fe">${impacts||'None selected'}</div></div>
-      <div><label>Impact Level</label><div class="form-control" style="background:#f8f9fe">${document.getElementById('idea-impact-level').value}</div></div>
+      <div><label>${t('preview.impact_areas')}</label><div class="form-control" style="background:#f8f9fe">${impacts||t('preview.none_selected')}</div></div>
+      <div><label>${t('preview.impact_level')}</label><div class="form-control" style="background:#f8f9fe">${document.getElementById('idea-impact-level').value}</div></div>
     </div>
-    ${document.getElementById('co1-name-display').textContent ? `<div><label>Co-Suggesters</label><div class="form-control" style="background:#f8f9fe">${document.getElementById('co1-name-display').textContent}${document.getElementById('co2-name-display').textContent ? ', ' + document.getElementById('co2-name-display').textContent : ''}</div></div>` : ''}
+    ${document.getElementById('co1-name-display').textContent ? `<div><label>${t('preview.co_suggesters')}</label><div class="form-control" style="background:#f8f9fe">${document.getElementById('co1-name-display').textContent}${document.getElementById('co2-name-display').textContent ? ', ' + document.getElementById('co2-name-display').textContent : ''}</div></div>` : ''}
   `;
 }
 
@@ -3587,7 +4008,7 @@ document.addEventListener('click', e => {
 });
 
 async function loadAudit() {
-  if (!['manager','admin','executive'].includes(currentUser?.role)) {
+  if (!['team_lead','project_lead','manager','senior_manager','executive','admin','super_admin'].includes(currentUser?.role)) {
     document.getElementById('audit-tbody').innerHTML = `<tr><td colspan="5" class="text-center"><div class="alert alert-warning">${t('msg.audit_restricted')}</div></td></tr>`;
     return;
   }
@@ -3608,7 +4029,7 @@ async function loadAudit() {
     <tr>
       <td>${fmtDate(w.created_at)}</td>
       <td><strong>${w.idea_code}</strong><br><small>${escHtml(w.idea_title||'').substring(0,40)}</small></td>
-      <td><span class="badge ${statusBadge(w.action)}">${w.action}</span></td>
+      <td><span class="badge ${statusBadge(w.action)}">${translateStatus(w.action)}</span></td>
       <td>${escHtml(w.actor_name)} <small>(${w.actor_role})</small></td>
       <td>${w.comment ? escHtml(w.comment) : '—'}</td>
     </tr>`).join('') || `<tr><td colspan="5" class="text-center">${t('msg.no_audit')}</td></tr>`;
@@ -3637,15 +4058,15 @@ async function loadLeaderboard() {
       <div class="lb-rank ${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n'}">${i+1}</div>
       <div class="avatar">${u.avatar_initials||u.name[0]}</div>
       <div style="flex:1">
-        <div class="lb-name">${escHtml(u.name)} ${u.id==currentUser?.id?'<span style="font-size:11px;color:#d97706">(You)</span>':''}</div>
+        <div class="lb-name">${escHtml(u.name)} ${u.id==currentUser?.id?`<span style="font-size:11px;color:#d97706">${t('lb.you')}</span>`:''}</div>
         <div class="lb-dept">${u.department||'–'}</div>
         <div class="progress-bar mt-8"><div class="progress-fill" style="width:0%" data-w="${Math.round(u.points/maxPts*100)}"></div></div>
         <div style="margin-top:4px">${engMiniStats(u.avg_community_rating, u.total_votes_received)}</div>
       </div>
       <div style="text-align:right">
-        <div class="lb-points">${u.points} pts</div>
-        <div class="lb-ideas">${u.idea_count||0} ideas</div>
-        ${u.avg_score > 0 ? `<span class="${scoreBadgeClass(u.avg_score)}" style="margin-top:2px;display:inline-block">Avg ${u.avg_score}</span>` : ''}
+        <div class="lb-points">${u.points} ${t('lb.points')}</div>
+        <div class="lb-ideas">${u.idea_count||0} ${t('lb.ideas')}</div>
+        ${u.avg_score > 0 ? `<span class="${scoreBadgeClass(u.avg_score)}" style="margin-top:2px;display:inline-block">${t('lb.avg_score')}: ${u.avg_score}</span>` : ''}
         <div style="margin-top:4px">${engBadge(u.avg_score, u.avg_community_rating, u.total_votes_received)}</div>
       </div>
     </div>`;
@@ -3685,7 +4106,7 @@ async function loadLeaderboard() {
         </div>
         <div style="text-align:right">
           <span class="${scoreBadgeClass(idea.ai_score)}">${idea.ai_score}/100</span>
-          <div style="font-size:11px;color:var(--subtle);margin-top:2px"><span class="badge ${statusBadge(idea.status)}">${idea.status}</span></div>
+          <div style="font-size:11px;color:var(--subtle);margin-top:2px"><span class="badge ${statusBadge(idea.status)}">${translateStatus(idea.status)}</span></div>
         </div>
       </div>`).join('');
   } else {
@@ -3700,7 +4121,7 @@ function activateChip(el, group) {
 }
 
 async function loadAnalytics() {
-  if (!['manager','admin','executive'].includes(currentUser?.role)) {
+  if (!['team_lead','project_lead','manager','senior_manager','executive','admin','super_admin'].includes(currentUser?.role)) {
     document.getElementById('analytics-kpis').innerHTML = `<div class="alert alert-warning" style="grid-column:1/-1">${t('msg.analytics_restricted')}</div>`;
     return;
   }
@@ -3772,7 +4193,7 @@ async function loadAnalytics() {
   document.getElementById('analytics-status').innerHTML = `
     <div class="bar-chart">${(d.status_summary||[]).map(s => `
       <div class="bar-row">
-        <span class="bar-label">${s.status}</span>
+        <span class="bar-label">${translateStatus(s.status)}</span>
         <div class="bar-track"><div class="bar-fill" style="width:0%;background:${statusColors[s.status]||'#ccc'}" data-w="${Math.round(s.cnt/Math.max(total,1)*100)}"></div></div>
         <span class="bar-val">${s.cnt}</span>
       </div>`).join('')}</div>`;
@@ -3801,32 +4222,38 @@ async function loadAnalytics() {
   const maxQ = Math.max(hq, mq, lq, 1);
   document.getElementById('analytics-score-dist').innerHTML = `
     <div class="bar-chart">
-      <div class="bar-row"><span class="bar-label">High (75+)</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(hq/maxQ*100)}%;background:#059669"></div></div><span class="bar-val">${hq}</span></div>
-      <div class="bar-row"><span class="bar-label">Med (50-74)</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(mq/maxQ*100)}%;background:#d97706"></div></div><span class="bar-val">${mq}</span></div>
-      <div class="bar-row"><span class="bar-label">Low (&lt;50)</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(lq/maxQ*100)}%;background:#dc2626"></div></div><span class="bar-val">${lq}</span></div>
+      <div class="bar-row"><span class="bar-label">${t('analytics.high')}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(hq/maxQ*100)}%;background:#059669"></div></div><span class="bar-val">${hq}</span></div>
+      <div class="bar-row"><span class="bar-label">${t('analytics.med')}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(mq/maxQ*100)}%;background:#d97706"></div></div><span class="bar-val">${mq}</span></div>
+      <div class="bar-row"><span class="bar-label">${t('analytics.low_score')}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(lq/maxQ*100)}%;background:#dc2626"></div></div><span class="bar-val">${lq}</span></div>
     </div>
-    <div style="font-size:11px;color:var(--subtle);margin-top:8px">Overall average AI score: <strong>${ss.overall_avg || 0}/100</strong></div>`;
+    <div style="font-size:11px;color:var(--subtle);margin-top:8px">${t('analytics.avg_note')} <strong>${ss.overall_avg || 0}/100</strong></div>`;
+}
+
+function buildRoleOptions() {
+  const opts = [
+    ['trainee','Trainee'],['employee','Employee'],['team_lead','Team Lead'],
+    ['project_lead','Project Lead'],['manager','Manager'],['senior_manager','Senior Manager'],
+    ['executive','Executive']
+  ];
+  if (currentUser?.role === 'super_admin') opts.push(['admin','Org Admin']);
+  return opts.map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
 }
 
 function formatRole(role) {
-  const map = {super_admin:'Super Admin',admin:'Admin',manager:'Manager',employee:'Employee',executive:'Executive'};
+  const map = {
+    super_admin:'Super Admin', admin:'Org Admin', executive:'Executive',
+    senior_manager:'Senior Manager', manager:'Manager',
+    project_lead:'Project Lead', team_lead:'Team Lead',
+    employee:'Employee', trainee:'Trainee', platform_admin:'Platform Admin'
+  };
   return map[role] || (role.charAt(0).toUpperCase() + role.slice(1));
 }
 
-async function loadAdminUsers() {
-  const r = await fetch('api/users.php?action=admin_users', {credentials:'same-origin'});
-  const d = await r.json();
-  document.getElementById('admin-users-tbody').innerHTML = (d.users||[]).map(u => `
-    <tr>
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar">${u.avatar_initials||escHtml(u.name[0])}</div>${escHtml(u.name)}</div></td>
-      <td>${escHtml(u.department||'–')}</td>
-      <td>${escHtml(u.email)}</td>
-      <td><span class="badge badge-submitted">${formatRole(u.role)}</span></td>
-      <td>${u.points}</td>
-    </tr>`).join('') || `<tr><td colspan="5" class="text-center">${t('msg.no_ideas')}</td></tr>`;
-}
-
-const ROLE_COLORS = {admin:'#4f46e5',manager:'#d97706',employee:'#059669',executive:'#7c3aed'};
+const ROLE_COLORS = {
+  admin:'#4f46e5', executive:'#7c3aed', senior_manager:'#9333ea',
+  manager:'#d97706', project_lead:'#0891b2', team_lead:'#0284c7',
+  employee:'#059669', trainee:'#64748b'
+};
 
 function switchSaTab(el, tabId) {
   document.querySelectorAll('#page-super-admin .tab').forEach(t => t.classList.remove('active'));
@@ -3863,8 +4290,8 @@ function renderHierarchyNode(node, depth) {
         </div>
         <span class="badge" style="background:${color}18;color:${color};border:1px solid ${color}40;font-weight:700">${formatRole(node.role)}</span>
         <div style="display:flex;gap:16px;font-size:12px;color:var(--subtle)">
-          <span title="Points"><strong style="color:var(--text)">${node.points}</strong> pts</span>
-          <span title="Ideas submitted"><strong style="color:var(--text)">${node.idea_count}</strong> ideas</span>
+          <span title="Points"><strong style="color:var(--text)">${node.points}</strong> ${t('lb.points')}</span>
+          <span title="Ideas submitted"><strong style="color:var(--text)">${node.idea_count}</strong> ${t('lb.ideas')}</span>
         </div>
       </div>
     </div>`;
@@ -3892,14 +4319,14 @@ async function loadHierarchy() {
   const counts = dash.counts || {};
   const pending = (counts['Submitted']||0) + (counts['Under Review']||0);
   document.getElementById('sa-last-updated').textContent =
-    'Last refreshed: ' + new Date().toLocaleTimeString();
+    t('sa.last_refreshed') + ' ' + new Date().toLocaleTimeString();
   document.getElementById('sa-kpi-strip').innerHTML = [
     [t('dash.total'),       dash.total||0,            '#4f46e5', 'Excluding drafts'],
     [t('status.review'),    pending,                  '#dc2626', 'Submitted + Under Review'],
     [t('dash.approved'),    counts['Approved']||0,    '#d97706', 'Awaiting implementation'],
     [t('dash.implemented'), counts['Implemented']||0, '#059669', 'Completed ideas'],
     [t('pa.total_users'),   s.total,                  '#7c3aed', `${s.admins} admins · ${s.managers} mgrs · ${s.employees} emp`],
-    ['Executives',          s.executives,             '#2563eb', 'Executive-level accounts'],
+    [t('sa.executives'),    s.executives,             '#2563eb', 'Executive-level accounts'],
   ].map(([label, val, color, sub]) => `
     <div class="kpi-card" style="border-left-color:${color}">
       <div class="kpi-val" style="color:${color}">${val}</div>
@@ -3915,7 +4342,7 @@ async function loadHierarchy() {
     <div class="bar-chart">
       ${statuses.map(s => `
         <div class="bar-row">
-          <span class="bar-label">${s}</span>
+          <span class="bar-label">${translateStatus(s)}</span>
           <div class="bar-track">
             <div class="bar-fill" style="width:${Math.round((counts[s]||0)/maxCount*100)}%;background:${statusColors[s]}"></div>
           </div>
@@ -3978,7 +4405,7 @@ async function batchRescoreSa() {
     const r = await fetch('api/score.php?action=batch_rescore', {method:'POST', credentials:'same-origin'});
     const d = await r.json();
     document.getElementById('sa-rescore-result').innerHTML = d.success
-      ? `<span class="alert alert-success" style="display:inline-block;padding:6px 14px">Rescored ${d.updated} ideas successfully.</span>`
+      ? `<span class="alert alert-success" style="display:inline-block;padding:6px 14px">${t('rescore.ok').replace('{n}', d.updated)}</span>`
       : `<span class="alert alert-danger"  style="display:inline-block;padding:6px 14px">${escHtml(d.error||'Error.')}</span>`;
   } catch(e) {
     document.getElementById('sa-rescore-result').innerHTML = `<span class="alert alert-danger" style="display:inline-block;padding:6px 14px">${t('msg.server_error')}</span>`;
@@ -3996,12 +4423,297 @@ async function batchRescore() {
     const r = await fetch('api/score.php?action=batch_rescore', {method:'POST', credentials:'same-origin'});
     const d = await r.json();
     document.getElementById('rescore-result').innerHTML = d.success
-      ? `<span class="alert alert-success" style="display:inline-block">Rescored ${d.updated} ideas successfully.</span>`
+      ? `<span class="alert alert-success" style="display:inline-block">${t('rescore.ok').replace('{n}', d.updated)}</span>`
       : `<span class="alert alert-danger" style="display:inline-block">${d.error || 'Error.'}</span>`;
   } catch(e) {
     document.getElementById('rescore-result').innerHTML = `<span class="alert alert-danger" style="display:inline-block">${t('msg.server_error')}</span>`;
   }
   if (btn) { btn.disabled = false; btn.textContent = t('btn.rescore_all'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ORGANISATION CREATION (Platform Admin)
+// ═══════════════════════════════════════════════════════════════
+function openCreateOrgModal() {
+  ['co-org-name','co-slug','co-admin-name','co-admin-email','co-admin-pass'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('create-org-error').style.display = 'none';
+  const btn = document.getElementById('co-submit-btn');
+  btn.disabled = false; btn.textContent = 'Create Organisation';
+  document.getElementById('modal-create-org').classList.add('open');
+}
+
+// Auto-generate slug from org name
+document.getElementById('co-org-name')?.addEventListener('input', function() {
+  const slug = document.getElementById('co-slug');
+  if (slug && !slug.dataset.edited) {
+    slug.value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+});
+document.getElementById('co-slug')?.addEventListener('input', function() {
+  this.dataset.edited = '1';
+});
+
+async function submitCreateOrg() {
+  const btn = document.getElementById('co-submit-btn');
+  const err = document.getElementById('create-org-error');
+  err.style.display = 'none';
+
+  const orgName   = document.getElementById('co-org-name').value.trim();
+  const slug      = document.getElementById('co-slug').value.trim();
+  const adminName = document.getElementById('co-admin-name').value.trim();
+  const adminEmail= document.getElementById('co-admin-email').value.trim();
+  const adminPass = document.getElementById('co-admin-pass').value;
+
+  if (!orgName || !slug || !adminName || !adminEmail || !adminPass) {
+    err.textContent = 'All fields are required.';
+    err.style.display = 'block'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Creating…';
+
+  try {
+    const r = await fetch('api/platform.php?action=create_tenant', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({org_name: orgName, slug, admin_name: adminName, admin_email: adminEmail, admin_password: adminPass})
+    });
+    const d = await r.json();
+    if (d.success) {
+      closeModal('modal-create-org');
+      showToast(`Organisation "${d.org_name}" created! Login URL: ?org=${d.slug}`, 'success');
+      // Show success details
+      setTimeout(() => {
+        alert(`✅ Organisation created!\n\nOrg Code: ${d.slug}\nAdmin Email: ${d.admin_email}\nLogin URL: index.php?org=${d.slug}\n\nShare the org code and admin credentials with the organisation.`);
+      }, 300);
+      loadPlatformDashboard();
+    } else {
+      err.textContent = d.error || 'Failed to create organisation.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Create Organisation';
+    }
+  } catch(e) {
+    err.textContent = 'Server error. Please try again.';
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Create Organisation';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// USER MANAGEMENT (Org Admin)
+// ═══════════════════════════════════════════════════════════════
+let _allAdminUsers = [];
+let _managersCache = [];
+
+async function loadAdminUsers() {
+  const r = await fetch('api/users.php?action=admin_users', {credentials:'same-origin'});
+  const d = await r.json();
+  _allAdminUsers = d.users || [];
+  renderAdminUsers(_allAdminUsers);
+
+  // Show tenant DB name
+  const dbEl = document.getElementById('admin-db-name');
+  if (dbEl && currentUser?.org_slug) {
+    dbEl.innerHTML = `<strong>Database:</strong> ifqm_${currentUser.org_slug}`;
+  }
+}
+
+function filterAdminUsers() {
+  const q = document.getElementById('admin-user-search')?.value.toLowerCase() || '';
+  renderAdminUsers(_allAdminUsers.filter(u =>
+    u.name.toLowerCase().includes(q) ||
+    u.email.toLowerCase().includes(q) ||
+    (u.employee_id||'').toLowerCase().includes(q)
+  ));
+}
+
+const ROLE_BADGE_STYLE = {
+  admin:     'background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe',
+  executive: 'background:#f3e8ff;color:#7c3aed;border:1px solid #e9d5ff',
+  manager:   'background:#fef3c7;color:#92400e;border:1px solid #fde68a',
+  employee:  'background:#dcfce7;color:#166534;border:1px solid #bbf7d0',
+};
+
+function renderAdminUsers(users) {
+  const tbody = document.getElementById('admin-users-tbody');
+  if (!users.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center"><div class="empty-state">No users yet. Click "+ Add User" to get started.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = users.map(u => {
+    const badgeStyle = ROLE_BADGE_STYLE[u.role] || '';
+    const statusBadge = u.status === 'inactive'
+      ? '<span style="font-size:10px;background:#fee2e2;color:#dc2626;padding:1px 8px;border-radius:99px;border:1px solid #fca5a5">Inactive</span>'
+      : '<span style="font-size:10px;background:#dcfce7;color:#166534;padding:1px 8px;border-radius:99px;border:1px solid #bbf7d0">Active</span>';
+    const isProtected = u.role === 'super_admin' || u.id === currentUser?.id;
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="width:30px;height:30px;font-size:11px">${escHtml(u.avatar_initials||u.name[0])}</div>
+          <div>
+            <div style="font-weight:600;font-size:13px">${escHtml(u.name)}</div>
+            <div style="font-size:11px;color:var(--subtle)">${escHtml(u.employee_id)} · ${escHtml(u.email)}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge" style="${badgeStyle}">${formatRole(u.role)}</span></td>
+      <td style="font-size:12px">${escHtml(u.department||'–')}</td>
+      <td style="font-size:12px;color:var(--subtle)">${escHtml(u.manager_name||'–')}</td>
+      <td><strong>${u.points}</strong></td>
+      <td>${statusBadge}</td>
+      <td>
+        ${isProtected ? '<span style="font-size:11px;color:var(--subtle)">—</span>' : `
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="openEditUserModal(${u.id})">Edit</button>
+            <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5" onclick="deleteUser(${u.id},'${escHtml(u.name)}')">Remove</button>
+          </div>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadManagersCache() {
+  if (_managersCache.length) return;
+  try {
+    const r = await fetch('api/users.php?action=managers', {credentials:'same-origin'});
+    const d = await r.json();
+    _managersCache = d.managers || [];
+  } catch(e) {}
+}
+
+function populateManagerDropdown(excludeId = null) {
+  const sel = document.getElementById('uf-manager');
+  sel.innerHTML = '<option value="">— None —</option>';
+  _managersCache.forEach(m => {
+    if (m.id === excludeId) return;
+    const opt = document.createElement('option');
+    opt.value = m.id; opt.textContent = `${m.name} (${formatRole(m.role)})`;
+    sel.appendChild(opt);
+  });
+}
+
+async function openCreateUserModal() {
+  await loadManagersCache();
+  document.getElementById('uf-id').value = '';
+  document.getElementById('user-form-title').textContent = 'Add User';
+  ['uf-name','uf-emp-id','uf-email','uf-password','uf-dept','uf-bu','uf-location'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('uf-role').value = 'employee';
+  document.getElementById('uf-status').value = 'active';
+  document.getElementById('uf-pass-group').style.display = '';
+  document.getElementById('uf-status-group').style.display = 'none';
+  document.getElementById('user-form-error').style.display = 'none';
+  document.getElementById('uf-submit-btn').disabled = false;
+  document.getElementById('uf-submit-btn').textContent = 'Save User';
+
+  const roleSel = document.getElementById('uf-role');
+  roleSel.innerHTML = buildRoleOptions();
+
+  populateManagerDropdown();
+  document.getElementById('modal-user-form').classList.add('open');
+}
+
+async function openEditUserModal(userId) {
+  await loadManagersCache();
+  const u = _allAdminUsers.find(x => x.id === userId);
+  if (!u) return;
+
+  document.getElementById('uf-id').value = u.id;
+  document.getElementById('user-form-title').textContent = 'Edit User';
+  document.getElementById('uf-name').value     = u.name || '';
+  document.getElementById('uf-emp-id').value   = u.employee_id || '';
+  document.getElementById('uf-email').value    = u.email || '';
+  document.getElementById('uf-dept').value     = u.department || '';
+  document.getElementById('uf-bu').value       = u.business_unit || '';
+  document.getElementById('uf-location').value = u.location || '';
+  document.getElementById('uf-role').value     = u.role;
+  document.getElementById('uf-status').value   = u.status || 'active';
+  document.getElementById('uf-pass-group').style.display = 'none';
+  document.getElementById('uf-status-group').style.display = '';
+  document.getElementById('user-form-error').style.display = 'none';
+  document.getElementById('uf-submit-btn').disabled = false;
+  document.getElementById('uf-submit-btn').textContent = 'Save Changes';
+
+  const roleSel = document.getElementById('uf-role');
+  roleSel.innerHTML = buildRoleOptions();
+  roleSel.value = u.role;
+
+  populateManagerDropdown(u.id);
+  document.getElementById('uf-manager').value = u.manager_id || '';
+  document.getElementById('modal-user-form').classList.add('open');
+}
+
+async function submitUserForm() {
+  const btn = document.getElementById('uf-submit-btn');
+  const err = document.getElementById('user-form-error');
+  err.style.display = 'none';
+
+  const id = document.getElementById('uf-id').value;
+  const isEdit = !!id;
+
+  const payload = {
+    name:          document.getElementById('uf-name').value.trim(),
+    email:         document.getElementById('uf-email').value.trim(),
+    employee_id:   document.getElementById('uf-emp-id').value.trim(),
+    role:          document.getElementById('uf-role').value,
+    manager_id:    document.getElementById('uf-manager').value || null,
+    department:    document.getElementById('uf-dept').value.trim(),
+    business_unit: document.getElementById('uf-bu').value.trim(),
+    location:      document.getElementById('uf-location').value.trim(),
+  };
+
+  if (isEdit) {
+    payload.id = parseInt(id);
+    payload.status = document.getElementById('uf-status').value;
+  } else {
+    payload.password = document.getElementById('uf-password').value;
+  }
+
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    const action = isEdit ? 'update_user' : 'create_user';
+    const r = await fetch(`api/users.php?action=${action}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      credentials: 'same-origin', body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (d.success) {
+      closeModal('modal-user-form');
+      _managersCache = []; // Invalidate cache
+      showToast(isEdit ? 'User updated.' : 'User created successfully.', 'success');
+      loadAdminUsers();
+    } else {
+      err.textContent = d.error || 'Failed to save user.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = isEdit ? 'Save Changes' : 'Save User';
+    }
+  } catch(e) {
+    err.textContent = 'Server error. Please try again.';
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = isEdit ? 'Save Changes' : 'Save User';
+  }
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Remove "${name}" from the organisation?\n\nIf they have submitted ideas, they will be deactivated instead of deleted.`)) return;
+  try {
+    const r = await fetch('api/users.php?action=delete_user', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      credentials: 'same-origin', body: JSON.stringify({id})
+    });
+    const d = await r.json();
+    if (d.success) {
+      showToast(d.deactivated ? `${name} deactivated (has submitted ideas).` : `${name} removed.`, 'info');
+      _managersCache = [];
+      loadAdminUsers();
+    } else {
+      showToast('Error: ' + (d.error || 'Unknown error'), 'danger');
+    }
+  } catch(e) {
+    showToast('Server error.', 'danger');
+  }
 }
 
 function renderProfile() {
@@ -4068,7 +4780,7 @@ function switchTab(el, tabId) {
 ['situation','solution'].forEach(s => {
   document.getElementById('file-'+s).addEventListener('change', function() {
     document.getElementById('file-'+s+'-name').textContent =
-      this.files.length ? 'Attached: ' + this.files[0].name : '';
+      this.files.length ? t('attach.prefix') + this.files[0].name : '';
   });
 });
 
@@ -4076,6 +4788,16 @@ function statusBadge(s) {
   return {'Submitted':'badge-submitted','Under Review':'badge-review','Approved':'badge-approved',
           'Rejected':'badge-rejected','Implemented':'badge-implemented','Draft':'badge-draft',
           'Reviewed':'badge-review'}[s] || 'badge-draft';
+}
+function translateStatus(s) {
+  const map = {'Submitted':t('status.submitted'),'Under Review':t('status.review'),
+    'Approved':t('status.approved'),'Rejected':t('status.rejected'),
+    'Implemented':t('status.implemented'),'Draft':t('status.draft')};
+  return map[s] || s;
+}
+function translateImpact(l) {
+  const map = {'Low':t('impact.low'),'Medium':t('impact.medium'),'High':t('impact.high')};
+  return map[l] || l;
 }
 function impactBadge(l) {
   return {'Low':'badge-low','Medium':'badge-medium','High':'badge-high'}[l]||'badge-draft';
@@ -4101,10 +4823,10 @@ function fmtDate(dt) {
 function timeAgo(dt) {
   if (!dt) return '–';
   const diff = (Date.now() - new Date(dt)) / 1000;
-  if (diff < 60) return 'Just now';
-  if (diff < 3600) return Math.floor(diff/60) + ' min ago';
-  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
-  return Math.floor(diff/86400) + 'd ago';
+  if (diff < 60) return t('time.just_now');
+  if (diff < 3600) return Math.floor(diff/60) + t('time.min_ago');
+  if (diff < 86400) return Math.floor(diff/3600) + t('time.hr_ago');
+  return Math.floor(diff/86400) + t('time.day_ago');
 }
 
 if (currentUser) initApp();
@@ -4113,33 +4835,33 @@ if (currentUser) initApp();
 <div class="modal-overlay" id="modal-assign-reviewers">
   <div class="modal" style="width:560px">
     <div class="modal-header">
-      <div class="modal-title">Route to Committee — <span id="ar-idea-code"></span></div>
+      <div class="modal-title"><span data-i18n="ar.title">Route to Committee</span> — <span id="ar-idea-code"></span></div>
       <span class="modal-close" onclick="closeModal('modal-assign-reviewers')">&#10005;</span>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>Search &amp; Add Reviewers</label>
+        <label data-i18n="ar.search_add">Search &amp; Add Reviewers</label>
         <div class="pos-rel">
-          <input class="form-control" id="ar-search" placeholder="Search by name or employee ID…" autocomplete="off" oninput="searchReviewersForAssign(this.value)"/>
+          <input class="form-control" id="ar-search" data-i18n-ph="placeholder.search_user" placeholder="Search by name or employee ID…" autocomplete="off" oninput="searchReviewersForAssign(this.value)"/>
           <div class="user-search-results" id="ar-results"></div>
         </div>
       </div>
       <div id="ar-selected-list" style="min-height:36px;margin-bottom:16px">
-        <div style="font-size:12px;color:var(--subtle);padding:6px 0">No reviewers added yet.</div>
+        <div style="font-size:12px;color:var(--subtle);padding:6px 0" data-i18n="ar.no_reviewers">No reviewers added yet.</div>
       </div>
       <div class="form-group">
-        <label>Approval Threshold</label>
+        <label data-i18n="ar.threshold">Approval Threshold</label>
         <select class="form-control" id="ar-threshold">
-          <option value="100">All reviewers must approve (unanimous)</option>
-          <option value="67">Supermajority — at least 2/3 must approve</option>
-          <option value="50">Simple majority — more than half must approve</option>
+          <option value="100" data-i18n="ar.unanimous">All reviewers must approve (unanimous)</option>
+          <option value="67" data-i18n="ar.supermajority">Supermajority — at least 2/3 must approve</option>
+          <option value="50" data-i18n="ar.simple_majority">Simple majority — more than half must approve</option>
         </select>
       </div>
-      <div class="alert alert-info" style="font-size:12px;margin:0">Idea moves to <strong>Under Review</strong>. All assigned reviewers will be notified immediately.</div>
+      <div class="alert alert-info" style="font-size:12px;margin:0" data-i18n="ar.info">Idea moves to <strong>Under Review</strong>. All assigned reviewers will be notified immediately.</div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-assign-reviewers')">Cancel</button>
-      <button class="btn btn-primary" id="ar-submit-btn" onclick="submitAssignReviewers()">Route to Committee</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-assign-reviewers')" data-i18n="btn.cancel">Cancel</button>
+      <button class="btn btn-primary" id="ar-submit-btn" onclick="submitAssignReviewers()" data-i18n="review.route_committee">Route to Committee</button>
     </div>
   </div>
 </div>
@@ -4147,26 +4869,152 @@ if (currentUser) initApp();
 <div class="modal-overlay" id="modal-reviewer-decision">
   <div class="modal" style="width:460px">
     <div class="modal-header">
-      <div class="modal-title">My Review — <span id="rd-idea-code"></span></div>
+      <div class="modal-title"><span data-i18n="rd.title">My Review</span> — <span id="rd-idea-code"></span></div>
       <span class="modal-close" onclick="closeModal('modal-reviewer-decision')">&#10005;</span>
     </div>
     <div class="modal-body">
       <div class="form-group" style="margin-bottom:20px">
-        <label>Your Decision</label>
+        <label data-i18n="rd.decision">Your Decision</label>
         <div style="display:flex;gap:10px;margin-top:8px">
-          <button class="btn btn-outline" id="rd-approve-btn" style="flex:1;padding:10px;font-size:14px" onclick="selectReviewerDecision('approved')">&#10003; Approve</button>
-          <button class="btn btn-outline" id="rd-reject-btn" style="flex:1;padding:10px;font-size:14px" onclick="selectReviewerDecision('rejected')">&#10007; Reject</button>
+          <button class="btn btn-outline" id="rd-approve-btn" style="flex:1;padding:10px;font-size:14px" onclick="selectReviewerDecision('approved')" data-i18n="rd.approve_btn">&#10003; Approve</button>
+          <button class="btn btn-outline" id="rd-reject-btn" style="flex:1;padding:10px;font-size:14px" onclick="selectReviewerDecision('rejected')" data-i18n="rd.reject_btn">&#10007; Reject</button>
         </div>
         <input type="hidden" id="rd-decision" value=""/>
       </div>
       <div class="form-group">
-        <label>Feedback / Comment <span style="color:var(--subtle);font-weight:400;text-transform:none">(optional)</span></label>
-        <textarea class="form-control" id="rd-comment" rows="3" placeholder="Share your reasoning with the submitter…"></textarea>
+        <label data-i18n="rd.feedback">Feedback / Comment <span style="color:var(--subtle);font-weight:400;text-transform:none">(optional)</span></label>
+        <textarea class="form-control" id="rd-comment" rows="3" data-i18n-ph="rd.feedback_ph" placeholder="Share your reasoning with the submitter…"></textarea>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-reviewer-decision')">Cancel</button>
-      <button class="btn btn-primary" id="rd-submit-btn" disabled onclick="submitReviewerDecision()">Submit Decision</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-reviewer-decision')" data-i18n="btn.cancel">Cancel</button>
+      <button class="btn btn-primary" id="rd-submit-btn" disabled onclick="submitReviewerDecision()" data-i18n="btn.submit_decision">Submit Decision</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL — Create Organisation (Platform Admin)
+════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-create-org">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title">New Organisation</div>
+      <span class="modal-close" onclick="closeModal('modal-create-org')">&#10005;</span>
+    </div>
+    <div class="modal-body">
+      <div id="create-org-error" class="alert alert-danger" style="display:none"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Organisation Name <span style="color:#dc2626">*</span></label>
+          <input class="form-control" id="co-org-name" type="text" placeholder="Jain Manufacturing Ltd."/>
+        </div>
+        <div class="form-group">
+          <label>Org Code (slug) <span style="color:#dc2626">*</span></label>
+          <input class="form-control" id="co-slug" type="text" placeholder="jain-mfg" style="text-transform:lowercase" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
+          <div style="font-size:11px;color:var(--subtle);margin-top:3px">Employees use this code to log in. Cannot be changed later.</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin:16px 0 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--subtle)">First Admin Account</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Admin Full Name <span style="color:#dc2626">*</span></label>
+          <input class="form-control" id="co-admin-name" type="text" placeholder="Priya Sharma"/>
+        </div>
+        <div class="form-group">
+          <label>Admin Email <span style="color:#dc2626">*</span></label>
+          <input class="form-control" id="co-admin-email" type="email" placeholder="admin@jain-mfg.com"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Admin Password <span style="color:#dc2626">*</span></label>
+        <input class="form-control" id="co-admin-pass" type="password" placeholder="Min. 6 characters"/>
+        <div style="font-size:11px;color:var(--subtle);margin-top:3px">Share this securely with the admin. They can change it after login.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-create-org')">Cancel</button>
+      <button class="btn btn-primary" id="co-submit-btn" onclick="submitCreateOrg()">Create Organisation</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL — Create / Edit User (Org Admin)
+════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-user-form">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title" id="user-form-title">Add User</div>
+      <span class="modal-close" onclick="closeModal('modal-user-form')">&#10005;</span>
+    </div>
+    <div class="modal-body">
+      <div id="user-form-error" class="alert alert-danger" style="display:none"></div>
+      <input type="hidden" id="uf-id"/>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name <span style="color:#dc2626">*</span></label>
+          <input class="form-control" id="uf-name" type="text" placeholder="Rahul Verma"/>
+        </div>
+        <div class="form-group">
+          <label>Employee ID <span style="color:#dc2626">*</span></label>
+          <input class="form-control" id="uf-emp-id" type="text" placeholder="EMP-001"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email <span style="color:#dc2626">*</span></label>
+          <input class="form-control" id="uf-email" type="email" placeholder="rahul@yourorg.com"/>
+        </div>
+        <div class="form-group" id="uf-pass-group">
+          <label>Password <span style="color:#dc2626">*</span></label>
+          <input class="form-control" id="uf-password" type="password" placeholder="Min. 6 characters"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Role <span style="color:#dc2626">*</span></label>
+          <select class="form-control" id="uf-role">
+            <option value="employee">Employee</option>
+            <option value="manager">Manager</option>
+            <option value="executive">Executive</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Reports To</label>
+          <select class="form-control" id="uf-manager">
+            <option value="">— None —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Department</label>
+          <input class="form-control" id="uf-dept" type="text" placeholder="Production"/>
+        </div>
+        <div class="form-group">
+          <label>Business Unit</label>
+          <input class="form-control" id="uf-bu" type="text" placeholder="Operations"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Location</label>
+          <input class="form-control" id="uf-location" type="text" placeholder="Mumbai"/>
+        </div>
+        <div class="form-group" id="uf-status-group" style="display:none">
+          <label>Status</label>
+          <select class="form-control" id="uf-status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-user-form')">Cancel</button>
+      <button class="btn btn-primary" id="uf-submit-btn" onclick="submitUserForm()">Save User</button>
     </div>
   </div>
 </div>

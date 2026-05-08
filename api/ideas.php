@@ -14,11 +14,13 @@ if ($action === 'list') {
     $where  = [];
     $params = [];
 
-    // Employees only see their own; managers see their dept; admin/executive see all
-    if ($user['role'] === 'employee') {
+    // Submitters see own; team leads/managers see direct reports; executive/admin see all
+    $individualRoles = ['trainee', 'employee'];
+    $teamRoles       = ['team_lead', 'project_lead', 'manager', 'senior_manager'];
+    if (in_array($user['role'], $individualRoles, true)) {
         $where[]  = '(i.submitter_id = ? OR i.co_suggester_1_id = ? OR i.co_suggester_2_id = ?)';
         $params   = array_merge($params, [$user['id'], $user['id'], $user['id']]);
-    } elseif ($user['role'] === 'manager') {
+    } elseif (in_array($user['role'], $teamRoles, true)) {
         $where[]  = '(i.submitter_id IN (SELECT id FROM users WHERE manager_id = ?) OR i.submitter_id = ?)';
         $params   = array_merge($params, [$user['id'], $user['id']]);
     }
@@ -73,13 +75,13 @@ if ($action === 'my') {
     respond(['success' => true, 'ideas' => $stmt->fetchAll()]);
 }
 
-// ── REVIEW QUEUE (manager / admin / executive) ─────────────────────
+// ── REVIEW QUEUE ──────────────────────────────────────────────────────
+$reviewerRoles = ['team_lead','project_lead','manager','senior_manager','executive','admin','super_admin'];
 if ($action === 'review') {
-    requireRole('manager', 'admin', 'executive', 'super_admin');
+    requireRole(...$reviewerRoles);
     $pdo = db();
-    $uid = $user['id'];
+    $uid = (int)$user['id'];
 
-    $uid  = (int)$user['id'];
     $cols = "SELECT DISTINCT i.*, u.name AS submitter_name, u.department, u.avatar_initials,
                     ir.decision AS my_reviewer_decision,
                     (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
@@ -92,7 +94,8 @@ if ($action === 'review') {
              JOIN users u ON u.id = i.submitter_id
              LEFT JOIN idea_reviewers ir ON ir.idea_id = i.id AND ir.reviewer_id = ?";
 
-    if ($user['role'] === 'manager') {
+    $teamRoles = ['team_lead','project_lead','manager','senior_manager'];
+    if (in_array($user['role'], $teamRoles, true)) {
         $stmt = $pdo->prepare($cols .
             " WHERE i.status IN ('Submitted','Under Review')
               AND ((i.workflow_type='hierarchical' AND u.manager_id=?)
@@ -278,7 +281,7 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
 
 // ── MANAGER REVIEW (approve / reject / implement) ─────────────────
 if ($action === 'review_action' && $method === 'POST') {
-    requireRole('manager', 'admin', 'executive', 'super_admin');
+    requireRole('team_lead','project_lead','manager','senior_manager','admin','executive','super_admin');
     $b       = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId  = (int)($b['idea_id'] ?? 0);
     $decision= $b['decision'] ?? '';   // Approved | Rejected | Implemented | Under Review
@@ -393,7 +396,7 @@ if ($action === 'dashboard') {
 
 // ── ASSIGN REVIEWERS (convert to multi-reviewer workflow) ─────────
 if ($action === 'assign_reviewers' && $method === 'POST') {
-    requireRole('manager', 'admin', 'executive', 'super_admin');
+    requireRole('team_lead','project_lead','manager','senior_manager','admin','executive','super_admin');
     $b           = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId      = (int)($b['idea_id']      ?? 0);
     $reviewerIds = array_map('intval', $b['reviewer_ids'] ?? []);
@@ -443,7 +446,7 @@ if ($action === 'assign_reviewers' && $method === 'POST') {
 
 // ── REVIEWER INDIVIDUAL DECISION ─────────────────────────────────
 if ($action === 'reviewer_decision' && $method === 'POST') {
-    requireRole('manager', 'admin', 'executive', 'super_admin');
+    requireRole('team_lead','project_lead','manager','senior_manager','admin','executive','super_admin');
     $b        = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId   = (int)($b['idea_id']  ?? 0);
     $decision = strtolower($b['decision'] ?? '');
