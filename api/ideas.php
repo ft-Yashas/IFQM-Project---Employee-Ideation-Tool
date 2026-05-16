@@ -41,11 +41,13 @@ if ($action === 'list') {
     }
 
     $uid = (int)$user['id'];
+    // Prepend uid to params for the community-vote subquery
+    $params_list = array_merge([$uid], $params);
     $sql = "SELECT i.*, u.name AS submitter_name, u.department, u.avatar_initials,
                    c1.name AS co1_name, c2.name AS co2_name,
                    (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
                    (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating,
-                   (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id={$uid}) AS user_community_vote
+                   (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id=?) AS user_community_vote
             FROM ideas i
             JOIN users u ON u.id = i.submitter_id
             LEFT JOIN users c1 ON c1.id = i.co_suggester_1_id
@@ -54,7 +56,7 @@ if ($action === 'list') {
          . " ORDER BY i.updated_at DESC LIMIT 100";
 
     $stmt = db()->prepare($sql);
-    $stmt->execute($params);
+    $stmt->execute($params_list);
     $ideas = $stmt->fetchAll();
 
     // Mask anonymous submitters for non-privileged users
@@ -80,14 +82,14 @@ if ($action === 'my') {
         "SELECT i.*, c1.name AS co1_name, c2.name AS co2_name,
                 (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
                 (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating,
-                (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id={$uid}) AS user_community_vote
+                (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id=?) AS user_community_vote
          FROM ideas i
          LEFT JOIN users c1 ON c1.id = i.co_suggester_1_id
          LEFT JOIN users c2 ON c2.id = i.co_suggester_2_id
          WHERE i.submitter_id = ? OR i.co_suggester_1_id = ? OR i.co_suggester_2_id = ?
          ORDER BY i.updated_at DESC"
     );
-    $stmt->execute([$user['id'], $user['id'], $user['id']]);
+    $stmt->execute([$uid, $uid, $uid, $uid]);
     respond(['success' => true, 'ideas' => $stmt->fetchAll()]);
 }
 
@@ -105,7 +107,7 @@ if ($action === 'review') {
                     (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id) AS reviewer_count,
                     (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id AND decision='approved') AS approved_count,
                     (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id AND decision='rejected') AS rejected_count,
-                    (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id={$uid}) AS user_community_vote
+                    (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id=?) AS user_community_vote
              FROM ideas i
              JOIN users u ON u.id = i.submitter_id
              LEFT JOIN idea_reviewers ir ON ir.idea_id = i.id AND ir.reviewer_id = ?";
@@ -113,16 +115,28 @@ if ($action === 'review') {
     $teamRoles = ['team_lead','project_lead','manager','senior_manager'];
     if (in_array($user['role'], $teamRoles, true)) {
         // Show ideas where I am the current_reviewer OR submitter's manager (legacy)
+        // LEFT JOIN already filtered ir.reviewer_id=? so WHERE condition is redundant
         $stmt = $pdo->prepare($cols .
             " WHERE i.status IN ('Submitted','Under Review')
-              AND ((i.workflow_type='hierarchical'
-                    AND (i.current_reviewer_id=? OR (i.current_reviewer_id IS NULL AND u.manager_id=?)))
-                   OR (i.workflow_type='multi_reviewer' AND ir.reviewer_id=? AND ir.decision='pending'))
+              AND (i.workflow_type = 'hierarchical'
+                   AND (i.current_reviewer_id = ? OR (i.current_reviewer_id IS NULL AND u.manager_id = ?))
+                   OR i.workflow_type = 'multi_reviewer' AND ir.decision = 'pending')
               ORDER BY i.review_due_date ASC, i.ai_score DESC, i.submitted_at ASC");
         $stmt->execute([$uid, $uid, $uid, $uid]);
     } else {
-        $stmt = $pdo->prepare($cols .
-            " WHERE i.status IN ('Submitted','Under Review')
+        // Admin / exec / super_admin — see all non-draft ideas
+        // Remove the ir.reviewer_id condition from the LEFT JOIN since we're not filtering by it
+        $stmt = $pdo->prepare(
+            "SELECT DISTINCT i.*, u.name AS submitter_name, u.department, u.avatar_initials,
+                    (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
+                    (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating,
+                    (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id) AS reviewer_count,
+                    (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id AND decision='approved') AS approved_count,
+                    (SELECT COUNT(*) FROM idea_reviewers WHERE idea_id=i.id AND decision='rejected') AS rejected_count,
+                    (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id=?) AS user_community_vote
+             FROM ideas i
+             JOIN users u ON u.id = i.submitter_id
+             WHERE i.status IN ('Submitted','Under Review')
               ORDER BY i.review_due_date ASC, i.ai_score DESC, i.submitted_at ASC");
         $stmt->execute([$uid]);
     }
@@ -140,7 +154,7 @@ if ($action === 'get') {
                 m.name AS manager_name,
                 (SELECT COUNT(*) FROM idea_votes WHERE idea_id=i.id) AS vote_count,
                 (SELECT ROUND(AVG(rating),1) FROM idea_votes WHERE idea_id=i.id) AS avg_rating,
-                (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id={$uid}) AS user_community_vote
+                (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id=?) AS user_community_vote
          FROM ideas i
          JOIN  users u  ON u.id  = i.submitter_id
          LEFT JOIN users c1 ON c1.id = i.co_suggester_1_id
@@ -148,7 +162,7 @@ if ($action === 'get') {
          LEFT JOIN users m  ON m.id  = u.manager_id
          WHERE i.id = ?"
     );
-    $stmt->execute([$id]);
+    $stmt->execute([$uid, $id]);
     $idea = $stmt->fetch();
     if (!$idea) respond(['success' => false, 'error' => 'Idea not found'], 404);
 
@@ -428,6 +442,11 @@ if ($action === 'review_action' && $method === 'POST') {
     $pdo->prepare("UPDATE ideas SET status=?,updated_at=NOW() WHERE id=?")
         ->execute([$decision, $ideaId]);
 
+    // Reload idea to ensure idea_code is available (e.g. if it was just created from draft)
+    $codeStmt = $pdo->prepare("SELECT idea_code FROM ideas WHERE id=?");
+    $codeStmt->execute([$ideaId]);
+    $ideaCode = $codeStmt->fetchColumn() ?: ('#' . $ideaId);
+
     addWorkflow($ideaId, $user['id'], $wfAction, $comment ?: null);
 
     // Award points to submitter
@@ -444,10 +463,10 @@ if ($action === 'review_action' && $method === 'POST') {
 
     // Notify submitter
     $msg = match($decision) {
-        'Approved'    => "Your idea {$idea['idea_code']} was Approved. +{$pts} points awarded.",
-        'Rejected'    => "Your idea {$idea['idea_code']} was Rejected. Feedback: {$comment}",
-        'Implemented' => "Your idea {$idea['idea_code']} is now Implemented. +{$pts} points awarded.",
-        default       => "Your idea {$idea['idea_code']} is Under Review.",
+        'Approved'    => "Your idea {$ideaCode} was Approved." . ($pts > 0 ? " +{$pts} points awarded." : ""),
+        'Rejected'    => "Your idea {$ideaCode} was Rejected." . ($comment ? " Feedback: {$comment}" : ""),
+        'Implemented' => "Your idea {$ideaCode} is now Implemented." . ($pts > 0 ? " +{$pts} points awarded." : ""),
+        default       => "Your idea {$ideaCode} is Under Review.",
     };
     addNotification($idea['submitter_id'], "Idea {$decision}", $msg, $ideaId);
 
@@ -456,7 +475,8 @@ if ($action === 'review_action' && $method === 'POST') {
     $subStmt->execute([$idea['submitter_id']]);
     $sub = $subStmt->fetch();
     if ($sub && $sub['email']) {
-        queueEmail($sub['email'], $sub['name'], "Your Idea {$idea['idea_code']} — {$decision}", $msg);
+        $subject = "Your Idea {$ideaCode} — {$decision}";
+        queueEmail($sub['email'], $sub['name'], $subject, $msg);
     }
 
     respond(['success' => true, 'decision' => $decision, 'points_awarded' => $pts]);
@@ -652,10 +672,11 @@ if ($action === 'reviewer_decision' && $method === 'POST') {
             addPoints($idea['submitter_id'], $pts);
             $pdo->prepare("UPDATE ideas SET points_awarded = points_awarded + ? WHERE id=?")->execute([$pts, $ideaId]);
         }
+        $ideaCode = $idea['idea_code'] ?? ('#' . $ideaId);
         $summary = "{$approved}/{$total} approved";
         $msg = $newStatus === 'Approved'
-            ? "Your idea {$idea['idea_code']} was Approved by committee ({$summary}). +{$pts} points awarded."
-            : "Your idea {$idea['idea_code']} was Rejected by committee ({$summary}).";
+            ? "Your idea {$ideaCode} was Approved by committee ({$summary})." . ($pts > 0 ? " +{$pts} points awarded." : "")
+            : "Your idea {$ideaCode} was Rejected by committee ({$summary}).";
         addNotification($idea['submitter_id'], "Idea {$newStatus}", $msg, $ideaId);
     }
 
@@ -712,7 +733,7 @@ if ($action === 'bulk_review' && $method === 'POST') {
 
         $msg = $decision === 'Approved'
             ? "Your idea {$idea['idea_code']} was Approved (bulk). +{$pts} points awarded."
-            : "Your idea {$idea['idea_code']} was Rejected (bulk). Feedback: {$comment}";
+            : "Your idea {$idea['idea_code']} was Rejected (bulk)." . ($comment ? " Feedback: {$comment}" : "");
         addNotification($idea['submitter_id'], "Idea {$decision}", $msg, $ideaId);
         $processed++;
     }
@@ -789,14 +810,14 @@ if ($action === 'board') {
                 u.name AS submitter_name, u.avatar_initials, u.department,
                 (SELECT COUNT(*) FROM idea_community_votes WHERE idea_id=i.id AND vote_type='up')   AS upvotes,
                 (SELECT COUNT(*) FROM idea_community_votes WHERE idea_id=i.id AND vote_type='down') AS downvotes,
-                (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id={$uid})  AS user_vote
+                (SELECT vote_type FROM idea_community_votes WHERE idea_id=i.id AND user_id=?)  AS user_vote
          FROM ideas i
          JOIN users u ON u.id = i.submitter_id
          WHERE i.status IN ('Submitted','Under Review','Approved','Implemented')
          ORDER BY {$orderBy}, i.created_at DESC
          LIMIT 100"
     );
-    $stmt->execute();
+    $stmt->execute([$uid]);
     $ideas = $stmt->fetchAll();
 
     $canSeeAnon = in_array($user['role'], ['manager','senior_manager','executive','admin','super_admin'], true);

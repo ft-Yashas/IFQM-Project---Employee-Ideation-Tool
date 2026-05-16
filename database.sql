@@ -1,5 +1,7 @@
 -- ============================================================
---  IFQM Employee Ideation Tool – Database Schema (FIXED)
+--  IFQM Employee Ideation Tool – Database Schema
+--  9-role system: trainee, employee, team_lead, project_lead,
+--  manager, senior_manager, executive, admin, super_admin
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS ifqm_ideation CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -16,35 +18,53 @@ CREATE TABLE IF NOT EXISTS users (
   department      VARCHAR(100),
   business_unit   VARCHAR(100),
   location        VARCHAR(100),
-  role            ENUM('employee','manager','admin','executive','super_admin') NOT NULL DEFAULT 'employee',
+  role            ENUM('trainee','employee','team_lead','project_lead','manager','senior_manager','executive','admin','super_admin') NOT NULL DEFAULT 'employee',
   manager_id      INT NULL,
   points          INT NOT NULL DEFAULT 0,
   avatar_initials VARCHAR(4),
+  status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
   created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- ── Ideas ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS ideas (
-  id                 INT AUTO_INCREMENT PRIMARY KEY,
-  idea_code          VARCHAR(20)  NOT NULL UNIQUE,
-  title              VARCHAR(255) NOT NULL,
-  present_situation  TEXT NOT NULL,
-  proposed_solution  TEXT NOT NULL,
-  impact_areas       VARCHAR(255),
-  impact_level       ENUM('Low','Medium','High') DEFAULT 'Medium',
-  tangible_benefit   TEXT,
-  intangible_benefit TEXT,
-  ai_score           INT DEFAULT 0,
-  ai_reason          TEXT,
-  status             ENUM('Draft','Submitted','Under Review','Approved','Rejected','Implemented') DEFAULT 'Draft',
-  submitter_id       INT NOT NULL,
-  co_suggester_1_id  INT NULL,
-  co_suggester_2_id  INT NULL,
-  points_awarded     INT DEFAULT 0,
-  submitted_at       DATETIME NULL,
-  created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at         DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id                        INT AUTO_INCREMENT PRIMARY KEY,
+  idea_code                 VARCHAR(20)  NOT NULL UNIQUE,
+  title                     VARCHAR(255) NOT NULL,
+  present_situation         TEXT NOT NULL,
+  proposed_solution         TEXT NOT NULL,
+  impact_areas              VARCHAR(255),
+  impact_level              ENUM('Low','Medium','High') DEFAULT 'Medium',
+  tangible_benefit          TEXT,
+  intangible_benefit        TEXT,
+  ai_score                  INT DEFAULT 0,
+  ai_reason                 TEXT,
+  workflow_type             ENUM('hierarchical','multi_reviewer') NOT NULL DEFAULT 'hierarchical',
+  approval_threshold        TINYINT NOT NULL DEFAULT 100,
+  upvotes                   INT NOT NULL DEFAULT 0,
+  downvotes                 INT NOT NULL DEFAULT 0,
+  escalation_level          INT NOT NULL DEFAULT 0,
+  current_reviewer_id       INT NULL,
+  review_due_date           DATE NULL,
+  is_anonymous              TINYINT(1) NOT NULL DEFAULT 0,
+  implementation_owner_id   INT NULL,
+  implementation_target_date DATE NULL,
+  implementation_status     ENUM('not_started','in_progress','completed','on_hold') NULL,
+  roi_value                 DECIMAL(15,2) NULL,
+  roi_type                  ENUM('cost_saving','time_saving','quality_improvement','revenue_increase','other') NULL,
+  roi_description           TEXT NULL,
+  challenge_id              INT NULL,
+  template_type             VARCHAR(50) NULL,
+  points_awarded            INT DEFAULT 0,
+  status                    ENUM('Draft','Submitted','Under Review','Approved','Rejected','Implemented') DEFAULT 'Draft',
+  submitter_id              INT NOT NULL,
+  co_suggester_1_id         INT NULL,
+  co_suggester_2_id         INT NULL,
+  submitted_at              DATETIME NULL,
+  created_at                DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at                DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (submitter_id)      REFERENCES users(id),
   FOREIGN KEY (co_suggester_1_id) REFERENCES users(id) ON DELETE SET NULL,
   FOREIGN KEY (co_suggester_2_id) REFERENCES users(id) ON DELETE SET NULL
@@ -61,7 +81,21 @@ CREATE TABLE IF NOT EXISTS idea_attachments (
   FOREIGN KEY (idea_id) REFERENCES ideas(id) ON DELETE CASCADE
 );
 
--- ── Approval Workflow ─────────────────────────────────────────
+-- ── Idea Reviewers (multi-reviewer workflow) ──────────────────
+CREATE TABLE IF NOT EXISTS idea_reviewers (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  idea_id      INT NOT NULL,
+  reviewer_id  INT NOT NULL,
+  decision     ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  comment      TEXT,
+  decided_at   DATETIME NULL,
+  assigned_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_reviewer (idea_id, reviewer_id),
+  FOREIGN KEY (idea_id)    REFERENCES ideas(id) ON DELETE CASCADE,
+  FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ── Approval Workflow Log ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS idea_workflow (
   id         INT AUTO_INCREMENT PRIMARY KEY,
   idea_id    INT NOT NULL,
@@ -73,18 +107,30 @@ CREATE TABLE IF NOT EXISTS idea_workflow (
   FOREIGN KEY (actor_id) REFERENCES users(id)
 );
 
--- ── Idea Votes ────────────────────────────────────────────────
+-- ── Idea Votes (1-5 star rating) ────────────────────────────────
 CREATE TABLE IF NOT EXISTS idea_votes (
   id         INT AUTO_INCREMENT PRIMARY KEY,
   idea_id    INT NOT NULL,
-  user_id    INT NOT NULL,
+  user_id    NOT NULL,
   rating     TINYINT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_vote (idea_id, user_id),
   FOREIGN KEY (idea_id) REFERENCES ideas(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id)  ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT chk_rating CHECK (rating BETWEEN 1 AND 5)
+);
+
+-- ── Community Votes (upvote / downvote) ───────────────────────
+CREATE TABLE IF NOT EXISTS idea_community_votes (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  idea_id    INT NOT NULL,
+  user_id    INT NOT NULL,
+  vote_type  ENUM('up','down') NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_cv (idea_id, user_id),
+  FOREIGN KEY (idea_id) REFERENCES ideas(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- ── Notifications ─────────────────────────────────────────────
@@ -97,6 +143,54 @@ CREATE TABLE IF NOT EXISTS notifications (
   is_read    TINYINT(1) DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ── Idea Comments ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS idea_comments (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  idea_id    INT NOT NULL,
+  user_id    INT NOT NULL,
+  parent_id  INT NULL,
+  content    TEXT NOT NULL,
+  is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (idea_id)   REFERENCES ideas(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)   REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES idea_comments(id) ON DELETE SET NULL
+);
+
+-- ── Challenges ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS challenges (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  title       VARCHAR(255) NOT NULL,
+  description TEXT,
+  created_by  INT NOT NULL,
+  deadline    DATE NULL,
+  status      ENUM('active','closed','draft') NOT NULL DEFAULT 'active',
+  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ── Org Settings ───────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS org_settings (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  key_name   VARCHAR(100) NOT NULL UNIQUE,
+  value      TEXT,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- ── Email Queue ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS email_queue (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  to_email   VARCHAR(150) NOT NULL,
+  to_name    VARCHAR(100),
+  subject    VARCHAR(255) NOT NULL,
+  body       TEXT NOT NULL,
+  status     ENUM('pending','sent','failed') NOT NULL DEFAULT 'pending',
+  attempts   INT NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  sent_at    DATETIME NULL
 );
 
 -- ── Leaderboard View ──────────────────────────────────────────
@@ -113,99 +207,83 @@ ORDER BY u.points DESC;
 
 -- ============================================================
 -- SEED DATA
--- Step 1: Insert ALL users with manager_id = NULL first
---         (avoids foreign key constraint error)
 -- All passwords = "password"
 -- ============================================================
 
+-- Step 1: Insert executives/admins first (no manager)
 INSERT INTO users
   (employee_id, name, email, password_hash, phone, department, business_unit, location, role, manager_id, points, avatar_initials)
 VALUES
-  ('EMP-003', 'Bhuvan K H',       'bhuvan.kh@jain.com',      '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543212', 'Administration', 'BU-South', 'Bengaluru', 'admin',    NULL, 500, 'BK'),
-  ('EMP-002', 'Priya Sharma',     'priya.sharma@jain.com',   '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543211', 'Production',     'BU-South', 'Bengaluru', 'manager',  NULL, 320, 'PS'),
-  ('EMP-001', 'Yashas R',         'yashas.r@jain.com',        '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543210', 'Production',     'BU-South', 'Bengaluru', 'employee', NULL, 145, 'YR'),
-  ('EMP-004', 'Adrish Chowdhury', 'adrish.c@jain.com',        '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543213', 'Strategy',       'BU-East',  'Kolkata',   'executive',NULL, 750, 'AC'),
-  ('EMP-005', 'Rahul Mehta',      'rahul.mehta@jain.com',     '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543214', 'Quality',        'BU-South', 'Bengaluru', 'employee', NULL, 210, 'RM'),
-  ('EMP-006', 'Arjun Chopra',     'arjun.chopra@jain.com',    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543215', 'Safety',         'BU-North', 'Delhi',     'employee', NULL,  80, 'AC');
+  ('EMP-001', 'IFQM Admin',         'admin@ifqm.com',       '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543210', 'Administration', 'BU-South', 'Bengaluru', 'admin',    NULL, 500, 'IA'),
+  ('EMP-002', 'Priya Sharma',       'priya.sharma@ifqm.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543211', 'Production',     'BU-South', 'Bengaluru', 'manager',  NULL, 320, 'PS'),
+  ('EMP-003', 'Adrish Chowdhury',   'adrish.c@ifqm.com',     '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543212', 'Strategy',       'BU-East',  'Kolkata',   'executive',NULL, 750, 'AC'),
+  ('SA-001',  'IFQM Super Admin',   'superadmin@ifqm.com',   '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NULL,        'IFQM Corporate', 'All Units', 'Bengaluru', 'super_admin', NULL, 0, 'SA');
+
+-- Step 2: Insert team leads / project leads (manager = admin EMP-001)
+INSERT INTO users
+  (employee_id, name, email, password_hash, phone, department, business_unit, location, role, manager_id, points, avatar_initials)
+VALUES
+  ('EMP-004', 'Anita Desai',        'anita.d@ifqm.com',      '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543213', 'Quality',        'BU-South', 'Bengaluru', 'team_lead',    NULL, 180, 'AD'),
+  ('EMP-005', 'Ravi Kumar',         'ravi.k@ifqm.com',       '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543214', 'Safety',         'BU-North', 'Delhi',     'project_lead', NULL, 220, 'RK');
+
+-- Step 3: Insert employees and trainees (manager = their team/project lead)
+INSERT INTO users
+  (employee_id, name, email, password_hash, phone, department, business_unit, location, role, manager_id, points, avatar_initials)
+VALUES
+  ('EMP-006', 'Yashas R',           'yashas.r@ifqm.com',     '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543215', 'Production',     'BU-South', 'Bengaluru', 'employee', NULL, 145, 'YR'),
+  ('EMP-007', 'Rahul Mehta',         'rahul.mehta@ifqm.com',  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543216', 'Quality',        'BU-South', 'Bengaluru', 'employee', NULL, 210, 'RM'),
+  ('EMP-008', 'Arjun Chopra',        'arjun.c@ifqm.com',      '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543217', 'Safety',         'BU-North', 'Delhi',     'trainee',   NULL,  80, 'AC'),
+  ('EMP-009', 'Sneha Patel',         'sneha.p@ifqm.com',      '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '9876543218', 'Production',     'BU-South', 'Bengaluru', 'trainee',   NULL,  60, 'SP');
+
+-- Step 4: Set manager relationships AFTER all rows exist
+-- (avoids foreign key constraint error on insert)
+
+-- Anita (EMP-004) and Ravi (EMP-005) report to admin
+UPDATE users SET manager_id = (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-001') AS tmp) WHERE employee_id = 'EMP-004';
+UPDATE users SET manager_id = (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-001') AS tmp) WHERE employee_id = 'EMP-005';
+
+-- Priya (EMP-002) reports to executive
+UPDATE users SET manager_id = (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-003') AS tmp) WHERE employee_id = 'EMP-002';
+
+-- Manager/team lead relationships
+UPDATE users SET manager_id = (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-002') AS tmp) WHERE employee_id IN ('EMP-004', 'EMP-005');
+
+-- Employees/trainees under their team leads
+UPDATE users SET manager_id = (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-004') AS tmp) WHERE employee_id IN ('EMP-006', 'EMP-007', 'EMP-009');
+UPDATE users SET manager_id = (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-005') AS tmp) WHERE employee_id = 'EMP-008';
 
 -- ============================================================
--- Step 2: Set manager relationships AFTER all rows exist
+-- Step 5: Sample idea (submitter = Yashas EMP-006)
 -- ============================================================
-
--- Priya (EMP-002) reports to Bhuvan (EMP-003)
-UPDATE users
-SET manager_id = (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-003') AS tmp)
-WHERE employee_id = 'EMP-002';
-
--- Yashas, Rahul, Arjun report to Priya (EMP-002)
-UPDATE users
-SET manager_id = (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-002') AS tmp)
-WHERE employee_id IN ('EMP-001', 'EMP-005', 'EMP-006');
-
--- ============================================================
--- Step 3: Sample idea
--- submitter_id uses a subquery so it works regardless of
--- which auto-increment ID Yashas was assigned
--- ============================================================
-
 INSERT INTO ideas
-  (idea_code, title, present_situation, proposed_solution, impact_areas, impact_level, ai_score, status, submitter_id, co_suggester_1_id, points_awarded, submitted_at)
+  (idea_code, title, present_situation, proposed_solution, impact_areas, impact_level, ai_score, ai_reason, status, submitter_id, co_suggester_1_id, points_awarded, submitted_at)
 VALUES (
   'IDA-2025-001',
-  'Reduce Rework in Production Line',
-  'Current rework rate is approximately 8% on Line 3 due to inconsistent incoming material quality checks.',
-  'Introduce a mandatory QC gate at the start of Line 3 with a digital checklist logged in the system.',
+  'Reduce Rework in Production Line 3',
+  'Current rework rate is approximately 8% on Line 3 due to inconsistent incoming material quality checks. This causes downstream delays and increased cost.',
+  'Introduce a mandatory QC gate at the start of Line 3 with a digital checklist logged in the system, ensuring every batch is verified before processing.',
   'Quality,Cost',
-  'Medium',
+  'High',
   88,
+  'Strong idea with clear problem statement and actionable solution. High potential impact on quality and cost reduction.',
   'Approved',
-  (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-001') AS u1),
-  (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-005') AS u2),
+  (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-006') AS u1),
+  (SELECT id FROM (SELECT id FROM users WHERE employee_id = 'EMP-007') AS u2),
   35,
   NOW() - INTERVAL 30 DAY
 );
 
--- ── IFQM Super Admin seed ─────────────────────────────────────────
-INSERT IGNORE INTO users
-  (employee_id, name, email, password_hash, phone, department, business_unit, location, role, manager_id, points, avatar_initials)
-VALUES
-  ('SA-001', 'IFQM Super Admin', 'superadmin@jain.com',
-   '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-   NULL, 'IFQM Corporate', 'All Units', 'Bengaluru', 'super_admin', NULL, 0, 'SA');
-
--- ── Migrations: run these once on existing databases ──────────────
--- ALTER TABLE ideas ADD COLUMN IF NOT EXISTS ai_reason TEXT AFTER ai_score;
--- ALTER TABLE users MODIFY COLUMN role ENUM('employee','manager','admin','executive','super_admin') NOT NULL DEFAULT 'employee';
-
--- ── Community Upvote / Downvote ────────────────────────────────
-CREATE TABLE IF NOT EXISTS idea_community_votes (
-  id         INT AUTO_INCREMENT PRIMARY KEY,
-  idea_id    INT NOT NULL,
-  user_id    INT NOT NULL,
-  vote_type  ENUM('up','down') NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_cv (idea_id, user_id),
-  FOREIGN KEY (idea_id) REFERENCES ideas(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-ALTER TABLE ideas
-  ADD COLUMN IF NOT EXISTS upvotes   INT NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS downvotes INT NOT NULL DEFAULT 0;
-
--- ── Dual Workflow Migration (run once on existing databases) ───────
-ALTER TABLE ideas ADD COLUMN IF NOT EXISTS workflow_type      ENUM('hierarchical','multi_reviewer') NOT NULL DEFAULT 'hierarchical';
-ALTER TABLE ideas ADD COLUMN IF NOT EXISTS approval_threshold TINYINT NOT NULL DEFAULT 100;
-
-CREATE TABLE IF NOT EXISTS idea_reviewers (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  idea_id      INT NOT NULL,
-  reviewer_id  INT NOT NULL,
-  decision     ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
-  comment      TEXT,
-  decided_at   DATETIME NULL,
-  assigned_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_reviewer (idea_id, reviewer_id),
-  FOREIGN KEY (idea_id)    REFERENCES ideas(id) ON DELETE CASCADE,
-  FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE CASCADE
-);
+-- ── Org Settings ───────────────────────────────────────────────
+INSERT IGNORE INTO org_settings (key_name, value) VALUES
+  ('review_sla_days',      '7'),
+  ('escalation_days',      '14'),
+  ('anonymous_allowed',    '1'),
+  ('public_board_enabled', '1'),
+  ('challenges_enabled',   '1'),
+  ('email_enabled',        '0'),
+  ('smtp_host',            ''),
+  ('smtp_port',            '587'),
+  ('smtp_user',            ''),
+  ('smtp_pass',            ''),
+  ('smtp_from',            ''),
+  ('smtp_from_name',       'IFQM Ideation');

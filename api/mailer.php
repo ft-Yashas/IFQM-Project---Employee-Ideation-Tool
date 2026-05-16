@@ -87,8 +87,8 @@ function processEmailQueue(): void {
             }
         } catch (Exception $e) {
             error_log('processEmailQueue send error (id=' . $id . '): ' . $e->getMessage());
-            $pdo->prepare("UPDATE email_queue SET status = 'failed', error_message = ? WHERE id = ?")
-                ->execute([mb_substr($e->getMessage(), 0, 500), $id]);
+            $pdo->prepare("UPDATE email_queue SET status = 'failed' WHERE id = ?")
+                ->execute([$id]);
         }
     }
 }
