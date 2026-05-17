@@ -630,7 +630,7 @@ $user     = $_SESSION['user'] ?? [];
         <label data-i18n="login.password">Password</label>
         <input class="form-control" id="login-pass" type="password" data-i18n-ph="login.password_ph" placeholder="••••••••" autocomplete="current-password"/>
       </div>
-      <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;padding:11px;font-size:14px" onclick="doLogin()" data-i18n="login.btn">Sign In</button>
+      <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;padding:11px;font-size:14px" data-i18n="login.btn">Sign In</button>
       <div class="separator"></div>
       <p style="font-size:11px;color:#aaa;text-align:center">Powered by IFQM &middot; Multi-Tenant &middot; Role-Based Access Control</p>
     </div>
@@ -1458,6 +1458,12 @@ function staggerAnimate(els, baseDelay=40) {
     if (el) el.value = orgParam.toLowerCase();
   }
 })();
+
+// Wire Sign In button via event listener (safer than onclick attribute)
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.getElementById('login-btn');
+  if (btn) btn.addEventListener('click', doLogin);
+});
 
 async function doLogin() {
   const email   = document.getElementById('login-email').value.trim();
@@ -3386,7 +3392,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function checkSession() {
   if (!currentUser) return;
   try {
-    const r = await fetch('api/auth.php?action=me');
+    const r = await fetch('api/auth.php?action=me', {credentials:'same-origin'});
     const d = await r.json();
     if (!d.authenticated) {
       currentUser = null;
