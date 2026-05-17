@@ -59,6 +59,7 @@ if ($action === 'get' && $method === 'GET') {
 
 // ── UPDATE settings ───────────────────────────────────────────────
 if ($action === 'update' && $method === 'POST') {
+    requireCsrf();
     requireRole('admin', 'super_admin');
     $b = json_decode(file_get_contents('php://input'), true) ?? [];
 

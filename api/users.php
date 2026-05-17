@@ -30,6 +30,7 @@ if ($action === 'admin_users') {
 
 // ── Create user (admin / super_admin) ─────────────────────────────────────
 if ($action === 'create_user' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf();
     requireRole('admin', 'super_admin');
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
@@ -85,6 +86,7 @@ if ($action === 'create_user' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ── Update user ────────────────────────────────────────────────────────────
 if ($action === 'update_user' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf();
     requireRole('admin', 'super_admin');
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $id   = (int)($body['id'] ?? 0);
@@ -128,6 +130,7 @@ if ($action === 'update_user' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ── Delete user ────────────────────────────────────────────────────────────
 if ($action === 'delete_user' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf();
     requireRole('admin', 'super_admin');
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $id   = (int)($body['id'] ?? 0);
@@ -287,6 +290,7 @@ if ($action === 'notifications') {
 }
 
 if ($action === 'mark_read' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf();
     $pdo->prepare("UPDATE notifications SET is_read=1 WHERE user_id=?")->execute([$user['id']]);
     respond(['success' => true]);
 }
@@ -354,6 +358,7 @@ if ($action === 'audit') {
 }
 
 if ($action === 'profile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf();
     $b     = json_decode(file_get_contents('php://input'), true) ?? [];
     $phone = trim($b['phone'] ?? '');
     $pdo->prepare("UPDATE users SET phone=? WHERE id=?")->execute([$phone, $user['id']]);

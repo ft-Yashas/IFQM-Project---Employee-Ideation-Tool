@@ -57,6 +57,7 @@ if ($action === 'get' && $method === 'GET') {
 
 // ── CREATE a challenge ────────────────────────────────────────────
 if ($action === 'create' && $method === 'POST') {
+    requireCsrf();
     requireRole('admin', 'executive', 'manager', 'senior_manager', 'super_admin');
     $b           = json_decode(file_get_contents('php://input'), true) ?? [];
     $title       = trim($b['title'] ?? '');
@@ -82,6 +83,7 @@ if ($action === 'create' && $method === 'POST') {
 
 // ── UPDATE a challenge ────────────────────────────────────────────
 if ($action === 'update' && $method === 'POST') {
+    requireCsrf();
     requireRole('admin', 'executive', 'manager', 'senior_manager', 'super_admin');
     $b  = json_decode(file_get_contents('php://input'), true) ?? [];
     $id = (int)($b['id'] ?? 0);
@@ -122,6 +124,7 @@ if ($action === 'update' && $method === 'POST') {
 
 // ── DELETE a challenge ────────────────────────────────────────────
 if ($action === 'delete' && $method === 'POST') {
+    requireCsrf();
     requireRole('admin', 'super_admin');
     $b  = json_decode(file_get_contents('php://input'), true) ?? [];
     $id = (int)($b['id'] ?? 0);

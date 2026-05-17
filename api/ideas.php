@@ -268,6 +268,7 @@ if ($action === 'get') {
 
 // ── SUBMIT / SAVE DRAFT ───────────────────────────────────────────
 if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
+    requireCsrf();
     $b = json_decode(file_get_contents('php://input'), true) ?? [];
 
     $title    = trim($b['title'] ?? '');
@@ -414,6 +415,7 @@ if (in_array($action, ['submit', 'draft'], true) && $method === 'POST') {
 
 // ── MANAGER REVIEW (approve / reject / implement) ─────────────────
 if ($action === 'review_action' && $method === 'POST') {
+    requireCsrf();
     requireRole('team_lead','project_lead','manager','senior_manager','admin','executive','super_admin');
     $b       = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId  = (int)($b['idea_id'] ?? 0);
@@ -630,6 +632,7 @@ if ($action === 'dashboard') {
 
 // ── ASSIGN REVIEWERS (convert to multi-reviewer workflow) ─────────
 if ($action === 'assign_reviewers' && $method === 'POST') {
+    requireCsrf();
     requireRole('team_lead','project_lead','manager','senior_manager','admin','executive','super_admin');
     $b           = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId      = (int)($b['idea_id']      ?? 0);
@@ -680,6 +683,7 @@ if ($action === 'assign_reviewers' && $method === 'POST') {
 
 // ── REVIEWER INDIVIDUAL DECISION ─────────────────────────────────
 if ($action === 'reviewer_decision' && $method === 'POST') {
+    requireCsrf();
     requireRole('team_lead','project_lead','manager','senior_manager','admin','executive','super_admin');
     $b        = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId   = (int)($b['idea_id']  ?? 0);
@@ -767,6 +771,7 @@ if ($action === 'check_duplicate') {
 
 // ── BULK REVIEW ────────────────────────────────────────────────────
 if ($action === 'bulk_review' && $method === 'POST') {
+    requireCsrf();
     requireRole('team_lead','project_lead','manager','senior_manager','admin','executive','super_admin');
     $b        = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaIds  = array_map('intval', $b['idea_ids'] ?? []);
@@ -806,6 +811,7 @@ if ($action === 'bulk_review' && $method === 'POST') {
 
 // ── UPDATE ROI ─────────────────────────────────────────────────────
 if ($action === 'update_roi' && $method === 'POST') {
+    requireCsrf();
     requireRole('manager','senior_manager','executive','admin','super_admin');
     $b        = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId   = (int)($b['idea_id'] ?? 0);
@@ -832,6 +838,7 @@ if ($action === 'update_roi' && $method === 'POST') {
 
 // ── UPDATE IMPLEMENTATION TRACKING ────────────────────────────────
 if ($action === 'update_implementation' && $method === 'POST') {
+    requireCsrf();
     requireRole('manager','senior_manager','executive','admin','super_admin');
     $b          = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId     = (int)($b['idea_id'] ?? 0);
@@ -899,6 +906,7 @@ if ($action === 'board') {
 
 // ── COMMUNITY VOTE (up / down toggle) ─────────────────────────────
 if ($action === 'community_vote' && $method === 'POST') {
+    requireCsrf();
     $b        = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId   = (int)($b['idea_id'] ?? 0);
     $voteType = $b['vote_type'] ?? '';

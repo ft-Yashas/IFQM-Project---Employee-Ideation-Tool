@@ -633,6 +633,9 @@ $user     = $_SESSION['user'] ?? [];
       <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;padding:11px;font-size:14px" data-i18n="login.btn">Sign In</button>
       <div class="separator"></div>
       <p style="font-size:11px;color:#aaa;text-align:center">Powered by IFQM &middot; Multi-Tenant &middot; Role-Based Access Control</p>
+      <div style="text-align:center;margin-top:4px">
+        <a href="#" onclick="openForgotPassword();return false" style="font-size:11px;color:#888;text-decoration:none" data-i18n="login.forgot">Forgot your password?</a>
+      </div>
     </div>
   </div>
 
@@ -1372,6 +1375,7 @@ $user     = $_SESSION['user'] ?? [];
 
 <script>
 let currentUser   = <?= $loggedIn ? json_encode($user) : 'null' ?>;
+let csrfToken      = null;
 let currentStep   = 1;
 const totalSteps  = 5;
 let draftIdeaId   = null;
@@ -1473,6 +1477,11 @@ if (document.readyState === 'loading') {
   attachLoginBtn();
 }
 
+// ── CSRF token helper: inject X-CSRF-Token header into mutating requests ──
+function csrfHeaders() {
+  return csrfToken ? {'X-CSRF-Token': csrfToken} : {};
+}
+
 async function doLogin() {
   const email   = document.getElementById('login-email').value.trim();
   const pass    = document.getElementById('login-pass').value.trim();
@@ -1491,6 +1500,7 @@ async function doLogin() {
     const d = await r.json();
     if (d.success) {
       currentUser = d.user;
+      csrfToken = d.csrf_token || null;
       const lp = document.getElementById('login-page');
       lp.style.transition = 'opacity .35s ease';
       lp.style.opacity = '0';
@@ -1514,6 +1524,52 @@ async function doLogin() {
   btn.disabled = false; btn.textContent = 'Sign In';
 }
 
+// ── FORGOT PASSWORD ──────────────────────────────────────────────
+function openForgotPassword() {
+  const email = prompt('Enter your registered email address:');
+  if (!email?.trim()) return;
+  const orgSlug = (document.getElementById('login-org')?.value || '').trim().toLowerCase();
+  fetch('api/auth.php?action=forgot_password', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    credentials: 'same-origin',
+    body: JSON.stringify({email: email.trim(), org_slug: orgSlug})
+  }).then(r => r.json()).then(d => {
+    if (d.success) {
+      showToast('If an account with that email exists, a reset link has been sent.', 'success');
+    } else {
+      showToast(d.error || 'Request failed.', 'danger');
+    }
+  }).catch(() => showToast('Network error. Please try again.', 'danger'));
+}
+
+// ── PASSWORD RESET PAGE ───────────────────────────────────────────
+function openResetPassword() {
+  const token = new URLSearchParams(window.location.search).get('reset_token');
+  if (!token) return;
+  const pw1 = prompt('Enter your new password (min. 8 characters):');
+  if (!pw1 || pw1.length < 8) { showToast('Password must be at least 8 characters.', 'warning'); return; }
+  const pw2 = prompt('Confirm your new password:');
+  if (pw1 !== pw2) { showToast('Passwords do not match.', 'warning'); return; }
+  const orgSlug = new URLSearchParams(window.location.search).get('org') || '';
+  fetch('api/auth.php?action=reset_password', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    credentials: 'same-origin',
+    body: JSON.stringify({token, password: pw1, org_slug: orgSlug})
+  }).then(r => r.json()).then(d => {
+    if (d.success) {
+      showToast('Password updated. Please sign in.', 'success');
+      const url = new URL(window.location.href);
+      url.searchParams.delete('reset_token');
+      url.searchParams.delete('org');
+      history.replaceState({}, '', url.pathname);
+    } else {
+      showToast(d.error || 'Reset failed. The link may have expired.', 'danger');
+    }
+  }).catch(() => showToast('Network error. Please try again.', 'danger'));
+}
+
 // ═══════════════════════════════════════════════════════════════
 // MULTILINGUAL SYSTEM — EN / HI / KN / TE / TA / ML
 // ═══════════════════════════════════════════════════════════════
@@ -1533,6 +1589,7 @@ const TRANSLATIONS = {
     'login.app_title':'Employee Ideation Tool','login.tagline':'Turn great ideas into real improvements.',
     'login.welcome':'Welcome back','login.subtitle':'Sign in to your IFQM account to continue',
     'login.org_code':'Organization Code','login.org_hint':'Leave blank for IFQM platform admin login',
+    'login.forgot':'Forgot your password?','login.email':'Email Address','login.password':'Password','login.btn':'Sign In',
     'login.email':'Email Address','login.password':'Password','login.btn':'Sign In',
     'login.email_ph':'admin@yourorg.com','login.password_ph':'Enter your password',
     'admin.add_user':'+ Add User',
@@ -1713,6 +1770,8 @@ const TRANSLATIONS = {
     'login.app_title':'कर्मचारी विचार मंच','login.tagline':'महान विचारों को वास्तविक सुधारों में बदलें।',
     'login.welcome':'वापस स्वागत है','login.subtitle':'जारी रखने के लिए अपने IFQM खाते में साइन इन करें',
     'login.org_code':'संगठन कोड','login.org_hint':'IFQM प्लेटफ़ॉर्म एडमिन के लिए खाली छोड़ें',
+    'login.forgot':'अपना पासवर्ड भूल गए?','login.email':'ईमेल पता','login.password':'पासवर्ड','login.btn':'साइन इन करें',
+    'login.forgot':'अपना पासवर्ड भूल गए?','login.email':'ईमेल पता','login.password':'पासवर्ड','login.btn':'साइन इन करें',
     'login.email':'ईमेल पता','login.password':'पासवर्ड','login.btn':'साइन इन',
     'admin.add_user':'+ उपयोगकर्ता जोड़ें',
     'login.email_ph':'आपका.नाम@jain.com','login.password_ph':'अपना पासवर्ड दर्ज करें',
@@ -1888,6 +1947,7 @@ const TRANSLATIONS = {
     'login.app_title':'कर्मचारी कल्पना साधन','login.tagline':'उत्तम कल्पनांना खऱ्या सुधारणांमध्ये बदला.',
     'login.welcome':'पुन्हा स्वागत आहे','login.subtitle':'सुरू ठेवण्यासाठी तुमच्या IFQM खात्यात साइन इन करा',
     'login.org_code':'संस्था कोड','login.org_hint':'IFQM प्लॅटफॉर्म अॅडमिनसाठी रिकामे ठेवा',
+    'login.forgot':'पासवर्ड विसरलात?','login.email':'ईमेल पत्ता','login.password':'पासवर्ड','login.btn':'साइन इन करा',
     'login.email':'ईमेल पत्ता','login.password':'पासवर्ड','login.btn':'साइन इन',
     'admin.add_user':'+ वापरकर्ता जोडा',
     'login.email_ph':'तुमचे.नाव@jain.com','login.password_ph':'तुमचा पासवर्ड प्रविष्ट करा',
@@ -2058,7 +2118,7 @@ const TRANSLATIONS = {
     'login.app_title':'ಉದ್ಯೋಗಿ ಆಲೋಚನೆ ಸಾಧನ','login.tagline':'ಉತ್ತಮ ಆಲೋಚನೆಗಳನ್ನು ನಿಜವಾದ ಸುಧಾರಣೆಗಳನ್ನಾಗಿ ಮಾಡಿ.',
     'login.welcome':'ಮರಳಿ ಸ್ವಾಗತ','login.subtitle':'ಮುಂದುವರಿಯಲು ನಿಮ್ಮ IFQM ಖಾತೆಗೆ ಸೈನ್ ಇನ್ ಮಾಡಿ',
     'login.org_code':'ಸಂಸ್ಥೆ ಕೋಡ್','login.org_hint':'IFQM ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಅಡ್ಮಿನ್‌ಗಾಗಿ ಖಾಲಿ ಬಿಡಿ',
-    'login.email':'ಇಮೇಲ್ ವಿಳಾಸ','login.password':'ಪಾಸ್‌ವರ್ಡ್','login.btn':'ಸೈನ್ ಇನ್',
+    'login.forgot':'ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ?','login.email':'ಇಮೇಲ್ ವಿಳಾಸ','login.password':'ಪಾಸ್‌ವರ್ಡ್','login.btn':'ಸೈನ್ ಇನ್',
     'admin.add_user':'+ ಬಳಕೆದಾರ ಸೇರಿಸಿ',
     'topbar.dark':'ಡಾರ್ಕ್','topbar.light':'ಲೈಟ್','topbar.notifications':'ಅಧಿಸೂಚನೆಗಳು',
     'topbar.logout':'ಲಾಗ್ ಔಟ್','topbar.mark_read':'ಎಲ್ಲಾ ಓದಿದಂತೆ ಗುರುತಿಸಿ',
@@ -2221,7 +2281,7 @@ const TRANSLATIONS = {
     'login.app_title':'ఉద్యోగి ఆలోచన సాధనం','login.tagline':'గొప్ప ఆలోచనలను నిజమైన మెరుగుదలలుగా మార్చండి.',
     'login.welcome':'మళ్ళీ స్వాగతం','login.subtitle':'కొనసాగించడానికి మీ IFQM ఖాతాకు సైన్ ఇన్ చేయండి',
     'login.org_code':'సంస్థ కోడ్','login.org_hint':'IFQM ప్లాట్‌ఫారమ్ అడ్మిన్ కోసం ఖాళీగా వదలండి',
-    'login.email':'ఇమెయిల్ చిరునామా','login.password':'పాస్‌వర్డ్','login.btn':'సైన్ ఇన్',
+    'login.forgot':'పాస్‌వర్డ్ మర్చితారా?','login.email':'ఇమెయిల్ చిరునామా','login.password':'పాస్‌వర్డ్','login.btn':'సైన్ ఇన్',
     'admin.add_user':'+ వినియోగదారుని జోడించు',
     'topbar.dark':'డార్క్','topbar.light':'లైట్','topbar.notifications':'నోటిఫికేషన్లు',
     'topbar.logout':'లాగ్ అవుట్','topbar.mark_read':'అన్నీ చదివినట్లు గుర్తించు',
@@ -2384,7 +2444,7 @@ const TRANSLATIONS = {
     'login.app_title':'ஊழியர் யோசனை கருவி','login.tagline':'சிறந்த யோசனைகளை உண்மையான முன்னேற்றங்களாக மாற்றுங்கள்.',
     'login.welcome':'மீண்டும் வரவேற்கிறோம்','login.subtitle':'தொடர உங்கள் IFQM கணக்கில் உள்நுழைக',
     'login.org_code':'நிறுவன குறியீடு','login.org_hint':'IFQM தளம் நிர்வாகிக்கு காலியாக விடுங்கள்',
-    'login.email':'மின்னஞ்சல் முகவரி','login.password':'கடவுச்சொல்','login.btn':'உள்நுழை',
+    'login.forgot':'கடவுச்சொல் மறந்துவிட்டதா?','login.email':'மின்னஞ்சல் முகவரி','login.password':'கடவுச்சொல்','login.btn':'உள்நுழை',
     'admin.add_user':'+ பயனரை சேர்க்கவும்',
     'topbar.dark':'இருள்','topbar.light':'ஒளி','topbar.notifications':'அறிவிப்புகள்',
     'topbar.logout':'வெளியேறு','topbar.mark_read':'அனைத்தையும் படித்ததாக குறி',
@@ -2548,7 +2608,7 @@ const TRANSLATIONS = {
     'login.app_title':'ജീവനക്കാരുടെ ആശയ ഉപകരണം','login.tagline':'മികച്ച ആശയങ്ങളെ യഥാർത്ഥ മെച്ചപ്പെടുത്തലുകളാക്കി മാറ്റുക.',
     'login.welcome':'തിരിച്ചു സ്വാഗതം','login.subtitle':'തുടരാൻ നിങ്ങളുടെ IFQM അക്കൗണ്ടിൽ സൈൻ ഇൻ ചെയ്യുക',
     'login.org_code':'സ്ഥാപന കോഡ്','login.org_hint':'IFQM പ്ലാറ്റ്‌ഫോം അഡ്‌മിനു വേണ്ടി ശൂന്യമായി വിടുക',
-    'login.email':'ഇ-മെയിൽ വിലാസം','login.password':'പാസ്‌വേഡ്','login.btn':'സൈൻ ഇൻ',
+    'login.forgot':'പാസ്‌വേഡ് മറന്നോ?','login.email':'ഇ-മെയിൽ വിലാസം','login.password':'പാസ്‌വേഡ്','login.btn':'സൈൻ ഇൻ',
     'admin.add_user':'+ ഉപയോക്താവിനെ ചേർക്കുക',
     'topbar.dark':'ഡാർക്ക്','topbar.light':'ലൈറ്റ്','topbar.notifications':'അറിയിപ്പുകൾ',
     'topbar.logout':'ലോഗ് ഔട്ട്','topbar.mark_read':'എല്ലാം വായിച്ചതായി അടയാളപ്പെടുത്തുക',
@@ -2836,7 +2896,7 @@ function starWidget(ideaId, isSelf, userRating) {
 }
 async function castVote(ideaId, rating) {
   const r = await fetch('api/votes.php?action=vote', {
-    method:'POST', headers:{'Content-Type':'application/json'},
+    method:'POST', headers:{'Content-Type':'application/json', ...csrfHeaders()},
     credentials:'same-origin', body: JSON.stringify({idea_id:ideaId, rating})
   });
   const d = await r.json();
@@ -2915,7 +2975,7 @@ async function castCommunityVote(ideaId, type) {
   try {
     const r = await fetch('api/votes.php?action=' + type + 'vote', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', ...csrfHeaders()},
       credentials: 'same-origin',
       body: JSON.stringify({idea_id: ideaId})
     });
@@ -3094,7 +3154,7 @@ async function submitAssignReviewers() {
   btn.disabled = true; btn.textContent = 'Routing…';
   try {
     const r = await fetch('api/ideas.php?action=assign_reviewers', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json', ...csrfHeaders()},
       credentials:'same-origin',
       body: JSON.stringify({idea_id: pendingAssignIdeaId, reviewer_ids: reviewerIds, threshold})
     });
@@ -3151,7 +3211,7 @@ async function submitReviewerDecision() {
   btn.disabled = true; btn.textContent = t('msg.loading');
   try {
     const r = await fetch('api/ideas.php?action=reviewer_decision', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json', ...csrfHeaders()},
       credentials:'same-origin',
       body: JSON.stringify({idea_id: pendingIdeaId, decision, comment})
     });
@@ -3293,6 +3353,7 @@ async function loadTenantHierarchy(tenantId, tenantName) {
 async function doLogout() {
   await fetch('api/auth.php?action=logout', {method:'POST'});
   currentUser = null;
+  csrfToken = null;
   // Clear login form fields
   const emailEl = document.getElementById('login-email');
   const passEl  = document.getElementById('login-pass');
@@ -3318,6 +3379,12 @@ async function doLogout() {
 function initApp() {
   if (!currentUser) return;
   const u = currentUser;
+
+  // Sync CSRF token from server session
+  fetch('api/auth.php?action=me', {credentials:'same-origin'})
+    .then(r => r.json())
+    .then(d => { if (d.csrf_token) csrfToken = d.csrf_token; })
+    .catch(() => {});
 
   document.getElementById('sb-avatar').textContent  = u.avatar_initials || u.name[0];
   document.getElementById('sb-name').textContent    = u.name;
@@ -3446,6 +3513,7 @@ async function checkSession() {
     const d = await r.json();
     if (!d.authenticated) {
       currentUser = null;
+      csrfToken = null;
       document.getElementById('main-app').style.display = 'none';
       const lp = document.getElementById('login-page');
       lp.style.display = '';
@@ -4092,7 +4160,7 @@ async function saveDraft() {
   const body = buildIdeaPayload();
   body.id = draftIdeaId;
   const r = await fetch('api/ideas.php?action=draft', {
-    method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(body)
+    method:'POST', headers:{'Content-Type':'application/json', ...csrfHeaders()}, credentials:'same-origin', body: JSON.stringify(body)
   });
   const d = await r.json();
   if (d.success) { draftIdeaId = d.idea_id; alert(t('msg.draft_prefix') + d.idea_code); }
@@ -4107,7 +4175,7 @@ async function submitIdea() {
   let r, d;
   try {
     r = await fetch('api/ideas.php?action=submit', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json', ...csrfHeaders()},
       credentials:'same-origin', body: JSON.stringify(body)
     });
     d = await r.json();
@@ -4278,7 +4346,7 @@ async function loadChallengesIntoSelect() {
 
 async function closeChallengePrompt(id) {
   if (!confirm('Close this challenge? Submissions will stop.')) return;
-  const r = await fetch('api/challenges.php?action=update', {method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({id,status:'closed'})});
+  const r = await fetch('api/challenges.php?action=update', {method:'POST',headers:{'Content-Type':'application/json', ...csrfHeaders()},credentials:'same-origin',body:JSON.stringify({id,status:'closed'})});
   const d = await r.json();
   if (d.success) { showToast('Challenge closed.','success'); loadChallenges(); }
   else showToast(d.error||'Error','danger');
@@ -4290,7 +4358,7 @@ function openChallengeModal() {
   if (!title?.trim()) return;
   const desc    = prompt('Description (optional):') || '';
   const deadline= prompt('Deadline (YYYY-MM-DD, optional):') || null;
-  fetch('api/challenges.php?action=create',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',
+  fetch('api/challenges.php?action=create',{method:'POST',headers:{'Content-Type':'application/json', ...csrfHeaders()},credentials:'same-origin',
     body:JSON.stringify({title:title.trim(),description:desc,deadline:deadline||null})})
     .then(r=>r.json()).then(d=>{
       if(d.success){showToast('Challenge created.','success');loadChallenges();}
@@ -4345,7 +4413,7 @@ async function loadBoard() {
 async function castCommunityVote(ideaId, voteType) {
   try {
     const r = await fetch('api/ideas.php?action=community_vote', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json', ...csrfHeaders()},
       credentials:'same-origin', body:JSON.stringify({idea_id:ideaId,vote_type:voteType})
     });
     const d = await r.json();
@@ -4391,7 +4459,7 @@ async function submitBulkReview(decision) {
   let r, d;
   try {
     r = await fetch('api/ideas.php?action=bulk_review', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json', ...csrfHeaders()},
       credentials:'same-origin', body:JSON.stringify({idea_ids:ideaIds, decision, comment})
     });
     d = await r.json();
@@ -4875,7 +4943,7 @@ async function submitCreateOrg() {
 
   try {
     const r = await fetch('api/platform.php?action=create_tenant', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
+      method: 'POST', headers: {'Content-Type':'application/json', ...csrfHeaders()},
       body: JSON.stringify({org_name: orgName, slug, admin_name: adminName, admin_email: adminEmail, admin_password: adminPass})
     });
     const d = await r.json();
@@ -5053,7 +5121,7 @@ async function saveOrgSettings(e) {
   const msgEl = document.getElementById('settings-save-msg');
   try {
     const r = await fetch('api/settings.php?action=update', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json', ...csrfHeaders()},
       credentials:'same-origin', body:JSON.stringify(data)
     });
     const d = await r.json();
@@ -5252,7 +5320,7 @@ async function submitUserForm() {
   try {
     const action = isEdit ? 'update_user' : 'create_user';
     const r = await fetch(`api/users.php?action=${action}`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
+      method: 'POST', headers: {'Content-Type':'application/json', ...csrfHeaders()},
       credentials: 'same-origin', body: JSON.stringify(payload)
     });
     const d = await r.json();
@@ -5277,7 +5345,7 @@ async function deleteUser(id, name) {
   if (!confirm(`Remove "${name}" from the organisation?\n\nIf they have submitted ideas, they will be deactivated instead of deleted.`)) return;
   try {
     const r = await fetch('api/users.php?action=delete_user', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
+      method: 'POST', headers: {'Content-Type':'application/json', ...csrfHeaders()},
       credentials: 'same-origin', body: JSON.stringify({id})
     });
     const d = await r.json();

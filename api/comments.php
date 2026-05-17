@@ -71,6 +71,7 @@ if ($action === 'list' && $method === 'GET') {
 
 // ── ADD a comment ─────────────────────────────────────────────────
 if ($action === 'add' && $method === 'POST') {
+    requireCsrf();
     $b        = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId   = (int)($b['idea_id'] ?? 0);
     $content  = trim($b['content'] ?? '');
@@ -104,6 +105,7 @@ if ($action === 'add' && $method === 'POST') {
 
 // ── DELETE a comment ──────────────────────────────────────────────
 if ($action === 'delete' && $method === 'POST') {
+    requireCsrf();
     $b  = json_decode(file_get_contents('php://input'), true) ?? [];
     $id = (int)($b['id'] ?? 0);
     if (!$id) respond(['success' => false, 'error' => 'Comment id is required.'], 400);

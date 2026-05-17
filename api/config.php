@@ -154,6 +154,28 @@ function respond(array $data, int $code = 200): void {
     exit;
 }
 
+// ── CSRF token helpers ─────────────────────────────────────────────
+function generateCsrfToken(): string {
+    if (empty($_SESSION['csrf_token']) || (time() - ($_SESSION['csrf_token_time'] ?? 0)) > 3600) {
+        $_SESSION['csrf_token']    = bin2hex(random_bytes(32));
+        $_SESSION['csrf_token_time'] = time();
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function validateCsrfToken(string $token): bool {
+    if (empty($_SESSION['csrf_token']) || empty($token)) return false;
+    return hash_equals($_SESSION['csrf_token'], $token);
+}
+
+function requireCsrf(): void {
+    $token = $_SERVER['HTTP_X_CSRF_TOKEN']
+        ?? ($_SERVER['HTTP_X_XSRF_TOKEN'] ?? '');
+    if (!validateCsrfToken($token)) {
+        respond(['success' => false, 'error' => 'Invalid or missing security token. Please refresh the page and try again.'], 403);
+    }
+}
+
 function requireAuth(): array {
     if (session_status() === PHP_SESSION_NONE) session_start();
     if (empty($_SESSION['user_id'])) respond(['success' => false, 'error' => 'Not authenticated'], 401);

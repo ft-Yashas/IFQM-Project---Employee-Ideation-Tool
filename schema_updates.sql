@@ -107,3 +107,26 @@ CREATE TABLE IF NOT EXISTS email_queue (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   sent_at    DATETIME NULL
 );
+
+-- ── Feature 17: Password reset tokens ───────────────────────────
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  user_id     INT NOT NULL,
+  token_hash  VARCHAR(255) NOT NULL,
+  expires_at  DATETIME NOT NULL,
+  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ── Feature 18: Database indexes for query performance ──────────
+CREATE INDEX IF NOT EXISTS idx_ideas_status ON ideas(status);
+CREATE INDEX IF NOT EXISTS idx_ideas_submitted_at ON ideas(submitted_at);
+CREATE INDEX IF NOT EXISTS idx_ideas_submitter_status ON ideas(submitter_id, status);
+CREATE INDEX IF NOT EXISTS idx_ideas_current_reviewer ON ideas(current_reviewer_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_idea_votes_idea ON idea_votes(idea_id);
+CREATE INDEX IF NOT EXISTS idx_idea_community_votes_idea ON idea_community_votes(idea_id);
+CREATE INDEX IF NOT EXISTS idx_idea_comments_idea ON idea_comments(idea_id);
+CREATE INDEX IF NOT EXISTS idx_idea_workflow_idea ON idea_workflow(idea_id);
+CREATE INDEX IF NOT EXISTS idx_idea_reviewers_idea_reviewer ON idea_reviewers(idea_id, reviewer_id);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens(user_id);

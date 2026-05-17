@@ -5,6 +5,7 @@ $user   = requireAuth();
 $action = $_GET['action'] ?? 'upload';
 
 if ($action === 'upload' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf();
     $ideaId  = (int)($_POST['idea_id'] ?? 0);
     $section = $_POST['section'] ?? 'situation';
 
@@ -52,6 +53,7 @@ if ($action === 'upload' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf();
     $b   = json_decode(file_get_contents('php://input'), true) ?? [];
     $aid = (int)($b['attachment_id'] ?? 0);
 

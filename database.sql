@@ -217,3 +217,26 @@ INSERT INTO org_settings (key_name, value) VALUES ('approval_mode', 'default') O
 INSERT INTO org_settings (key_name, value) VALUES ('approval_reviewer_roles', 'team_lead,project_lead,manager,senior_manager') ON DUPLICATE KEY UPDATE value=value;
 INSERT INTO org_settings (key_name, value) VALUES ('approval_final_approver_roles', 'executive,admin,super_admin') ON DUPLICATE KEY UPDATE value=value;
 INSERT INTO org_settings (key_name, value) VALUES ('approval_threshold', '100') ON DUPLICATE KEY UPDATE value=value;
+
+-- ── Password Reset Tokens ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  user_id     INT NOT NULL,
+  token_hash  VARCHAR(255) NOT NULL,
+  expires_at  DATETIME NOT NULL,
+  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ── Performance Indexes ───────────────────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_ideas_status ON ideas(status);
+CREATE INDEX IF NOT EXISTS idx_ideas_submitted_at ON ideas(submitted_at);
+CREATE INDEX IF NOT EXISTS idx_ideas_submitter_status ON ideas(submitter_id, status);
+CREATE INDEX IF NOT EXISTS idx_ideas_current_reviewer ON ideas(current_reviewer_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_idea_votes_idea ON idea_votes(idea_id);
+CREATE INDEX IF NOT EXISTS idx_idea_community_votes_idea ON idea_community_votes(idea_id);
+CREATE INDEX IF NOT EXISTS idx_idea_comments_idea ON idea_comments(idea_id);
+CREATE INDEX IF NOT EXISTS idx_idea_workflow_idea ON idea_workflow(idea_id);
+CREATE INDEX IF NOT EXISTS idx_idea_reviewers_idea_reviewer ON idea_reviewers(idea_id, reviewer_id);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens(user_id);

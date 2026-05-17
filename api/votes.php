@@ -48,6 +48,7 @@ function communityAdjustedScore(int $aiScore, int $upvotes, int $downvotes): int
 
 // ── POST ?action=vote  {idea_id, rating} ──────────────────────
 if ($action === 'vote' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf();
     $b      = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId = (int)($b['idea_id'] ?? 0);
     $rating = (int)($b['rating']  ?? 0);
@@ -75,6 +76,7 @@ if ($action === 'vote' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ── POST ?action=upvote|downvote  {idea_id} ───────────────────
 if (in_array($action, ['upvote', 'downvote'], true) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf();
     $b        = json_decode(file_get_contents('php://input'), true) ?? [];
     $ideaId   = (int)($b['idea_id'] ?? 0);
     $voteType = $action === 'upvote' ? 'up' : 'down';
