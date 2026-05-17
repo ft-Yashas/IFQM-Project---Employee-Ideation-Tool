@@ -142,3 +142,29 @@ FROM users u
 LEFT JOIN ideas i ON i.submitter_id = u.id AND i.status != 'Draft'
 GROUP BY u.id
 ORDER BY u.points DESC;
+
+-- ── Org Settings ────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS org_settings (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  key_name   VARCHAR(100) NOT NULL UNIQUE,
+  value      TEXT,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT IGNORE INTO org_settings (key_name, value) VALUES
+  ('review_sla_days',           '7'),
+  ('escalation_days',           '14'),
+  ('anonymous_allowed',         '1'),
+  ('public_board_enabled',      '1'),
+  ('challenges_enabled',        '1'),
+  ('email_enabled',             '0'),
+  ('smtp_host',                 ''),
+  ('smtp_port',                 '587'),
+  ('smtp_user',                 ''),
+  ('smtp_pass',                 ''),
+  ('smtp_from',                 ''),
+  ('smtp_from_name',            'IFQM Ideation'),
+  ('approval_mode',             'default'),
+  ('approval_reviewer_roles',   'team_lead,project_lead,manager,senior_manager'),
+  ('approval_final_approver_roles', 'executive,admin,super_admin'),
+  ('approval_threshold',        '100');

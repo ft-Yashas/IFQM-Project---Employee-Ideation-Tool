@@ -158,7 +158,19 @@ if ($action === 'create_tenant' && $_SERVER['REQUEST_METHOD'] === 'POST') {
              VALUES (?, ?, ?, ?, 'admin', ?, 'active')"
         )->execute([$adminEmpId, $adminName, $adminEmail, $hash, $initials ?: 'OA']);
 
-        // 4. Register tenant in master DB
+        // 4a. Insert default approval workflow settings
+        $approvalDefaults = [
+            ['approval_mode',                'default'],
+            ['approval_reviewer_roles',       'team_lead,project_lead,manager,senior_manager'],
+            ['approval_final_approver_roles', 'executive,admin,super_admin'],
+            ['approval_threshold',            '100'],
+        ];
+        $insDef = $tPdo->prepare(
+            "INSERT INTO org_settings (key_name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value=value"
+        );
+        foreach ($approvalDefaults as $row) $insDef->execute($row);
+
+        // 4b. Register tenant in master DB
         $master->prepare(
             "INSERT INTO tenants (name, slug, domain, db_host, db_name, db_user, db_pass, status, is_default, primary_color)
              VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 0, ?)"

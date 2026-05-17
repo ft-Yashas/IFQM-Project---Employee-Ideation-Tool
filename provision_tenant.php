@@ -101,6 +101,23 @@ try {
     echo "WARNING: Could not create super admin: " . $e->getMessage() . "\n";
 }
 
+// 4b. Insert default approval workflow settings
+try {
+    $approvalDefaults = [
+        ['approval_mode',                'default'],
+        ['approval_reviewer_roles',       'team_lead,project_lead,manager,senior_manager'],
+        ['approval_final_approver_roles', 'executive,admin,super_admin'],
+        ['approval_threshold',            '100'],
+    ];
+    $insDef = $tenantPdo->prepare(
+        "INSERT INTO org_settings (key_name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value=value"
+    );
+    foreach ($approvalDefaults as $row) $insDef->execute($row);
+    echo "[4b/5] Approval defaults inserted ✓\n";
+} catch (Exception $e) {
+    echo "WARNING: Could not insert approval defaults: " . $e->getMessage() . "\n";
+}
+
 // 5. Register in master DB
 try {
     $master->prepare(

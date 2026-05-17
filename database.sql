@@ -210,3 +210,10 @@ ORDER BY u.points DESC;
 -- All passwords = "password"
 -- Fresh start — no users. Create your first org via platform admin.
 -- ============================================================
+
+-- ── Approval Workflow Defaults ─────────────────────────────────────────
+-- approval_mode: 'default' = platform hardcoded logic, 'custom' = use stored roles
+INSERT INTO org_settings (key_name, value) VALUES ('approval_mode', 'default') ON DUPLICATE KEY UPDATE value=value;
+INSERT INTO org_settings (key_name, value) VALUES ('approval_reviewer_roles', 'team_lead,project_lead,manager,senior_manager') ON DUPLICATE KEY UPDATE value=value;
+INSERT INTO org_settings (key_name, value) VALUES ('approval_final_approver_roles', 'executive,admin,super_admin') ON DUPLICATE KEY UPDATE value=value;
+INSERT INTO org_settings (key_name, value) VALUES ('approval_threshold', '100') ON DUPLICATE KEY UPDATE value=value;

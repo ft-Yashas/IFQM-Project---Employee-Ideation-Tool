@@ -6,6 +6,34 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/score.php';
 require_once __DIR__ . '/mailer.php';
 
+// ── Load approval workflow config from org_settings ───────────────
+function getApprovalConfig(): array {
+    static $cfg = null;
+    if ($cfg !== null) return $cfg;
+    $settings = getOrgSettings();
+    $mode     = $settings['approval_mode'] ?? 'default';
+    if ($mode !== 'custom') {
+        $cfg = [
+            'mode'           => 'default',
+            'reviewer_roles' => ['team_lead','project_lead','manager','senior_manager'],
+            'final_roles'    => ['executive','admin','super_admin'],
+            'threshold'      => (int)($settings['approval_threshold'] ?? 100),
+        ];
+        return $cfg;
+    }
+    $reviewerRoles = array_filter(array_map('trim', explode(',', $settings['approval_reviewer_roles'] ?? '')));
+    $finalRoles    = array_filter(array_map('trim', explode(',', $settings['approval_final_approver_roles'] ?? '')));
+    if (empty($reviewerRoles)) $reviewerRoles = ['team_lead','project_lead','manager','senior_manager'];
+    if (empty($finalRoles))    $finalRoles    = ['executive','admin','super_admin'];
+    $cfg = [
+        'mode'           => 'custom',
+        'reviewer_roles' => $reviewerRoles,
+        'final_roles'    => $finalRoles,
+        'threshold'      => max(1, min(100, (int)($settings['approval_threshold'] ?? 100))),
+    ];
+    return $cfg;
+}
+
 $user   = requireAuth();
 $action = $_GET['action'] ?? 'list';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -112,7 +140,8 @@ if ($action === 'review') {
              JOIN users u ON u.id = i.submitter_id
              LEFT JOIN idea_reviewers ir ON ir.idea_id = i.id AND ir.reviewer_id = ?";
 
-    $teamRoles = ['team_lead','project_lead','manager','senior_manager'];
+    $cfg = getApprovalConfig();
+    $teamRoles = $cfg['reviewer_roles'];
     if (in_array($user['role'], $teamRoles, true)) {
         // Show ideas where I am the current_reviewer OR submitter's manager (legacy)
         // LEFT JOIN already filtered ir.reviewer_id=? so WHERE condition is redundant
@@ -394,9 +423,10 @@ if ($action === 'review_action' && $method === 'POST') {
         respond(['success' => false, 'error' => 'Duplicate action detected. Please wait a moment before retrying.'], 429);
     }
 
-    // Escalation chain for hierarchical workflow
-    $escalationRoles    = ['team_lead','project_lead','manager','senior_manager'];
-    $finalApproverRoles = ['executive','admin','super_admin'];
+    // Escalation chain — loaded from org_settings when custom mode is active
+    $cfg = getApprovalConfig();
+    $escalationRoles    = $cfg['reviewer_roles'];
+    $finalApproverRoles = $cfg['final_roles'];
 
     if ($decision === 'Approved'
         && ($idea['workflow_type'] ?? 'hierarchical') !== 'multi_reviewer'
@@ -654,7 +684,10 @@ if ($action === 'reviewer_decision' && $method === 'POST') {
     $approved = count(array_filter($allDecisions, fn($d) => $d === 'approved'));
     $rejected = count(array_filter($allDecisions, fn($d) => $d === 'rejected'));
     $pending  = count(array_filter($allDecisions, fn($d) => $d === 'pending'));
-    $threshold= (int)($idea['approval_threshold'] ?? 100);
+    $cfg = getApprovalConfig();
+    $threshold = $cfg['mode'] === 'custom'
+        ? $cfg['threshold']
+        : (int)($idea['approval_threshold'] ?? 100);
 
     $newStatus = null; $pts = 0;
 

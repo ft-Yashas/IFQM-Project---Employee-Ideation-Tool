@@ -25,6 +25,15 @@ const SETTINGS_WHITELIST = [
     'smtp_pass',
     'smtp_from',
     'smtp_from_name',
+    'approval_mode',
+    'approval_reviewer_roles',
+    'approval_final_approver_roles',
+    'approval_threshold',
+];
+
+const VALID_ROLES = [
+    'trainee','employee','team_lead','project_lead',
+    'manager','senior_manager','executive','admin','super_admin'
 ];
 
 // ── GET all settings ──────────────────────────────────────────────
@@ -72,6 +81,19 @@ if ($action === 'update' && $method === 'POST') {
         // If smtp_pass is the masked placeholder, skip (don't overwrite)
         if ($key === 'smtp_pass' && $value === '••••••••') {
             continue;
+        }
+
+        // ── Approval workflow validation ────────────────────────────
+        if ($key === 'approval_mode' && !in_array($value, ['default','custom'], true)) {
+            continue; // reject invalid mode
+        }
+        if ($key === 'approval_threshold') {
+            $v = max(1, min(100, (int)$value));
+            $value = (string)$v;
+        }
+        if (in_array($key, ['approval_reviewer_roles','approval_final_approver_roles'], true)) {
+            $parts = array_filter(array_map('trim', explode(',', $value)));
+            $value = implode(',', $parts ?: []);
         }
 
         $updateStmt->execute([$key, (string)$value]);

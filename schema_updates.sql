@@ -84,6 +84,13 @@ INSERT IGNORE INTO org_settings (key_name, value) VALUES
   ('smtp_from',             ''),
   ('smtp_from_name',        'IFQM Ideation');
 
+-- ── Feature 16: Customizable approval hierarchy ────────────────────
+INSERT INTO org_settings (key_name, value) VALUES
+  ('approval_mode',             'default') ON DUPLICATE KEY UPDATE value=value,
+  ('approval_reviewer_roles',   'team_lead,project_lead,manager,senior_manager') ON DUPLICATE KEY UPDATE value=value,
+  ('approval_final_approver_roles', 'executive,admin,super_admin') ON DUPLICATE KEY UPDATE value=value,
+  ('approval_threshold',        '100') ON DUPLICATE KEY UPDATE value=value;
+
 -- ── Feature 4: Email queue ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS email_queue (
   id         INT AUTO_INCREMENT PRIMARY KEY,

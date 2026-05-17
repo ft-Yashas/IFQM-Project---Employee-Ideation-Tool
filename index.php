@@ -4894,6 +4894,69 @@ async function loadOrgSettings() {
           </label>
         </div>
       </div>
+      <div style="font-size:13px;font-weight:600;color:var(--heading);margin:16px 0 12px">Approval Workflow</div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label style="font-weight:500;margin-bottom:8px;display:block">Workflow Mode</label>
+        <div style="display:flex;gap:20px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+            <input type="radio" name="approval_mode" value="default" ${s.approval_mode!=='custom'?'checked':''}
+              onclick="document.getElementById('custom-hierarchy-panel').style.display='none'"/>
+            Use Platform Default
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+            <input type="radio" name="approval_mode" value="custom" ${s.approval_mode==='custom'?'checked':''}
+              onclick="document.getElementById('custom-hierarchy-panel').style.display='block'"/>
+            Customize My Approval Hierarchy
+          </label>
+        </div>
+        <div style="font-size:11px;color:var(--subtle);margin-top:4px">Platform Default: Team Lead → Project Lead → Manager → Senior Manager → (Executive/Admin/Super Admin final)</div>
+      </div>
+      <div id="custom-hierarchy-panel" style="${s.approval_mode==='custom'?'':'display:none'};border-left:2px solid var(--primary);padding-left:14px;margin-bottom:14px">
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="font-weight:500;margin-bottom:6px;display:block">Reviewer Roles (escalation chain — who can review before final approval)</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${['team_lead','project_lead','manager','senior_manager'].map(r => `
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;background:var(--surface);padding:4px 10px;border-radius:4px;border:1px solid var(--border)">
+                <input type="checkbox" name="approval_reviewer_roles" value="${r}"
+                  ${(s.approval_reviewer_roles||'team_lead,project_lead,manager,senior_manager').split(',').includes(r)?'checked':''}/>
+                ${r.replace(/_/g,' ')}
+              </label>`).join('')}
+          </div>
+          <div style="font-size:11px;color:var(--subtle);margin-top:4px">Ideas move up the chain through selected roles. At least one role must be selected.</div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="font-weight:500;margin-bottom:6px;display:block">Final Approver Roles (can give final approval — no further escalation)</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${['executive','admin','super_admin'].map(r => `
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;background:var(--surface);padding:4px 10px;border-radius:4px;border:1px solid var(--border)">
+                <input type="checkbox" name="approval_final_approver_roles" value="${r}"
+                  ${(s.approval_final_approver_roles||'executive,admin,super_admin').split(',').includes(r)?'checked':''}/>
+                ${r.replace(/_/g,' ')}
+              </label>`).join('')}
+          </div>
+          <div style="font-size:11px;color:var(--subtle);margin-top:4px">When an idea reaches any of these roles, it gets a final Approved or Rejected decision — no more escalation.</div>
+        </div>
+        <div class="form-group" style="margin-bottom:8px;max-width:200px">
+          <label style="font-weight:500;margin-bottom:6px;display:block">Default Approval Threshold (%) — for multi-reviewer mode</label>
+          <input class="form-control" name="approval_threshold" type="number" min="1" max="100"
+            value="${escHtml(s.approval_threshold||'100')}"/>
+          <div style="font-size:11px;color:var(--subtle);margin-top:4px">% of reviewers who must approve. 100% = all must approve.</div>
+        </div>
+        <button type="button" class="btn btn-outline" style="font-size:12px;margin-bottom:10px"
+          onclick="if(confirm('Reset approval workflow to platform defaults?')){
+            document.querySelector('[name=approval_mode][value=default]').checked=true;
+            document.getElementById('custom-hierarchy-panel').style.display='none';
+            ['team_lead','project_lead','manager','senior_manager'].forEach(r=>{
+              const cb=document.querySelector(`[name=approval_reviewer_roles][value=${r}]`);
+              if(cb) cb.checked=['team_lead','project_lead','manager','senior_manager'].includes(r);
+            });
+            ['executive','admin','super_admin'].forEach(r=>{
+              const cb=document.querySelector(`[name=approval_final_approver_roles][value=${r}]`);
+              if(cb) cb.checked=['executive','admin','super_admin'].includes(r);
+            });
+            document.querySelector('[name=approval_threshold]').value='100';
+          }">Reset to Platform Defaults</button>
+      </div>
       <div style="font-size:13px;font-weight:600;color:var(--heading);margin:16px 0 12px">SMTP Email Settings</div>
       <div class="form-row">
         <div class="form-group"><label>SMTP Host</label><input class="form-control" name="smtp_host" value="${escHtml(s.smtp_host||'')}"/></div>
@@ -4921,12 +4984,19 @@ async function saveOrgSettings(e) {
   const fd   = new FormData(form);
   const data = {};
   // Collect text/number fields
-  ['review_sla_days','escalation_days','smtp_host','smtp_port','smtp_user','smtp_pass','smtp_from','smtp_from_name'].forEach(k => {
+  ['review_sla_days','escalation_days','smtp_host','smtp_port','smtp_user','smtp_pass','smtp_from','smtp_from_name','approval_threshold'].forEach(k => {
     data[k] = fd.get(k) || '';
   });
-  // Checkboxes
+  // Radio buttons
+  data['approval_mode'] = fd.get('approval_mode') || 'default';
+  // Checkboxes (binary flags)
   ['anonymous_allowed','public_board_enabled','challenges_enabled','email_enabled'].forEach(k => {
     data[k] = fd.get(k) === '1' ? '1' : '0';
+  });
+  // Multi-select: approval role lists (comma-joined)
+  ['approval_reviewer_roles','approval_final_approver_roles'].forEach(key => {
+    const vals = [...fd.getAll(key)];
+    data[key] = vals.join(',');
   });
   const msgEl = document.getElementById('settings-save-msg');
   try {
