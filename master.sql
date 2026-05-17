@@ -21,7 +21,9 @@ CREATE TABLE IF NOT EXISTS tenants (
   UNIQUE KEY uq_domain (domain)
 );
 
--- Default tenant removed — fresh start. Create via platform admin UI.
+-- Default IFQM tenant for local development
+INSERT IGNORE INTO tenants (name, slug, domain, db_host, db_name, db_user, db_pass, status, is_default)
+VALUES ('IFQM', 'ifqm', 'localhost', 'localhost', 'ifqm_ideation', 'root', '', 'active', 1);
 
 -- ── Platform Admins (IFQM vendor staff — NOT tenant users) ────────────────
 -- These are the SaaS platform operators. They live in ifqm_master,

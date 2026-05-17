@@ -1471,6 +1471,7 @@ async function doLogin() {
     const r = await fetch('api/auth.php?action=login', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
+      credentials: 'same-origin',
       body: JSON.stringify({email, password: pass, org_slug: orgSlug})
     });
     const d = await r.json();
@@ -1492,10 +1493,11 @@ async function doLogin() {
       requestAnimationFrame(() => { err.style.animation = 'fadeInDown .25s ease'; });
     }
   } catch(e) {
-    err.textContent = t('msg.server_error');
+    console.error('Login error:', e);
+    err.textContent = 'Server error. Please try again.';
     err.style.display = 'block';
   }
-  btn.disabled = false; btn.innerHTML = t('login.btn');
+  btn.disabled = false; btn.textContent = 'Sign In';
 }
 
 // ═══════════════════════════════════════════════════════════════
