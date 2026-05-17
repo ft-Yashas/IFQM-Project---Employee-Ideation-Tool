@@ -2709,6 +2709,8 @@ function resetApprovalWorkflow() {
 
 // ═══════════════════════════════════════════════════════════════
 // MULTILINGUAL SYSTEM — EN / HI / KN / TE / TA / ML
+// ═══════════════════════════════════════════════════════════════
+function t(key) {
   return (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || TRANSLATIONS.en[key] || key;
 }
 const LANG_NAMES = {en:'English',hi:'हिन्दी',mr:'मराठी',kn:'ಕನ್ನಡ',te:'తెలుగు',ta:'தமிழ்',ml:'മലയാളം'};
