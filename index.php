@@ -689,7 +689,7 @@ $user     = $_SESSION['user'] ?? [];
     <div id="topbar" style="position:relative">
       <div class="topbar-left">
         <button style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted);padding:4px 6px;border-radius:6px;transition:background .15s;line-height:1" onmouseover="this.style.background='var(--bar-track)'" onmouseout="this.style.background='none'" onclick="toggleSidebar()">&#9776;</button>
-        <span class="page-title" id="page-title">Dashboard</span>
+        <span class="page-title" id="page-title" data-i18n="nav.dashboard">Dashboard</span>
       </div>
       <div class="topbar-right">
         <div class="dm-toggle" onclick="toggleDarkMode()" title="Toggle dark mode" id="dm-btn">
@@ -1542,6 +1542,7 @@ const TRANSLATIONS = {
     'topbar.dark':'Dark','topbar.light':'Light','topbar.notifications':'Notifications',
     'topbar.logout':'Logout','topbar.mark_read':'Mark all read',
     'dash.total':'Total Ideas','dash.approved':'Approved','dash.implemented':'Implemented',
+    'dash.pending_review':'Pending Review','dash.overdue_reviews':'Overdue Reviews',
     'dash.status_dist':'Status Distribution','dash.recent':'Recent Activity',
     'status.submitted':'Submitted','status.review':'Under Review','status.approved':'Approved',
     'status.rejected':'Rejected','status.implemented':'Implemented','status.draft':'Draft',
@@ -1720,6 +1721,7 @@ const TRANSLATIONS = {
     'topbar.dark':'डार्क','topbar.light':'लाइट','topbar.notifications':'सूचनाएं',
     'topbar.logout':'लॉगआउट','topbar.mark_read':'सभी पढ़ा हुआ चिह्नित करें',
     'dash.total':'कुल विचार','dash.approved':'स्वीकृत','dash.implemented':'लागू किए गए',
+    'dash.pending_review':'लंबित समीक्षा','dash.overdue_reviews':'अतिदेय समीक्षाएं',
     'dash.status_dist':'स्थिति वितरण','dash.recent':'हालिया गतिविधि',
     'status.submitted':'सबमिट किया गया','status.review':'समीक्षाधीन','status.approved':'स्वीकृत',
     'status.rejected':'अस्वीकृत','status.implemented':'लागू किया गया','status.draft':'मसौदा',
@@ -1893,6 +1895,7 @@ const TRANSLATIONS = {
     'topbar.dark':'डार्क','topbar.light':'लाइट','topbar.notifications':'सूचना',
     'topbar.logout':'लॉग आउट','topbar.mark_read':'सर्व वाचले म्हणून चिन्हांकित करा',
     'dash.total':'एकूण कल्पना','dash.approved':'मंजूर','dash.implemented':'अंमलात आणले',
+    'dash.pending_review':'प्रलंबित समीक्षा','dash.overdue_reviews':'ड्यू समीक्षा',
     'dash.status_dist':'स्थिती वितरण','dash.recent':'अलीकडील क्रियाकलाप',
     'status.submitted':'सादर केले','status.review':'पुनरावलोकनात','status.approved':'मंजूर',
     'status.rejected':'नाकारले','status.implemented':'अंमलात आणले','status.draft':'मसुदा',
@@ -2057,6 +2060,7 @@ const TRANSLATIONS = {
     'topbar.dark':'ಡಾರ್ಕ್','topbar.light':'ಲೈಟ್','topbar.notifications':'ಅಧಿಸೂಚನೆಗಳು',
     'topbar.logout':'ಲಾಗ್ ಔಟ್','topbar.mark_read':'ಎಲ್ಲಾ ಓದಿದಂತೆ ಗುರುತಿಸಿ',
     'dash.total':'ಒಟ್ಟು ಆಲೋಚನೆಗಳು','dash.approved':'ಅನುಮೋದಿಸಲಾಗಿದೆ','dash.implemented':'ಅನುಷ್ಠಾನಗೊಳಿಸಲಾಗಿದೆ',
+    'dash.pending_review':'ಬಾಕಿ ಇರುವ ವಿಮರ್ಶೆ','dash.overdue_reviews':'ವಿಳಂಬದ ವಿಮರ್ಶೆಗಳು',
     'dash.status_dist':'ಸ್ಥಿತಿ ವಿತರಣೆ','dash.recent':'ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ',
     'status.submitted':'ಸಲ್ಲಿಸಲಾಗಿದೆ','status.review':'ವಿಮರ್ಶೆಯಲ್ಲಿದೆ','status.approved':'ಅನುಮೋದಿಸಲಾಗಿದೆ',
     'status.rejected':'ತಿರಸ್ಕರಿಸಲಾಗಿದೆ','status.implemented':'ಅನುಷ್ಠಾನಗೊಳಿಸಲಾಗಿದೆ','status.draft':'ಕರಡು',
@@ -2218,6 +2222,7 @@ const TRANSLATIONS = {
     'topbar.dark':'డార్క్','topbar.light':'లైట్','topbar.notifications':'నోటిఫికేషన్లు',
     'topbar.logout':'లాగ్ అవుట్','topbar.mark_read':'అన్నీ చదివినట్లు గుర్తించు',
     'dash.total':'మొత్తం ఆలోచనలు','dash.approved':'అనుమతించబడింది','dash.implemented':'అమలు చేయబడింది',
+    'dash.pending_review':'అనుమోదించవలసిన సమీక్ష','dash.overdue_reviews':'అతివ్యాధి సమీక్షలు',
     'dash.status_dist':'స్థితి పంపిణీ','dash.recent':'ఇటీవలి కార్యకలాపాలు',
     'status.submitted':'సమర్పించబడింది','status.review':'సమీక్షలో','status.approved':'అనుమతించబడింది',
     'status.rejected':'తిరస్కరించబడింది','status.implemented':'అమలు చేయబడింది','status.draft':'ముసాయిదా',
@@ -2379,6 +2384,7 @@ const TRANSLATIONS = {
     'topbar.dark':'இருள்','topbar.light':'ஒளி','topbar.notifications':'அறிவிப்புகள்',
     'topbar.logout':'வெளியேறு','topbar.mark_read':'அனைத்தையும் படித்ததாக குறி',
     'dash.total':'மொத்த யோசனைகள்','dash.approved':'அங்கீகரிக்கப்பட்டவை','dash.implemented':'செயல்படுத்தப்பட்டவை',
+    'dash.pending_review':'நிலுவையில் உள்ள மதிப்பீடு','dash.overdue_reviews':'காலாவதியான மதிப்பீடுகள்',
     'dash.status_dist':'நிலை விநியோகம்','dash.recent':'சமீபத்திய செயல்பாடு',
     'status.submitted':'சமர்ப்பிக்கப்பட்டது','status.review':'மறுஆய்வில்','status.approved':'அங்கீகரிக்கப்பட்டது',
     'status.rejected':'நிராகரிக்கப்பட்டது','status.implemented':'செயல்படுத்தப்பட்டது','status.draft':'வரைவு',
@@ -2541,6 +2547,7 @@ const TRANSLATIONS = {
     'topbar.dark':'ഡാർക്ക്','topbar.light':'ലൈറ്റ്','topbar.notifications':'അറിയിപ്പുകൾ',
     'topbar.logout':'ലോഗ് ഔട്ട്','topbar.mark_read':'എല്ലാം വായിച്ചതായി അടയാളപ്പെടുത്തുക',
     'dash.total':'മൊത്തം ആശയങ്ങൾ','dash.approved':'അംഗീകരിച്ചവ','dash.implemented':'നടപ്പാക്കിയവ',
+    'dash.pending_review':'സമഗ്ര നിരീക്ഷണം','dash.overdue_reviews':'കാലാവധി കഴിഞ്ഞ നിരീക്ഷണങ്ങൾ',
     'dash.status_dist':'സ്ഥിതി വിതരണം','dash.recent':'സമീപകാല പ്രവർത്തനം',
     'status.submitted':'സമർപ്പിച്ചു','status.review':'അവലോകനത്തിൽ','status.approved':'അംഗീകരിച്ചു',
     'status.rejected':'നിരസിച്ചു','status.implemented':'നടപ്പാക്കി','status.draft':'ഡ്രാഫ്റ്റ്',
@@ -3279,6 +3286,13 @@ async function loadTenantHierarchy(tenantId, tenantName) {
 async function doLogout() {
   await fetch('api/auth.php?action=logout', {method:'POST'});
   currentUser = null;
+  // Clear login form fields
+  const emailEl = document.getElementById('login-email');
+  const passEl  = document.getElementById('login-pass');
+  const orgEl   = document.getElementById('login-org');
+  if (emailEl) emailEl.value = '';
+  if (passEl)  passEl.value  = '';
+  if (orgEl)   orgEl.value   = '';
   const app = document.getElementById('main-app');
   app.style.transition = 'opacity .3s ease';
   app.style.opacity = '0';
@@ -3470,12 +3484,12 @@ async function loadDashboard() {
   const reviewerKpis = isReviewer && (d.pending_reviews > 0 || d.overdue_reviews > 0) ? `
     <div class="kpi-card" style="border-left-color:#2563eb;cursor:pointer" onclick="navigate('review',document.getElementById('nav-review'))">
       <div class="kpi-icon" style="background:#eff6ff;color:#2563eb"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><polyline points="9 14 11 16 15 12"/></svg></div>
-      <div class="kpi-body"><div class="kpi-val" data-target="${d.pending_reviews||0}">0</div><div class="kpi-label">Pending Review</div></div>
+      <div class="kpi-body"><div class="kpi-val" data-target="${d.pending_reviews||0}">0</div><div class="kpi-label" data-i18n="dash.pending_review">Pending Review</div></div>
     </div>
     ${d.overdue_reviews > 0 ? `
     <div class="kpi-card" style="border-left-color:#ef4444;cursor:pointer" onclick="navigate('review',document.getElementById('nav-review'))">
       <div class="kpi-icon" style="background:#fee2e2;color:#ef4444"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-      <div class="kpi-body"><div class="kpi-val" data-target="${d.overdue_reviews||0}">0</div><div class="kpi-label">Overdue Reviews</div></div>
+      <div class="kpi-body"><div class="kpi-val" data-target="${d.overdue_reviews||0}">0</div><div class="kpi-label" data-i18n="dash.overdue_reviews">Overdue Reviews</div></div>
     </div>` : ''}` : '';
   document.getElementById('dash-kpis').innerHTML = `
     <div class="kpi-card" style="border-left-color:#1f2937">
