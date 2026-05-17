@@ -923,9 +923,9 @@ $user     = $_SESSION['user'] ?? [];
         <div id="review-list"><div class="empty-state"><div class="spinner"></div> Loading…</div></div>
         <div id="bulk-action-bar" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 20px;box-shadow:var(--shadow-xl);display:flex;gap:12px;align-items:center;z-index:200">
           <span id="bulk-count-label" style="font-size:13px;font-weight:600;color:var(--heading)">0 selected</span>
-          <button class="btn btn-success btn-sm" onclick="submitBulkReview('Approved')">Approve All</button>
-          <button class="btn btn-danger btn-sm" onclick="submitBulkReview('Rejected')">Reject All</button>
-          <button class="btn btn-outline btn-sm" onclick="clearBulkSelection()">Clear</button>
+          <button class="btn btn-success btn-sm" onclick="submitBulkReview('Approved')" data-i18n="bulk.approve_all">Approve All</button>
+          <button class="btn btn-danger btn-sm" onclick="submitBulkReview('Rejected')" data-i18n="bulk.reject_all">Reject All</button>
+          <button class="btn btn-outline btn-sm" onclick="clearBulkSelection()" data-i18n="bulk.clear">Clear</button>
         </div>
       </div>
 
@@ -1613,6 +1613,7 @@ const TRANSLATIONS = {
     'review.comment_ph':'Optional comments for the submitter…',
     'review.to_review':'Move to Under Review','review.approve':'Approve',
     'review.reject':'Reject','review.implement':'Mark as Implemented',
+    'bulk.approve_all':'Approve All','bulk.reject_all':'Reject All','bulk.clear':'Clear',
     'admin.tab_overview':'Overview','admin.tab_ideas':'Idea Management',
     'admin.tab_users':'User List','admin.tab_system':'System',
     'admin.points_config':'Points Configuration',
@@ -1794,6 +1795,7 @@ const TRANSLATIONS = {
     'review.comment_ph':'सबमिटर के लिए वैकल्पिक टिप्पणी…',
     'review.to_review':'समीक्षाधीन में ले जाएं','review.approve':'स्वीकृत करें',
     'review.reject':'अस्वीकार करें','review.implement':'कार्यान्वित के रूप में चिह्नित करें',
+    'bulk.approve_all':'सभी स्वीकृत करें','bulk.reject_all':'सभी अस्वीकृत करें','bulk.clear':'साफ़ करें',
     'admin.tab_overview':'अवलोकन','admin.tab_ideas':'विचार प्रबंधन',
     'admin.tab_users':'उपयोगकर्ता सूची','admin.tab_system':'सिस्टम',
     'admin.points_config':'अंक कॉन्फ़िगरेशन',
@@ -1964,6 +1966,7 @@ const TRANSLATIONS = {
     'review.comment_ph':'सादरकर्त्यासाठी पर्यायी टिप्पणी…',
     'review.to_review':'पुनरावलोकनात हलवा','review.approve':'मंजूर करा',
     'review.reject':'नाकारा','review.implement':'अंमलात आणले म्हणून चिन्हांकित करा',
+    'bulk.approve_all':'सर्व मंजूर करा','bulk.reject_all':'सर्व नाकारा','bulk.clear':'साफ करा',
     'admin.tab_overview':'आढावा','admin.tab_ideas':'कल्पना व्यवस्थापन',
     'admin.tab_users':'वापरकर्ता यादी','admin.tab_system':'सिस्टम',
     'admin.points_config':'गुण कॉन्फिगरेशन',
@@ -2126,6 +2129,7 @@ const TRANSLATIONS = {
     'review.comment_ph':'ಸಲ್ಲಿಸಿದವರಿಗೆ ಐಚ್ಛಿಕ ಟಿಪ್ಪಣಿಗಳು…',
     'review.to_review':'ಪರಿಶೀಲನೆಯಲ್ಲಿ ಸರಿಸಿ','review.approve':'ಅನುಮೋದಿಸಿ',
     'review.reject':'ತಿರಸ್ಕರಿಸಿ','review.implement':'ಅನುಷ್ಠಾನಗೊಂಡಿದೆ ಎಂದು ಗುರುತಿಸಿ',
+    'bulk.approve_all':'ಎಲ್ಲಾ ಅನುಮೋದಿಸಿ','bulk.reject_all':'ಎಲ್ಲಾ ತಿರಸ್ಕರಿಸಿ','bulk.clear':'ಅಳಿಸಿ',
     'admin.tab_overview':'ಅವಲೋಕನ','admin.tab_ideas':'ಆಲೋಚನೆ ನಿರ್ವಹಣೆ',
     'admin.tab_users':'ಬಳಕೆದಾರ ಪಟ್ಟಿ','admin.tab_system':'ಸಿಸ್ಟಂ',
     'admin.points_config':'ಅಂಕ ಸಂರಚನೆ',
@@ -2288,6 +2292,7 @@ const TRANSLATIONS = {
     'review.comment_ph':'సమర్పించినవారికి ఐచ్ఛిక వ్యాఖ్యలు…',
     'review.to_review':'సమీక్షలో ఉంచు','review.approve':'అనుమతించు',
     'review.reject':'తిరస్కరించు','review.implement':'అమలు చేయబడిందిగా గుర్తించు',
+    'bulk.approve_all':'అన్నీ ఆమోదించు','bulk.reject_all':'అన్నీ తిరస్కరించు','bulk.clear':'తొలగించు',
     'admin.tab_overview':'అవలోకనం','admin.tab_ideas':'ఆలోచన నిర్వహణ',
     'admin.tab_users':'వినియోగదారు జాబితా','admin.tab_system':'సిస్టమ్',
     'admin.points_config':'పాయింట్ కాన్ఫిగరేషన్',
@@ -2451,6 +2456,7 @@ const TRANSLATIONS = {
     'review.comment_ph':'சமர்ப்பிப்பாளருக்கு விருப்பமான கருத்துகள்…',
     'review.to_review':'மதிப்பாய்வில் நகர்த்து','review.approve':'அங்கீகரிக்கவும்',
     'review.reject':'நிராகரிக்கவும்','review.implement':'செயல்படுத்தப்பட்டதாக குறி',
+    'bulk.approve_all':'அனைத்தையும் ஏற்கவும்','bulk.reject_all':'அனைத்தையும் நிராகரிக்கவும்','bulk.clear':'அழி',
     'admin.tab_overview':'கண்ணோட்டம்','admin.tab_ideas':'யோசனை மேலாண்மை',
     'admin.tab_users':'பயனர் பட்டியல்','admin.tab_system':'கணினி',
     'admin.points_config':'புள்ளிகள் கட்டமைப்பு',
@@ -2614,6 +2620,7 @@ const TRANSLATIONS = {
     'review.comment_ph':'സമർപ്പിച്ചവർക്ക് ഐച്ഛിക അഭിപ്രായങ്ങൾ…',
     'review.to_review':'അവലോകനത്തിലേക്ക് നീക്കുക','review.approve':'അംഗീകരിക്കുക',
     'review.reject':'നിരസിക്കുക','review.implement':'നടപ്പാക്കിയതായി അടയാളപ്പെടുത്തുക',
+    'bulk.approve_all':'എല്ലാം അംഗീകരിക്കുക','bulk.reject_all':'എല്ലാം നിരസിക്കുക','bulk.clear':'മായ്ക്കുക',
     'admin.tab_overview':'അവലോകനം','admin.tab_ideas':'ആശയ മാനേജ്മെന്റ്',
     'admin.tab_users':'ഉപയോക്തൃ പട്ടിക','admin.tab_system':'സിസ്റ്റം',
     'admin.points_config':'പോയിന്റ് കോൺഫിഗറേഷൻ',
@@ -3138,7 +3145,7 @@ async function submitReviewerDecision() {
   const decision = document.getElementById('rd-decision').value;
   const comment  = document.getElementById('rd-comment').value;
   if (!decision) { showToast('Please select Approve or Reject.', 'warning'); return; }
-  const label = decision === 'approved' ? 'Approve' : 'Reject';
+  const label = decision === 'approved' ? t('review.approve') : t('review.reject');
   if (!confirm(`Confirm: ${label} this idea? Your decision is final and will be recorded in the audit trail.`)) return;
   const btn = document.getElementById('rd-submit-btn');
   btn.disabled = true; btn.textContent = t('msg.loading');
@@ -3955,8 +3962,11 @@ async function submitReview() {
   const comment   = document.getElementById('review-comment').value;
   const submitBtn = document.querySelector('#modal-review .modal-footer .btn-primary');
 
-  const label = {'Approved':'Approve','Rejected':'Reject','Implemented':'Mark as Implemented','Under Review':'Move to Under Review'}[decision] || decision;
-  if (!confirm(`Confirm: ${label} this idea?\n\nThis action will be recorded in the audit trail and the submitter will be notified.`)) return;
+  const label = {
+    'Approved':'Approve','Rejected':'Reject','Implemented':'Mark as Implemented','Under Review':'Move to Under Review'
+  }[decision] || decision;
+  const labelText = t('bulk.' + (decision === 'Approved' ? 'approve_all' : decision === 'Rejected' ? 'reject_all' : '')) || label;
+  if (!confirm(`Confirm: ${labelText} this idea?\n\nThis action will be recorded in the audit trail and the submitter will be notified.`)) return;
 
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('msg.loading'); }
 

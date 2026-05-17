@@ -86,6 +86,12 @@ if ($action === 'list') {
     $stmt = db()->prepare($sql);
     $stmt->execute($params_list);
     $ideas = $stmt->fetchAll();
+    foreach ($ideas as &$idea) {
+        $idea['submitter_name'] = esc($idea['submitter_name'] ?? '');
+        $idea['co1_name']      = esc($idea['co1_name'] ?? '');
+        $idea['co2_name']       = esc($idea['co2_name'] ?? '');
+    }
+    unset($idea);
 
     // Mask anonymous submitters for non-privileged users
     $canSeeAnon = in_array($user['role'], ['manager','senior_manager','executive','admin','super_admin'], true);
@@ -118,7 +124,13 @@ if ($action === 'my') {
          ORDER BY i.updated_at DESC"
     );
     $stmt->execute([$uid, $uid, $uid, $uid]);
-    respond(['success' => true, 'ideas' => $stmt->fetchAll()]);
+    $ideas = $stmt->fetchAll();
+    foreach ($ideas as &$idea) {
+        $idea['co1_name'] = esc($idea['co1_name'] ?? '');
+        $idea['co2_name'] = esc($idea['co2_name'] ?? '');
+    }
+    unset($idea);
+    respond(['success' => true, 'ideas' => $ideas]);
 }
 
 // ── REVIEW QUEUE ──────────────────────────────────────────────────────
@@ -169,7 +181,10 @@ if ($action === 'review') {
               ORDER BY i.review_due_date ASC, i.ai_score DESC, i.submitted_at ASC");
         $stmt->execute([$uid]);
     }
-    respond(['success' => true, 'ideas' => $stmt->fetchAll()]);
+    $ideas = $stmt->fetchAll();
+    foreach ($ideas as &$idea) { $idea['submitter_name'] = esc($idea['submitter_name'] ?? ''); }
+    unset($idea);
+    respond(['success' => true, 'ideas' => $ideas]);
 }
 
 // ── GET single idea detail ─────────────────────────────────────────
@@ -194,6 +209,11 @@ if ($action === 'get') {
     $stmt->execute([$uid, $id]);
     $idea = $stmt->fetch();
     if (!$idea) respond(['success' => false, 'error' => 'Idea not found'], 404);
+    // Escape all user-provided name fields to prevent XSS
+    $idea['submitter_name'] = esc($idea['submitter_name'] ?? '');
+    $idea['co1_name']      = esc($idea['co1_name'] ?? '');
+    $idea['co2_name']       = esc($idea['co2_name'] ?? '');
+    $idea['manager_name']   = esc($idea['manager_name'] ?? '');
 
     // Attachments
     $att = db()->prepare("SELECT * FROM idea_attachments WHERE idea_id = ?");
@@ -207,7 +227,10 @@ if ($action === 'get') {
          WHERE w.idea_id = ? ORDER BY w.created_at ASC"
     );
     $wf->execute([$id]);
-    $idea['workflow'] = $wf->fetchAll();
+    $wfData = $wf->fetchAll();
+    foreach ($wfData as &$w) { $w['actor_name'] = esc($w['actor_name'] ?? ''); }
+    unset($w);
+    $idea['workflow'] = $wfData;
 
     // Reviewer assignments (multi-reviewer workflow)
     try {
@@ -219,7 +242,12 @@ if ($action === 'get') {
              WHERE ir.idea_id = ? ORDER BY ir.assigned_at ASC"
         );
         $rv->execute([$id]);
-        $idea['reviewers'] = $rv->fetchAll();
+        $revData = $rv->fetchAll();
+        foreach ($revData as &$r) {
+            $r['reviewer_name'] = esc($r['reviewer_name'] ?? '');
+        }
+        unset($r);
+        $idea['reviewers'] = $revData;
     } catch (Exception $e) {
         $idea['reviewers'] = [];
     }
@@ -581,6 +609,8 @@ if ($action === 'dashboard') {
          JOIN ideas i ON i.id = w.idea_id
          ORDER BY w.created_at DESC LIMIT 10"
     )->fetchAll();
+    foreach ($recent as &$r) { $r['actor_name'] = esc($r['actor_name'] ?? ''); }
+    unset($r);
 
     // Fetch current points from DB (authoritative)
     $ptsStmt = $pdo->prepare("SELECT points FROM users WHERE id=?");
@@ -854,17 +884,16 @@ if ($action === 'board') {
     $ideas = $stmt->fetchAll();
 
     $canSeeAnon = in_array($user['role'], ['manager','senior_manager','executive','admin','super_admin'], true);
-    if (!$canSeeAnon) {
-        foreach ($ideas as &$idea) {
-            if (!empty($idea['is_anonymous'])) {
-                $idea['submitter_name']  = 'Anonymous';
-                $idea['avatar_initials'] = '?';
-                $idea['department']      = '—';
-            }
+    foreach ($ideas as &$idea) {
+        // Escape all user-provided name fields
+        $idea['submitter_name'] = esc($idea['submitter_name'] ?? '');
+        if (!empty($idea['is_anonymous']) && !$canSeeAnon) {
+            $idea['submitter_name']  = 'Anonymous';
+            $idea['avatar_initials'] = '?';
+            $idea['department']      = '—';
         }
-        unset($idea);
     }
-
+    unset($idea);
     respond(['success' => true, 'ideas' => $ideas]);
 }
 

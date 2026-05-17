@@ -214,19 +214,39 @@ Org-level settings (SLA days, SMTP credentials, feature flags) are stored in the
 
 ---
 
-## Demo accounts
+## First-time setup
 
-All passwords are `password`.
+After running `schema.sql`, a default super_admin account is created automatically:
 
-| Name | Email | Role |
-|---|---|---|
-| IFQM Super Admin | superadmin@ifqm.com | super_admin |
-| Bhuvan K H | bhuvan.kh@ifqm.com | admin |
-| Priya Sharma | priya.sharma@ifqm.com | manager |
-| Adrish Chowdhury | adrish.c@ifqm.com | executive |
-| Yashas R | yashas.r@ifqm.com | employee |
-| Rahul Mehta | rahul.mehta@ifqm.com | employee |
-| Arjun Chopra | arjun.chopra@ifqm.com | employee |
+| Field | Value |
+|---|---|
+| Email | `admin@ifqm.test` |
+| Password | `changeme123` |
+
+> **Change this password immediately on first login.** Create new users for your team and delete this account once onboarded.
+
+### Platform admin (IFQM team only)
+
+The platform-level admin account is stored separately in `ifqm_master.platform_admins`:
+
+| Field | Value |
+|---|---|
+| Email | `platform@ifqm.io` |
+| Password | `password` |
+
+Log in at the platform level by **leaving the Organization Code blank** on the login screen.
+
+---
+
+## Security checklist before production
+
+- [ ] Change all default passwords (admin accounts, platform admin)
+- [ ] Set `GEMINI_API_KEY` in `api/config.php` (optional — heuristic scorer works without it)
+- [ ] Configure real SMTP credentials in Org Settings
+- [ ] Enable HTTPS on your web server
+- [ ] Set `MASTER_DB_PASS` and `FALLBACK_DB_PASS` to strong credentials in `api/config.php`
+- [ ] Review the `.gitignore` — ensure `api/uploads/` and any credentials files are excluded
+- [ ] Run `schema_updates.sql` on all existing tenant databases after updating the codebase
 
 ---
 

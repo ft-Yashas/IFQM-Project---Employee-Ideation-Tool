@@ -144,6 +144,9 @@ function uploadUrl(): string {
 define('UPLOAD_DIR', __DIR__ . '/uploads/');
 
 // ── Core helpers ──────────────────────────────────────────────────
+function esc(string $s): string {
+    return htmlspecialchars($s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}
 function respond(array $data, int $code = 200): void {
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
