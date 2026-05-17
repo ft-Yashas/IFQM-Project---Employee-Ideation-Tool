@@ -1460,12 +1460,21 @@ function staggerAnimate(els, baseDelay=40) {
 })();
 
 // Wire Sign In button via event listener (safer than onclick attribute)
-document.addEventListener('DOMContentLoaded', function() {
+function attachLoginBtn() {
   const btn = document.getElementById('login-btn');
-  if (btn) btn.addEventListener('click', doLogin);
-});
+  if (btn) {
+    btn.removeEventListener('click', doLogin);
+    btn.addEventListener('click', doLogin);
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', attachLoginBtn);
+} else {
+  attachLoginBtn();
+}
 
 async function doLogin() {
+  alert('doLogin called');
   const email   = document.getElementById('login-email').value.trim();
   const pass    = document.getElementById('login-pass').value.trim();
   const orgSlug = (document.getElementById('login-org')?.value || '').trim().toLowerCase();
