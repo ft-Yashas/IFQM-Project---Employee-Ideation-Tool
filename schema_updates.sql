@@ -84,6 +84,10 @@ INSERT IGNORE INTO org_settings (key_name, value) VALUES
   ('smtp_from',             ''),
   ('smtp_from_name',        'IFQM Ideation');
 
+-- ── IFQM Tenant Cleanup: remove all seed users, keep only SA-001 ───
+-- platform@ifqm.io user lives in ifqm_master.platform_admins, not here
+DELETE FROM users WHERE employee_id != 'SA-001';
+
 -- ── Feature 16: Customizable approval hierarchy ────────────────────
 INSERT INTO org_settings (key_name, value) VALUES
   ('approval_mode',             'default') ON DUPLICATE KEY UPDATE value=value,
